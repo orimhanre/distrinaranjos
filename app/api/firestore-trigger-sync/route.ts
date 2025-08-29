@@ -4,6 +4,18 @@ import { virtualDb } from '../../../lib/firebase';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if required environment variables are available
+    if (!process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY || 
+        !process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID ||
+        !process.env.VIRTUAL_FIREBASE_PRIVATE_KEY ||
+        !process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL) {
+      console.log('⚠️ Virtual Firebase environment variables not available, skipping sync');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Virtual Firebase not configured' 
+      }, { status: 503 });
+    }
+
     if (!virtualDb) {
       return NextResponse.json({ 
         success: false, 
@@ -116,4 +128,16 @@ export async function POST(request: NextRequest) {
       error: 'Firestore trigger sync failed' 
     }, { status: 500 });
   }
+}
+
+export async function GET() {
+  // Handle build-time page data collection
+  return NextResponse.json({ 
+    success: true, 
+    message: 'Firestore trigger sync endpoint available',
+    configured: !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                  process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                  process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                  process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL)
+  });
 }
