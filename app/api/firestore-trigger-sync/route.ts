@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { virtualDb } from '../../../lib/firebase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +13,10 @@ export async function POST(request: NextRequest) {
         error: 'Virtual Firebase not configured' 
       }, { status: 503 });
     }
+
+    // Only import Firebase when we actually need it
+    const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+    const { virtualDb } = await import('../../../lib/firebase');
 
     if (!virtualDb) {
       return NextResponse.json({ 
