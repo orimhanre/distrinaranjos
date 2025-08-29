@@ -1,0 +1,11 @@
+{
+  "crons": [],
+  "functions": {
+    "app/api/database/sync-airtable/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cleanup-images/route.ts": {
+      "maxDuration": 60
+    }
+  }
+} 

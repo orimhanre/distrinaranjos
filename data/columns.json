@@ -1,0 +1,82 @@
+[
+  {
+    "key": "name",
+    "label": "name",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "brand",
+    "label": "brand",
+    "type": "select",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "type",
+    "label": "type",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "colors",
+    "label": "colors",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "price1",
+    "label": "price1",
+    "type": "number",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "price2",
+    "label": "price2",
+    "type": "number",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "isProductStarredAirtable",
+    "label": "isProductStarredAirtable",
+    "type": "boolean",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "quantity",
+    "label": "quantity",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "imageURL",
+    "label": "imageURL",
+    "type": "attachment",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "lastUpdated",
+    "label": "lastUpdated",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  }
+]

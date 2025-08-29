@@ -1,0 +1,154 @@
+[
+  {
+    "key": "name",
+    "label": "name",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "SKU",
+    "label": "SKU",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "checkMark",
+    "label": "checkMark",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "commercialName",
+    "label": "commercialName",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "brand",
+    "label": "brand",
+    "type": "select",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "type",
+    "label": "type",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "category",
+    "label": "category",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "subCategory",
+    "label": "subCategory",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "detail",
+    "label": "detail",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "materials",
+    "label": "materials",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "dimensions",
+    "label": "dimensions",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "capacity",
+    "label": "capacity",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "price",
+    "label": "price",
+    "type": "number",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "colors",
+    "label": "colors",
+    "type": "multipleSelect",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "imageURL",
+    "label": "imageURL",
+    "type": "attachment",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "distriPrice",
+    "label": "distriPrice",
+    "type": "number",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "stock",
+    "label": "stock",
+    "type": "number",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "lastUpdated",
+    "label": "lastUpdated",
+    "type": "text",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  },
+  {
+    "key": "isProductStarredAirtable",
+    "label": "isProductStarredAirtable",
+    "type": "boolean",
+    "required": false,
+    "sortable": true,
+    "filterable": true
+  }
+]

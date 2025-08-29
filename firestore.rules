@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow reads and writes to orders collection
+    match /orders/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to virtualOrders collection
+    match /virtualOrders/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to admin_permissions collection
+    match /admin_permissions/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to virtualAdminPermissions collection
+    match /virtualAdminPermissions/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to visits collection
+    match /visits/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to settings collection
+    match /settings/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to test collection (for testing)
+    match /test/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to deletedOrders collection
+    match /deletedOrders/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to invoiceNumbers collection
+    match /invoiceNumbers/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to virtualInvoiceNumbers collection
+    match /virtualInvoiceNumbers/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to invoiceCounters collection
+    match /invoiceCounters/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to virtualInvoiceCounters collection
+    match /virtualInvoiceCounters/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to clients collection
+    match /clients/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow reads and writes to deletedClients collection (for soft deletion)
+    match /deletedClients/{document} {
+      allow read, write: if true;
+    }
+  }
+} 
