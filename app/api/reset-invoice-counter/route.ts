@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only import Firebase when we actually need it
-    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where, FieldValue } = await import('firebase/firestore');
     const { db } = await import('../../../lib/firebase');
   try {
     console.log('🔄 Resetting invoice counter for today...');
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
     await counterDocRef.set({
       dateString,
       count: 0,
-      createdAt: FieldValue.serverTimestamp(),
-      lastUpdated: FieldValue.serverTimestamp()
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
     });
     
     console.log('✅ Invoice counter reset to 0 for today');

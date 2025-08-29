@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '../../../../lib/emailService';
 import Stripe from 'stripe';
+import { collection, doc, getDoc, updateDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { virtualDb } from '../../../../lib/firebase';
 
 // Initialize Stripe conditionally
 let stripe: Stripe | null = null;
@@ -13,6 +15,27 @@ if (process.env.VIRTUAL_STRIPE_SECRET_KEY) {
   } catch (error) {
     console.warn('Failed to initialize Stripe:', error);
   }
+}
+
+export async function GET() {
+  // Handle build-time page data collection
+  const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                               process.env.FIREBASE_PRIVATE_KEY &&
+                               process.env.FIREBASE_CLIENT_EMAIL);
+  
+  const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                               process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                               process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+  
+  return NextResponse.json({ 
+    success: true, 
+    message: 'API endpoint available',
+    configured: hasRegularFirebase || hasVirtualFirebase,
+    regularFirebase: hasRegularFirebase,
+    virtualFirebase: hasVirtualFirebase
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -207,25 +230,4 @@ async function sendPaymentConfirmationEmail(orderData: any) {
   } catch (error) {
     console.error('Error sending payment confirmation email:', error);
   }
-} 
-
-export async function GET() {
-  // Handle build-time page data collection
-  const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-                               process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-                               process.env.FIREBASE_PRIVATE_KEY &&
-                               process.env.FIREBASE_CLIENT_EMAIL);
-  
-  const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
-                               process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
-                               process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
-                               process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
-  
-  return NextResponse.json({ 
-    success: true, 
-    message: 'API endpoint available',
-    configured: hasRegularFirebase || hasVirtualFirebase,
-    regularFirebase: hasRegularFirebase,
-    virtualFirebase: hasVirtualFirebase
-  });
 }

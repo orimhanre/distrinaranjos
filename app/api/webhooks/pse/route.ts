@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '../../../../lib/emailService';
 import crypto from 'crypto';
+import { collection, doc, getDoc, updateDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { virtualDb } from '../../../../lib/firebase';
 
 export async function POST(request: NextRequest) {
     // Check if required virtual Firebase environment variables are available

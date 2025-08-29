@@ -5,6 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {

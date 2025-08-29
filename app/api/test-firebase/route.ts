@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
 export async function GET() {
     // Check if required Firebase environment variables are available
     if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 

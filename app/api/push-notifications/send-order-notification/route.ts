@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initDatabase } from '@/lib/database';
 import fs from 'fs';
 import path from 'path';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getMessaging, MulticastMessage } from 'firebase-admin/messaging';
 
 function loadVirtualEnv() {
   try {

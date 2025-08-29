@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, doc, getDoc, getDocs } from 'firebase/firestore';
 // Import Firebase configs directly to avoid client-side code in server context
 // Initialize Firebase apps directly for server-side use
 const getFirebaseApps = () => {
