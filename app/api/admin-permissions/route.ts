@@ -32,6 +32,22 @@ export async function GET() {
 
 // POST: Add a new admin email
 export async function POST(request: Request) {
+  // Check if required Firebase environment variables are available
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+      !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+      !process.env.FIREBASE_PRIVATE_KEY ||
+      !process.env.FIREBASE_CLIENT_EMAIL) {
+    console.log('⚠️ Firebase environment variables not available, skipping operation');
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Firebase not configured' 
+    }, { status: 503 });
+  }
+
+  // Only import Firebase when we actually need it
+  const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+  const { db } = await import('../../../lib/firebase');
+
   try {
     const { email } = await request.json();
     
@@ -61,6 +77,22 @@ export async function POST(request: Request) {
 
 // DELETE: Remove an admin email
 export async function DELETE(request: Request) {
+  // Check if required Firebase environment variables are available
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+      !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+      !process.env.FIREBASE_PRIVATE_KEY ||
+      !process.env.FIREBASE_CLIENT_EMAIL) {
+    console.log('⚠️ Firebase environment variables not available, skipping operation');
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Firebase not configured' 
+    }, { status: 503 });
+  }
+
+  // Only import Firebase when we actually need it
+  const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+  const { db } = await import('../../../lib/firebase');
+
   try {
     const { email } = await request.json();
     
