@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc } from 'firebase/firestore';
-import { db, virtualDb } from '../../../../lib/firebase';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if required environment variables are available
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+        !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+        !process.env.FIREBASE_PRIVATE_KEY ||
+        !process.env.FIREBASE_CLIENT_EMAIL) {
+      console.log('⚠️ Firebase environment variables not available, skipping order retrieval');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Firebase not configured' 
+      }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
     
@@ -13,6 +23,10 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Only import Firebase when we actually need it
+    const { doc, getDoc } = await import('firebase/firestore');
+    const { db, virtualDb } = await import('../../../../lib/firebase');
 
     // Determine which Firebase instance to use based on the request
     const url = new URL(request.url);
@@ -143,4 +157,16 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST() {
+  // Handle build-time page data collection
+  return NextResponse.json({ 
+    success: true, 
+    message: 'Get original order endpoint available',
+    configured: !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                  process.env.FIREBASE_PRIVATE_KEY &&
+                  process.env.FIREBASE_CLIENT_EMAIL)
+  });
 } 
