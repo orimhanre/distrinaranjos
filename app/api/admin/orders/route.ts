@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { db, virtualDb } from '../../../../lib/firebase';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-
 // Function to load environment variables from .env.virtual.local
 function loadVirtualEnv() {
   try {
@@ -52,6 +47,28 @@ if (!apiVirtualDb && virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY) {
 }
 
 export async function GET(request: NextRequest) {
+    // Check if required environment variables are available for both regular and virtual environments
+    const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                                 process.env.FIREBASE_PRIVATE_KEY &&
+                                 process.env.FIREBASE_CLIENT_EMAIL);
+    
+    const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                                 process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                                 process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+    
+    if (!hasRegularFirebase && !hasVirtualFirebase) {
+      console.log('⚠️ Neither regular nor virtual Firebase environment variables available, skipping operation');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Firebase not configured for either environment' 
+      }, { status: 503 });
+    }
+
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db, virtualDb } = await import('../..//lib/firebase');
   try {
     
     // Determine if this is for virtual admin

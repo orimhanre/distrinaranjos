@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { virtualAdminDb } from '@/lib/firebaseAdmin';
 
 export async function GET() {
+    // Check if required Firebase environment variables are available
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+        !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+        !process.env.FIREBASE_PRIVATE_KEY ||
+        !process.env.FIREBASE_CLIENT_EMAIL) {
+      console.log('⚠️ Firebase environment variables not available, skipping operation');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Firebase not configured' 
+      }, { status: 503 });
+    }
+
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db } = await import('..//lib/firebase');
   try {
     console.log('🔍 Checking virtual orders for invoice number patterns...');
     

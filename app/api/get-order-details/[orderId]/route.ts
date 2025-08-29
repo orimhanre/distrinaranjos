@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc } from 'firebase/firestore';
-
 // Import Firebase configs directly to avoid client-side code in server context
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-
 // Initialize Firebase apps directly for server-side use
 const getFirebaseApps = () => {
   // Main Firebase config
@@ -59,7 +54,29 @@ const getFirebaseApps = () => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  {
+    // Check if required environment variables are available for both regular and virtual environments
+    const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                                 process.env.FIREBASE_PRIVATE_KEY &&
+                                 process.env.FIREBASE_CLIENT_EMAIL);
+    
+    const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                                 process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                                 process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+    
+    if (!hasRegularFirebase && !hasVirtualFirebase) {
+      console.log('⚠️ Neither regular nor virtual Firebase environment variables available, skipping operation');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Firebase not configured for either environment' 
+      }, { status: 503 });
+    }
+
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db, virtualDb } = await import('../..//lib/firebase'); params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const { orderId } = await params;
