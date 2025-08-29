@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
-import { db, virtualDb } from '../../../lib/firebase';
 import { Resend } from 'resend';
 import { generateInvoiceNumber } from '../../../lib/invoiceNumber';
 
@@ -97,6 +95,29 @@ function deepSanitize(obj: any): any {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if required environment variables are available for both regular and virtual environments
+    const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                                 process.env.FIREBASE_PRIVATE_KEY &&
+                                 process.env.FIREBASE_CLIENT_EMAIL);
+    
+    const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                                 process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                                 process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+    
+    if (!hasRegularFirebase && !hasVirtualFirebase) {
+      console.log('⚠️ Neither regular nor virtual Firebase environment variables available, skipping order processing');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Firebase not configured for either environment' 
+      }, { status: 503 });
+    }
+
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc } = await import('firebase/firestore');
+    const { db, virtualDb } = await import('../../../lib/firebase');
+
     const { 
       client, 
       cartItems, 
@@ -1023,4 +1044,25 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  // Handle build-time page data collection
+  const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                               process.env.FIREBASE_PRIVATE_KEY &&
+                               process.env.FIREBASE_CLIENT_EMAIL);
+  
+  const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                               process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                               process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+  
+  return NextResponse.json({ 
+    success: true, 
+    message: 'Send order endpoint available',
+    configured: hasRegularFirebase || hasVirtualFirebase,
+    regularFirebase: hasRegularFirebase,
+    virtualFirebase: hasVirtualFirebase
+  });
 }
