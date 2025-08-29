@@ -25,27 +25,6 @@ function loadVirtualEnv() {
 // Load virtual environment variables
 const virtualEnv = loadVirtualEnv();
 
-// Initialize virtual Firebase app for API routes if not already available
-let apiVirtualDb = virtualDb;
-if (!apiVirtualDb && virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY) {
-  try {
-    const virtualFirebaseConfig = {
-      apiKey: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY,
-      authDomain: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN,
-      projectId: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID,
-      storageBucket: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_MESSAGING_SENDER_ID,
-      appId: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID
-    };
-    
-    const virtualApp = initializeApp(virtualFirebaseConfig, 'virtual-api');
-    apiVirtualDb = getFirestore(virtualApp);
-    console.log('✅ Virtual Firebase initialized for API route');
-  } catch (error) {
-    console.error('❌ Failed to initialize virtual Firebase for API route:', error);
-  }
-}
-
 export async function GET(request: NextRequest) {
     // Check if required environment variables are available for both regular and virtual environments
     const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
@@ -78,21 +57,20 @@ export async function GET(request: NextRequest) {
     console.log('🔍 API Route Debug:', {
       isVirtualAdmin,
       virtualDbAvailable: !!virtualDb,
-      apiVirtualDbAvailable: !!apiVirtualDb,
       mainDbAvailable: !!db,
       url: request.url
     });
     
     // Select database and collection
     const { firestoreDb, collectionName } = isVirtualAdmin 
-      ? { firestoreDb: apiVirtualDb, collectionName: 'virtualOrders' }
+      ? { firestoreDb: virtualDb, collectionName: 'virtualOrders' }
       : { firestoreDb: db, collectionName: 'orders' };
     
     console.log('🔍 Selected Database:', {
       firestoreDbAvailable: !!firestoreDb,
       collectionName,
       isVirtualAdmin,
-      usingApiVirtualDb: isVirtualAdmin && !!apiVirtualDb
+      usingVirtualDb: isVirtualAdmin && !!virtualDb
     });
     
     if (!firestoreDb) {
@@ -103,7 +81,6 @@ export async function GET(request: NextRequest) {
         debug: {
           isVirtualAdmin,
           virtualDbAvailable: !!virtualDb,
-          apiVirtualDbAvailable: !!apiVirtualDb,
           mainDbAvailable: !!db
         }
       }, { status: 500 });

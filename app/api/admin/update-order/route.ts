@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only import Firebase when we actually need it
-    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where, deleteField } = await import('firebase/firestore');
     const { db, virtualDb } = await import('../../../../lib/firebase');
   try {
     const { orderId, updates } = await request.json();

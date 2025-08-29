@@ -38,24 +38,7 @@ const virtualFirebaseConfig = {
   appId: virtualEnv.NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID || process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID
 };
 
-// Initialize virtual Firebase app for API routes
-let virtualApp: any = null;
-try {
-  virtualApp = initializeApp(virtualFirebaseConfig, 'virtual-api');
-  console.log('Virtual Firebase API initialized successfully');
-} catch (error) {
-  console.log('Virtual Firebase API already initialized or config missing:', error);
-}
 
-const virtualDb = virtualApp ? getFirestore(virtualApp) : null;
-const virtualAuth = virtualApp ? getAuth(virtualApp) : null;
-console.log('Virtual Firebase Config:', {
-  projectId: virtualFirebaseConfig.projectId,
-  apiKey: virtualFirebaseConfig.apiKey ? 'Set' : 'Not set',
-  virtualApp: !!virtualApp,
-  virtualDb: !!virtualDb,
-  virtualAuth: !!virtualAuth
-});
 
 export async function GET() {
     // Check if required virtual Firebase environment variables are available
@@ -72,6 +55,8 @@ export async function GET() {
 
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { initializeApp } = await import('firebase/app');
+    const { getFirestore } = await import('firebase/firestore');
     const { virtualDb } = await import('../../../../lib/firebase');
   try {
     if (!virtualDb) {
@@ -131,16 +116,30 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Check if required virtual Firebase environment variables are available
+  if (!process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY || 
+      !process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID ||
+      !process.env.VIRTUAL_FIREBASE_PRIVATE_KEY ||
+      !process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL) {
+    console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Virtual Firebase not configured' 
+    }, { status: 503 });
+  }
+
+  // Only import Firebase when we actually need it
+  const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+  const { virtualDb } = await import('../../../../lib/firebase');
+
   try {
     console.log('=== ADD VIRTUAL ADMIN START ===');
     console.log('virtualDb available:', !!virtualDb);
-    console.log('virtualAuth available:', !!virtualAuth);
-    console.log('virtualAdminAuth available:', !!virtualAdminAuth);
     console.log('Environment variables check:');
     console.log('- VIRTUAL_FIREBASE_CLIENT_EMAIL:', process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL ? 'Set' : 'Not set');
     console.log('- VIRTUAL_FIREBASE_PRIVATE_KEY:', process.env.VIRTUAL_FIREBASE_PRIVATE_KEY ? 'Set' : 'Not set');
     
-    if (!virtualDb || !virtualAuth) {
+    if (!virtualDb) {
       console.log('Virtual Firebase not configured');
       return NextResponse.json(
         { success: false, error: 'Virtual Firebase not configured' },
@@ -196,12 +195,28 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // Check if required virtual Firebase environment variables are available
+  if (!process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY || 
+      !process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID ||
+      !process.env.VIRTUAL_FIREBASE_PRIVATE_KEY ||
+      !process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL) {
+    console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Virtual Firebase not configured' 
+    }, { status: 503 });
+  }
+
+  // Only import Firebase when we actually need it
+  const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+  const { virtualDb } = await import('../../../../lib/firebase');
+
   try {
     console.log('=== DELETE VIRTUAL ADMIN START ===');
     console.log('virtualDb available:', !!virtualDb);
-    console.log('virtualAuth available:', !!virtualAuth);
+
     
-    if (!virtualDb || !virtualAuth) {
+    if (!virtualDb) {
       console.log('Virtual Firebase not configured');
       return NextResponse.json(
         { success: false, error: 'Virtual Firebase not configured' },
