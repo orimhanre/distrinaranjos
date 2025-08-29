@@ -54,7 +54,7 @@ export async function GET() {
 
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
-    const { db } = await import('../lib/firebase');
+    const { db } = await import('../../lib/firebase');
   try {
     const trackingDoc = await getDoc(doc(db, 'settings', 'tracking'));
     
