@@ -76,7 +76,7 @@ export async function GET(
 
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
-    const { db, virtualDb } = await import('../..//lib/firebase'); params }: { params: Promise<{ orderId: string }> }
+    const { db, virtualDb } = await import('../../../lib/firebase'); params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const { orderId } = await params;
