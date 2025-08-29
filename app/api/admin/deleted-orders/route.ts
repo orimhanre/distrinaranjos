@@ -2,15 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if required environment variables are available
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-        !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-        !process.env.FIREBASE_PRIVATE_KEY ||
-        !process.env.FIREBASE_CLIENT_EMAIL) {
-      console.log('⚠️ Firebase environment variables not available, skipping deleted orders retrieval');
+    // Check if required environment variables are available for both regular and virtual environments
+    const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                                 process.env.FIREBASE_PRIVATE_KEY &&
+                                 process.env.FIREBASE_CLIENT_EMAIL);
+    
+    const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                                 process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                                 process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                                 process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+    
+    if (!hasRegularFirebase && !hasVirtualFirebase) {
+      console.log('⚠️ Neither regular nor virtual Firebase environment variables available, skipping deleted orders retrieval');
       return NextResponse.json({ 
         success: false, 
-        error: 'Firebase not configured' 
+        error: 'Firebase not configured for either environment' 
       }, { status: 503 });
     }
 
@@ -175,12 +182,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST() {
   // Handle build-time page data collection
+  const hasRegularFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+                               process.env.FIREBASE_PRIVATE_KEY &&
+                               process.env.FIREBASE_CLIENT_EMAIL);
+  
+  const hasVirtualFirebase = !!(process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                               process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID &&
+                               process.env.VIRTUAL_FIREBASE_PRIVATE_KEY &&
+                               process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL);
+  
   return NextResponse.json({ 
     success: true, 
     message: 'Deleted orders endpoint available',
-    configured: !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-                  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-                  process.env.FIREBASE_PRIVATE_KEY &&
-                  process.env.FIREBASE_CLIENT_EMAIL)
+    configured: hasRegularFirebase || hasVirtualFirebase,
+    regularFirebase: hasRegularFirebase,
+    virtualFirebase: hasVirtualFirebase
   });
 } 
