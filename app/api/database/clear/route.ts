@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { resetDatabaseSingletons } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -29,17 +28,7 @@ export async function POST(request: NextRequest) {
     let filesDeleted = 0;
     const warnings: string[] = [];
     
-    // Step 1: Reset database singletons
-    try {
-      resetDatabaseSingletons(context === 'virtual' ? 'virtual' : 'regular');
-      console.log('🗑️ [Railway] Database singletons reset successfully');
-    } catch (resetError) {
-      const errorMsg = resetError instanceof Error ? resetError.message : 'Unknown error';
-      console.warn('⚠️ [Railway] Warning: Error resetting database singletons:', errorMsg);
-      warnings.push(`Singleton reset error: ${errorMsg}`);
-    }
-    
-    // Step 2: Define file paths
+    // Step 1: Define file paths
     const dataDir = path.resolve(process.cwd(), 'data');
     console.log('🗑️ [Railway] Data directory:', dataDir);
     
@@ -67,7 +56,7 @@ export async function POST(request: NextRequest) {
     console.log('🗑️ [Railway] Database path:', dbPath);
     console.log('🗑️ [Railway] Files to delete:', filesToDelete);
     
-    // Step 3: Delete database file
+    // Step 2: Delete database file
     try {
       await fs.access(dbPath);
       await fs.unlink(dbPath);
@@ -83,7 +72,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Step 4: Delete configuration files
+    // Step 3: Delete configuration files
     for (const filePath of filesToDelete) {
       try {
         await fs.access(filePath);
