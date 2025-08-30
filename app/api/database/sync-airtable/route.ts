@@ -94,30 +94,9 @@ export async function POST(request: NextRequest) {
     productDB.clearAllProducts();
     console.log(`🗑️ Cleared ${existingProducts.length} existing products from SQLite database`);
     
-    // Clear images directory to force re-download of images
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
-      
-      if (fs.existsSync(imagesDir)) {
-        const files = fs.readdirSync(imagesDir);
-        console.log(`🗑️ Found ${files.length} existing image files in ${imagesDir}`);
-        
-        // Remove all image files
-        for (const file of files) {
-          const filePath = path.join(imagesDir, file);
-          fs.unlinkSync(filePath);
-          console.log(`🗑️ Deleted image file: ${file}`);
-        }
-        console.log(`🗑️ Cleared ${files.length} image files from images directory`);
-      } else {
-        console.log(`📁 Images directory does not exist: ${imagesDir}`);
-      }
-    } catch (error) {
-      console.warn(`⚠️ Failed to clear images directory:`, error);
-      // Continue with sync even if image clearing fails
-    }
+    // For virtual products, we keep original Airtable URLs instead of downloading locally
+    // This avoids Railway filesystem issues and ensures images are always accessible
+    console.log(`📸 Virtual environment: Using original Airtable image URLs (no local download)`);
     
     // Verify database is empty
     const productsAfterClear = productDB.getAllProducts();
@@ -147,42 +126,18 @@ export async function POST(request: NextRequest) {
         });
         
         if (product) {
-          // Download images if needed
+          // For virtual products, keep original Airtable URLs instead of downloading locally
+          // This avoids Railway filesystem issues and is more reliable
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            console.log(`📸 Processing images for product ${product.name}:`, {
-              originalImageURLs: product.imageURL,
-              count: product.imageURL.length
+            console.log(`📸 Virtual product ${product.name} has ${product.imageURL.length} images from Airtable:`, {
+              imageURLs: product.imageURL
             });
             
-            try {
-              const downloadedImages = await ImageDownloader.downloadImages(product.imageURL, true); // Force re-download
-              console.log(`📸 Download results for ${product.name}:`, {
-                totalDownloaded: downloadedImages.length,
-                successful: downloadedImages.filter(img => img.success).length,
-                failed: downloadedImages.filter(img => !img.success).length
-              });
-              
-              if (downloadedImages && downloadedImages.length > 0) {
-                // Extract local paths from downloaded images
-                const localPaths = downloadedImages
-                  .filter(img => img.success)
-                  .map(img => img.localPath);
-                if (localPaths.length > 0) {
-                  console.log(`📸 Updated imageURL for ${product.name}:`, {
-                    from: product.imageURL,
-                    to: localPaths
-                  });
-                  product.imageURL = localPaths;
-                } else {
-                  console.log(`⚠️ No successful image downloads for ${product.name}`);
-                }
-              }
-            } catch (imageError) {
-              console.warn(`⚠️ Failed to download images for product ${product.name}:`, imageError);
-              // Continue with original URLs if download fails
-            }
+            // Keep the original Airtable URLs - don't download locally
+            // This ensures images are always accessible and avoids Railway filesystem issues
+            console.log(`📸 Keeping original Airtable URLs for virtual product ${product.name}`);
           } else {
-            console.log(`📸 No images to process for product ${product.name}`);
+            console.log(`📸 No images for virtual product ${product.name}`);
           }
           
           // Save to SQLite database
