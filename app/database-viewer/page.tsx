@@ -1,15 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  imageUrl?: string;
-  category?: string;
-  brand?: string;
-}
+import { Product } from '../../types';
 
 interface WebPhoto {
   id: string;
