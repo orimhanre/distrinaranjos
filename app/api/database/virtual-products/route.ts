@@ -2,79 +2,115 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProductDatabase } from '@/lib/database';
 import { Product } from '@/types';
 
-// Virtual database instance - create fresh instance for each request
-let virtualProductDB: ProductDatabase;
+// Virtual database instance
+const virtualProductDB = new ProductDatabase('virtual');
 
 // GET /api/database/virtual-products - Get all virtual products or search
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const category = searchParams.get('category');
-    const marca = searchParams.get('marca');
-    const tipo = searchParams.get('tipo');
+    // // console.log('🔄 Fetching virtual products for iOS app...');
+    
+    // Initialize database for virtual environment
+    const productDB = new ProductDatabase('virtual');
+    
+    // Get all products from the database
+    const products = productDB.getAllProducts();
+    
 
-    console.log('🔍 Fetching virtual products from SQLite database...');
     
-    // Create fresh database instance for this request
-    virtualProductDB = new ProductDatabase('virtual');
-    console.log('🔍 API: Created fresh ProductDatabase instance for virtual environment');
-    
-    let products: Product[] = [];
-    console.log('🔍 API: About to call virtualProductDB.getAllProducts()');
-    
-    if (search) {
-      // Use search functionality
-      products = virtualProductDB.searchProducts(search);
-    } else if (category || marca || tipo) {
-      // For category, marca, or tipo filtering, get all products and filter in memory
-      const allProducts = virtualProductDB.getAllProducts();
-      
-      if (category) {
-        products = allProducts.filter(product => 
-          product.category && 
-          (Array.isArray(product.category) 
-            ? product.category.some(cat => cat.toLowerCase().includes(category.toLowerCase()))
-            : product.category.toLowerCase().includes(category.toLowerCase())
-          )
-        );
-      } else if (marca) {
-        products = allProducts.filter(product => 
-          product.brand && 
-          product.brand.toLowerCase().includes(marca.toLowerCase())
-        );
-      } else if (tipo) {
-        products = allProducts.filter(product => 
-          product.type && 
-          (Array.isArray(product.type) 
-            ? product.type.some(t => t.toLowerCase().includes(tipo.toLowerCase()))
-            : product.type.toLowerCase().includes(tipo.toLowerCase())
-          )
-        );
+    // Helper function to ensure arrays for category/subcategory
+    const ensureArray = (value: any): string[] => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value.filter(item => item && item.trim());
+      if (typeof value === 'string') {
+        // Try to parse JSON string
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) return parsed.filter(item => item && item.trim());
+        } catch {
+          // If parsing fails, treat as single value
+          return value.trim() ? [value.trim()] : [];
+        }
       }
-    } else {
-      // Get all products
-      console.log('🔍 API: Calling getAllProducts()...');
-      products = virtualProductDB.getAllProducts();
-      console.log('🔍 API: getAllProducts() returned', products.length, 'products');
-    }
+      return [];
+    };
 
-    console.log(`✅ Found ${products.length} virtual products`);
-    
-    return NextResponse.json({
-      success: true,
-      products,
-      count: products.length
+            // Convert relative image paths to full URLs for iOS app
+        const convertToFullUrls = (urls: any): string[] => {
+          if (!urls) return [];
+          const urlArray = Array.isArray(urls) ? urls : [urls];
+          return urlArray.map(url => {
+            if (typeof url === 'string' && url.startsWith('/')) {
+              // Convert relative path to full URL
+              // Use Mac's IP address for iOS compatibility instead of localhost
+              const baseUrl = process.env.NEXTAUTH_URL || `http://192.168.1.29:${process.env.PORT || 3001}`;
+              return `${baseUrl}${url}`;
+            }
+            return url;
+          }).filter(url => url && typeof url === 'string');
+        };
+
+    // Transform products for API response
+    const transformedProducts = products.map(product => {
+      const fullImageUrls = convertToFullUrls(product.imageURL);
+      
+
+      
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        detail: product.detail, // Add the detail field
+        price: product.price || 0,
+        category: ensureArray(product.category),
+        subcategory: ensureArray(product.subCategory),
+        subCategory: product.subCategory, // Add the subCategory field directly
+        brand: product.brand,
+        type: ensureArray(product.type),
+        imageURL: fullImageUrls,
+        quantity: product.stock || 0, // Use stock field directly for virtual products
+        stock: product.stock || 0, // Also include stock field for admin interface
+        isActive: product.isActive !== false, // Default to true if not specified
+        webPhotoUrl: product.webPhotoUrl,
+        airtableId: product.airtableId || product.id,
+        // Add any other fields that might be needed
+        SKU: product.SKU,
+        commercialName: product.commercialName,
+        materials: product.materials,
+        dimensions: product.dimensions,
+        capacity: product.capacity,
+        colors: Array.isArray(product.colors) ? product.colors : (product.colors ? [product.colors] : []),
+        distriPrice: product.distriPrice,
+        lastUpdated: product.lastUpdated,
+        isProductStarred: product.isProductStarred || product.isProductStarredAirtable || false
+      };
     });
-
+    
+    // Add cache control headers to prevent caching
+    const response = NextResponse.json({
+      success: true,
+      products: transformedProducts,
+      count: transformedProducts.length,
+      timestamp: Date.now() // Add timestamp to force cache refresh
+    });
+    
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('X-Cache-Buster', Date.now().toString());
+    response.headers.set('Last-Modified', new Date().toUTCString());
+    
+    return response;
+    
   } catch (error) {
     console.error('❌ Error fetching virtual products:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch virtual products',
-      products: [],
-      count: 0
-    }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch products',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
 }
 
