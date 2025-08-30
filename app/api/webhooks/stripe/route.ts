@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '../../../../lib/emailService';
 import Stripe from 'stripe';
-import { collection, doc, getDoc, updateDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
-import { virtualDb } from '../../../../lib/firebase';
 
 // Initialize Stripe conditionally
 let stripe: Stripe | null = null;
