@@ -114,6 +114,8 @@ export default function VirtualDatabasePage() {
     setShowClearConfirm(false);
     setClearing(true);
     
+    console.log('🗑️ Starting virtual database clear...');
+    
     // Add a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       console.log('🗑️ Clear operation timed out after 30 seconds');
@@ -122,6 +124,7 @@ export default function VirtualDatabasePage() {
     }, 30000);
     
     try {
+      console.log('🗑️ Sending clear request to API...');
       const response = await fetch('/api/database/clear', {
         method: 'POST',
         headers: {
@@ -129,9 +132,15 @@ export default function VirtualDatabasePage() {
         },
         body: JSON.stringify({ context: 'virtual' }),
       });
+      
+      console.log('🗑️ API response status:', response.status);
       const result = await response.json();
+      console.log('🗑️ API response result:', result);
+      
       setClearResult(result);
       if (result.success) {
+        console.log('✅ Database clear successful, updating UI...');
+        
         // Clear sync timestamps when database is cleared
         setLastProductSync(null);
         setLastWebPhotosSync(null);
@@ -151,13 +160,18 @@ export default function VirtualDatabasePage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Reload data to confirm everything is cleared
+        console.log('🔄 Reloading data after clear...');
         await loadProducts();
         await loadWebPhotos();
         await fetchColumns();
+        
+        console.log('✅ Database clear process completed');
+      } else {
+        console.error('❌ Database clear failed:', result.message || result.error);
       }
     } catch (error) {
       console.error('🗑️ Error during database clear:', error);
-      setClearResult({ success: false, message: 'Error al limpiar base de datos' });
+      setClearResult({ success: false, message: `Error al limpiar base de datos: ${error}` });
     } finally {
       clearTimeout(timeoutId);
       setClearing(false);
@@ -701,7 +715,10 @@ export default function VirtualDatabasePage() {
         body: JSON.stringify({ context: 'virtual' })
       });
 
+      console.log('🔄 Sync API response status:', response.status);
       const result = await response.json();
+      console.log('🔄 Sync API response result:', result);
+      
       setSyncResult(result);
       
       if (result.success) {
@@ -723,11 +740,26 @@ export default function VirtualDatabasePage() {
         
         // Trigger cache refresh after successful sync
         try {
+          console.log('🔄 Triggering cache refresh...');
           await fetch('/api/cache-refresh', { method: 'POST' });
           console.log('🔄 Cache refresh triggered after product sync');
         } catch (cacheError) {
           console.warn('⚠️ Cache refresh failed:', cacheError);
         }
+        
+        // Force refresh images on the page
+        setTimeout(() => {
+          console.log('🖼️ Forcing image refresh on page...');
+          const images = document.querySelectorAll('img');
+          images.forEach((img) => {
+            const src = img.getAttribute('src');
+            if (src && (src.includes('dl.airtable.com') || src.includes('airtable'))) {
+              const newSrc = src.includes('?') ? `${src}&cb=${Date.now()}` : `${src}?cb=${Date.now()}`;
+              (img as HTMLImageElement).src = newSrc;
+            }
+          });
+          console.log(`🖼️ Forced refresh of ${images.length} images`);
+        }, 1000);
         
         // Dispatch sync completion event
         window.dispatchEvent(new CustomEvent('virtual-sync-complete'));
@@ -738,7 +770,7 @@ export default function VirtualDatabasePage() {
       }
     } catch (error) {
       console.error('❌ Virtual sync error:', error);
-      setSyncResult({ success: false, error: 'Error syncing products' });
+      setSyncResult({ success: false, error: `Error syncing products: ${error}` });
     } finally {
       setSyncing(false);
     }
