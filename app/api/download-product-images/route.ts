@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             
             // Clean filename (remove query parameters)
             filename = filename.split('?')[0];
-          } else if (imageUrl && typeof imageUrl === 'object' && imageUrl.filename) {
+          } else if (imageUrl && typeof imageUrl === 'object' && 'filename' in imageUrl && typeof imageUrl.filename === 'string') {
             filename = imageUrl.filename;
           } else {
             continue;
