@@ -9,8 +9,14 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting product image download process...');
     
+    // Get context from request body
+    const body = await request.json().catch(() => ({}));
+    const context = body.context || 'regular';
+    
+    console.log(`📸 Downloading images for ${context} environment...`);
+    
     // Get all products from database
-    const productDB = new ProductDatabase('regular');
+    const productDB = new ProductDatabase(context);
     const products = productDB.getAllProducts();
     
     if (products.length === 0) {
@@ -18,11 +24,23 @@ export async function POST(request: NextRequest) {
         success: false,
         message: 'No products found in database. Please sync products first.',
         downloadedCount: 0,
-        totalProducts: 0
+        totalProducts: 0,
+        context
       });
     }
     
     console.log(`📦 Found ${products.length} products to process`);
+    
+    // For virtual environment, we don't download images locally
+    if (context === 'virtual') {
+      return NextResponse.json({
+        success: true,
+        message: 'Virtual environment uses original Airtable URLs - no local download needed',
+        downloadedCount: 0,
+        totalProducts: products.length,
+        context
+      });
+    }
     
     // Ensure images directory exists
     const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
@@ -94,7 +112,8 @@ export async function POST(request: NextRequest) {
       message: `Downloaded ${downloadedCount} product images`,
       downloadedCount,
       totalProducts: products.length,
-      errors
+      errors,
+      context
     });
     
   } catch (error) {

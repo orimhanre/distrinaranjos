@@ -143,9 +143,14 @@ export default function VirtualDatabasePage() {
         setSelectedColumns([]);
         localStorage.removeItem('virtual-admin-selected-columns');
         
+        // Clear products and webPhotos state
+        setProducts([]);
+        setWebPhotos({});
+        
         // Add a small delay to ensure file system operations are complete
         await new Promise(resolve => setTimeout(resolve, 1000));
         
+        // Reload data to confirm everything is cleared
         await loadProducts();
         await loadWebPhotos();
         await fetchColumns();
@@ -712,6 +717,9 @@ export default function VirtualDatabasePage() {
         // Reload products and columns
         await loadProducts();
         await fetchColumns();
+        
+        // For virtual environment, we don't download images locally but we can trigger a cache refresh
+        console.log('🖼️ Virtual environment: Using original Airtable URLs - no local download needed');
         
         // Trigger cache refresh after successful sync
         try {

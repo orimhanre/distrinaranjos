@@ -369,6 +369,27 @@ export default function DatabasePage() {
         await loadProducts();
         await fetchColumns();
         
+        // Download images after successful sync
+        console.log('🖼️ Starting image download process...');
+        try {
+          const imageResponse = await fetch('/api/download-product-images', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ context: 'regular' }),
+          });
+          
+          const imageResult = await imageResponse.json();
+          if (imageResult.success) {
+            console.log(`✅ Image download completed: ${imageResult.downloadedCount} images downloaded`);
+          } else {
+            console.warn('⚠️ Image download failed:', imageResult.message);
+          }
+        } catch (imageError) {
+          console.warn('⚠️ Image download error:', imageError);
+        }
+        
         console.log('🎉 Admin sync process completed');
       } else {
         console.error('❌ Sync failed:', result.message);
