@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: Record<string, string> = {
       VIRTUAL_AIRTABLE_API_KEY: process.env.VIRTUAL_AIRTABLE_API_KEY || '',
       VIRTUAL_AIRTABLE_BASE_ID: process.env.VIRTUAL_AIRTABLE_BASE_ID || '',

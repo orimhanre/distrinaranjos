@@ -5,7 +5,7 @@ import { join } from 'path';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: { [key: string]: string } = {
       VIRTUAL_SHIPPING_FREE_THRESHOLD: process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '',
       VIRTUAL_SHIPPING_COST: process.env.VIRTUAL_SHIPPING_COST || '',
@@ -14,7 +14,7 @@ function loadVirtualEnv() {
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_SHIPPING_FREE_THRESHOLD || envVars.VIRTUAL_SHIPPING_COST) {
-      console.log('✅ Using environment variables from process.env (Vercel deployment)');
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
       return envVars;
     }
 

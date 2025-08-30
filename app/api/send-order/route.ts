@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: Record<string, string> = {
       VIRTUAL_RESEND_API_KEY: process.env.VIRTUAL_RESEND_API_KEY || '',
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
@@ -22,7 +22,7 @@ function loadVirtualEnv() {
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_RESEND_API_KEY) {
-      console.log('✅ Using environment variables from process.env (Vercel deployment)');
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
       return envVars;
     }
 

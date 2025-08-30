@@ -4,7 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: Record<string, string> = {
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
@@ -13,7 +13,7 @@ function loadVirtualEnv() {
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_CLOUDINARY_CLOUD_NAME && envVars.VIRTUAL_CLOUDINARY_API_KEY && envVars.VIRTUAL_CLOUDINARY_API_SECRET) {
-      console.log('✅ Using environment variables from process.env (Vercel deployment)');
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
       return envVars;
     }
 

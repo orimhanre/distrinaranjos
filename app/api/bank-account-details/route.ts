@@ -5,7 +5,7 @@ import { join } from 'path';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: { [key: string]: string } = {
       VIRTUAL_BANK_ACCOUNT_HOLDER: process.env.VIRTUAL_BANK_ACCOUNT_HOLDER || '',
       VIRTUAL_BANK_NAME: process.env.VIRTUAL_BANK_NAME || '',
@@ -17,7 +17,7 @@ function loadVirtualEnv() {
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_BANK_ACCOUNT_HOLDER || envVars.VIRTUAL_BANK_NAME) {
-      console.log('✅ Using environment variables from process.env (Vercel deployment)');
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
       return envVars;
     }
 

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: Record<string, string> = {
       NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY || '',
       NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN || '',
