@@ -3,28 +3,12 @@ import React from 'react';
 import { useCart } from '@/lib/cartContext';
 import FlyingAnimation from './FlyingAnimation';
 import { createPortal } from 'react-dom';
+import { Product } from '../types';
 
 
 
 interface ProductModalProps {
-  product: {
-    id: string;
-    name: string;
-    price: number;
-  
-    price2?: number;
-    image?: string | string[];
-    imageURL?: string | string[];
-    category: string | string[];
-    brand: string;
-    colors?: string[];
-    type?: string;
-    capacity?: string;
-    materials?: string;
-    dimensions?: string;
-    SKN?: string;
-    quantity?: number;
-  };
+  product: Product;
   isOpen: boolean;
   onClose: () => void;
 }
