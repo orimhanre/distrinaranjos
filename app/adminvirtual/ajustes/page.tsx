@@ -29,11 +29,19 @@ export default function VirtualAjustesPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set()); // All sections closed by default
   const [expandedSubcategories, setExpandedSubcategories] = useState<Set<string>>(new Set()); // All subcategories closed by default
   const [lastUpdated, setLastUpdated] = useState<Record<string, string>>({});
+  const [isProduction, setIsProduction] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
+    // Detect if we're in production (Railway)
+    setIsProduction(
+      typeof window !== 'undefined' && 
+      (window.location.hostname.includes('railway') || 
+       window.location.hostname.includes('vercel') ||
+       window.location.hostname.includes('distrinaranjos-production'))
+    );
   }, []);
 
   useEffect(() => {
@@ -196,71 +204,6 @@ export default function VirtualAjustesPage() {
           { key: 'VIRTUAL_BANK_ACCOUNT_TYPE', value: process.env.VIRTUAL_BANK_ACCOUNT_TYPE || 'Cuenta Corriente', description: 'Tipo de cuenta bancaria', category: 'payment', subcategory: 'bank', isSecret: false },
           { key: 'VIRTUAL_BANK_NAME', value: process.env.VIRTUAL_BANK_NAME || 'Bancolombia', description: 'Nombre del banco', category: 'payment', subcategory: 'bank', isSecret: false },
           { key: 'VIRTUAL_BANK_PHONE', value: process.env.VIRTUAL_BANK_PHONE || '+57 311 388 7955', description: 'Teléfono de contacto bancario', category: 'payment', subcategory: 'bank', isSecret: false },
-          { key: 'VIRTUAL_BANK_EMAIL', value: process.env.VIRTUAL_BANK_EMAIL || 'info@distrinaranjos.com', description: 'Email de contacto bancario', category: 'payment', subcategory: 'bank', isSecret: false },
-          
-          // Security
-          { key: 'VIRTUAL_JWT_SECRET', value: process.env.VIRTUAL_JWT_SECRET || '', description: 'Clave secreta para JWT', category: 'security', isSecret: true },
-          { key: 'VIRTUAL_SESSION_SECRET', value: process.env.VIRTUAL_SESSION_SECRET || '', description: 'Clave secreta para sesiones', category: 'security', isSecret: true },
-        ];
-
-        setEnvVariables(variables);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error loading environment variables:', error);
-      // Fallback to client-side environment variables
-      const variables: EnvVariable[] = [
-        // Resend
-        { key: 'VIRTUAL_RESEND_API_KEY', value: process.env.VIRTUAL_RESEND_API_KEY || '', description: 'API Key para envío de emails', category: 'resend', isSecret: true },
-        { key: 'VIRTUAL_RESEND_FROM_EMAIL', value: process.env.VIRTUAL_RESEND_FROM_EMAIL || '', description: 'Email remitente (From)', category: 'resend', isSecret: false },
-        { key: 'VIRTUAL_RESEND_TO_EMAIL', value: process.env.VIRTUAL_RESEND_TO_EMAIL || '', description: 'Email destinatario (To)', category: 'resend', isSecret: false },
-        
-        // Cloudinary
-        { key: 'VIRTUAL_CLOUDINARY_CLOUD_NAME', value: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '', description: 'Nombre de la nube de Cloudinary', category: 'cloudinary', isSecret: false },
-        { key: 'VIRTUAL_CLOUDINARY_API_KEY', value: process.env.VIRTUAL_CLOUDINARY_API_KEY || '', description: 'API Key de Cloudinary', category: 'cloudinary', isSecret: true },
-        { key: 'VIRTUAL_CLOUDINARY_API_SECRET', value: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '', description: 'API Secret de Cloudinary', category: 'cloudinary', isSecret: true },
-        { key: 'VIRTUAL_CLOUDINARY_ACCOUNT_EMAIL', value: process.env.VIRTUAL_CLOUDINARY_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Cloudinary', category: 'cloudinary', isSecret: false },
-        
-        // Firebase
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY || '', description: 'API Key de Firebase', category: 'firebase', isSecret: false },
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN || '', description: 'Dominio de autenticación de Firebase', category: 'firebase', isSecret: false },
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID || '', description: 'ID del proyecto de Firebase', category: 'firebase', isSecret: false },
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_STORAGE_BUCKET', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_STORAGE_BUCKET || '', description: 'Bucket de almacenamiento de Firebase', category: 'firebase', isSecret: false },
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_MESSAGING_SENDER_ID', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_MESSAGING_SENDER_ID || '', description: 'ID del remitente de mensajes de Firebase', category: 'firebase', isSecret: false },
-        { key: 'NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID', value: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID || '', description: 'ID de la aplicación de Firebase', category: 'firebase', isSecret: false },
-        { key: 'VIRTUAL_FIREBASE_ACCOUNT_EMAIL', value: process.env.VIRTUAL_FIREBASE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Firebase', category: 'firebase', isSecret: false },
-        
-        // Airtable
-        { key: 'VIRTUAL_AIRTABLE_API_KEY', value: process.env.VIRTUAL_AIRTABLE_API_KEY || 'patfzZxPHONwkhZPN.da7c68ed49bff5a194b578eace74ce8a1431f583723b475412e04e0f321815f7', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
-        { key: 'VIRTUAL_AIRTABLE_BASE_ID', value: process.env.VIRTUAL_AIRTABLE_BASE_ID || 'appyNH3iztQpMqHAY', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
-        { key: 'VIRTUAL_AIRTABLE_ACCOUNT_EMAIL', value: process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Airtable', category: 'airtable', isSecret: false },
-        
-        // Shipping
-        { key: 'VIRTUAL_SHIPPING_FREE_THRESHOLD', value: process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '100000', description: 'Umbral para envío gratuito (en centavos)', category: 'shipping', isSecret: false },
-        { key: 'VIRTUAL_SHIPPING_COST', value: process.env.VIRTUAL_SHIPPING_COST || '15000', description: 'Costo de envío (en centavos)', category: 'shipping', isSecret: false },
-        { key: 'VIRTUAL_SHIPPING_ESTIMATED_DAYS', value: process.env.VIRTUAL_SHIPPING_ESTIMATED_DAYS || '3', description: 'Días estimados de entrega', category: 'shipping', isSecret: false },
-        
-        // Wompi Payment Gateway
-        { key: 'VIRTUAL_WOMPI_PUBLIC_KEY', value: process.env.VIRTUAL_WOMPI_PUBLIC_KEY || '', description: 'Clave pública de Wompi', category: 'payment', subcategory: 'wompi', isSecret: true },
-        { key: 'VIRTUAL_WOMPI_PRIVATE_KEY', value: process.env.VIRTUAL_WOMPI_PRIVATE_KEY || '', description: 'Clave privada de Wompi', category: 'payment', subcategory: 'wompi', isSecret: true },
-        { key: 'VIRTUAL_WOMPI_WEBHOOK_SECRET', value: process.env.VIRTUAL_WOMPI_WEBHOOK_SECRET || '', description: 'Secreto del webhook de Wompi', category: 'payment', subcategory: 'wompi', isSecret: true },
-        
-        // PSE Payment Gateway
-        { key: 'VIRTUAL_PSE_MERCHANT_ID', value: process.env.VIRTUAL_PSE_MERCHANT_ID || '', description: 'ID del comerciante PSE', category: 'payment', subcategory: 'pse', isSecret: false },
-        { key: 'VIRTUAL_PSE_API_KEY', value: process.env.VIRTUAL_PSE_API_KEY || '', description: 'Clave API de PSE', category: 'payment', subcategory: 'pse', isSecret: true },
-        { key: 'VIRTUAL_PSE_WEBHOOK_SECRET', value: process.env.VIRTUAL_PSE_WEBHOOK_SECRET || '', description: 'Secreto del webhook de PSE', category: 'payment', subcategory: 'pse', isSecret: true },
-        
-        // Stripe Payment Gateway
-        { key: 'VIRTUAL_STRIPE_PUBLISHABLE_KEY', value: process.env.VIRTUAL_STRIPE_PUBLISHABLE_KEY || '', description: 'Clave pública de Stripe', category: 'payment', subcategory: 'stripe', isSecret: false },
-        { key: 'VIRTUAL_STRIPE_SECRET_KEY', value: process.env.VIRTUAL_STRIPE_SECRET_KEY || '', description: 'Clave secreta de Stripe', category: 'payment', subcategory: 'stripe', isSecret: true },
-        { key: 'VIRTUAL_STRIPE_WEBHOOK_SECRET', value: process.env.VIRTUAL_STRIPE_WEBHOOK_SECRET || '', description: 'Secreto del webhook de Stripe', category: 'payment', subcategory: 'stripe', isSecret: true },
-        
-        // Bank Account Details
-        { key: 'VIRTUAL_BANK_ACCOUNT_HOLDER', value: process.env.VIRTUAL_BANK_ACCOUNT_HOLDER || 'DISTRI NARANJOS SAS', description: 'Titular de la cuenta bancaria', category: 'payment', subcategory: 'bank', isSecret: false },
-        { key: 'VIRTUAL_BANK_ACCOUNT_NUMBER', value: process.env.VIRTUAL_BANK_ACCOUNT_NUMBER || '1234567890', description: 'Número de cuenta bancaria', category: 'payment', subcategory: 'bank', isSecret: true },
-        { key: 'VIRTUAL_BANK_ACCOUNT_TYPE', value: process.env.VIRTUAL_BANK_ACCOUNT_TYPE || 'Cuenta Corriente', description: 'Tipo de cuenta bancaria', category: 'payment', subcategory: 'bank', isSecret: false },
-        { key: 'VIRTUAL_BANK_NAME', value: process.env.VIRTUAL_BANK_NAME || 'Bancolombia', description: 'Nombre del banco', category: 'payment', subcategory: 'bank', isSecret: false },
-        { key: 'VIRTUAL_BANK_PHONE', value: process.env.VIRTUAL_BANK_PHONE || '+57 311 388 7955', description: 'Teléfono de contacto bancario', category: 'payment', subcategory: 'bank', isSecret: false },
                   { key: 'VIRTUAL_BANK_EMAIL', value: process.env.VIRTUAL_BANK_EMAIL || 'info@distrinaranjos.com', description: 'Email de contacto bancario', category: 'payment', subcategory: 'bank', isSecret: false },
         
         // Security
@@ -483,6 +426,69 @@ export default function VirtualAjustesPage() {
         >
           Cerrar sesión
         </button>
+      </div>
+    );
+  }
+
+  // Check if we're in production (Railway)
+  const isProduction = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('railway') || 
+     window.location.hostname.includes('vercel') ||
+     window.location.hostname.includes('distrinaranjos-production'));
+
+  if (isProduction) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl">
+          <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">🚀 Entorno de Producción Detectado</h1>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-3 text-blue-800">ℹ️ Información Importante</h2>
+            <p className="text-blue-700 mb-4">
+              Estás en el entorno de producción de Railway. Las variables de entorno están gestionadas 
+              a través del panel de control de Railway y no pueden ser modificadas desde esta interfaz.
+            </p>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h3 className="font-semibold text-yellow-800 mb-2">🔧 Para modificar variables:</h3>
+              <ol className="text-yellow-700 text-sm space-y-1">
+                <li>1. Ve al panel de control de Railway</li>
+                <li>2. Selecciona tu proyecto</li>
+                <li>3. Ve a la sección "Variables"</li>
+                <li>4. Agrega o modifica las variables necesarias</li>
+                <li>5. Guarda los cambios</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-2">📋 Variables requeridas para el funcionamiento:</h3>
+            <ul className="text-gray-700 text-sm space-y-1">
+              <li>• VIRTUAL_FIREBASE_PROJECT_ID</li>
+              <li>• VIRTUAL_FIREBASE_CLIENT_EMAIL</li>
+              <li>• VIRTUAL_FIREBASE_PRIVATE_KEY</li>
+              <li>• VIRTUAL_CLOUDINARY_CLOUD_NAME</li>
+              <li>• VIRTUAL_CLOUDINARY_API_KEY</li>
+              <li>• VIRTUAL_CLOUDINARY_API_SECRET</li>
+              <li>• VIRTUAL_RESEND_API_KEY</li>
+            </ul>
+          </div>
+
+          <div className="mt-6 flex justify-center space-x-4">
+            <button
+              onClick={() => window.open('https://railway.app/dashboard', '_blank')}
+              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 font-semibold"
+            >
+              Ir a Railway Dashboard
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-gray-600 text-white px-6 py-3 rounded hover:bg-gray-700 font-semibold"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
