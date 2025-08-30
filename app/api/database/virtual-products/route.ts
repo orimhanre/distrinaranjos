@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProductDatabase } from '@/lib/database';
 import { Product } from '@/types';
 
-// Virtual database instance
-const virtualProductDB = new ProductDatabase('virtual');
-
 // GET /api/database/virtual-products - Get all virtual products or search
 export async function GET(request: NextRequest) {
   try {
@@ -135,7 +132,8 @@ export async function POST(request: NextRequest) {
       imageURL: productData.imageURL || []
     };
     
-    const product = virtualProductDB.createProduct(newProduct);
+    const productDB = new ProductDatabase('virtual');
+    const product = productDB.createProduct(newProduct);
     
     return NextResponse.json({
       success: true,
@@ -163,7 +161,8 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const product = virtualProductDB.updateProduct(id, updates);
+    const productDB = new ProductDatabase('virtual');
+    const product = productDB.updateProduct(id, updates);
     
     if (!product) {
       return NextResponse.json(
@@ -198,7 +197,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const deleted = virtualProductDB.deleteProduct(id);
+    const productDB = new ProductDatabase('virtual');
+    const deleted = productDB.deleteProduct(id);
     
     if (!deleted) {
       return NextResponse.json(
