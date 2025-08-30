@@ -25,9 +25,9 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
   const getProductImage = () => {
     let imagePath = '';
     
-    // Handle both 'image', 'imageURL', and 'currentDisplayImage' properties
+    // Handle both 'imageURL' and 'currentDisplayImage' properties
     // currentDisplayImage is used by AutoRotatingProductCard for rotating display
-    const imageData = (product as any).currentDisplayImage || (product as any).imageURL || product.image;
+    const imageData = (product as any).currentDisplayImage || product.imageURL;
     
     // Handle case where imageData is a string representation of an empty array "[]"
     if (imageData === '[]' || imageData === 'null' || imageData === null) {
