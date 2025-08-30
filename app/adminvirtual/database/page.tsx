@@ -511,11 +511,29 @@ export default function VirtualDatabasePage() {
 
   const renderFilePreview = (fileUrl: any, fileName: string) => {
     // Debug logging
-    console.log('renderFilePreview called with:', { fileUrl, fileName });
+    console.log('renderFilePreview called with:', { 
+      fileUrl, 
+      fileName, 
+      type: typeof fileUrl,
+      isArray: Array.isArray(fileUrl),
+      length: Array.isArray(fileUrl) ? fileUrl.length : 'N/A'
+    });
+    
+    // Try to parse JSON string if it's a string that looks like JSON
+    let processedFileUrl = fileUrl;
+    if (typeof fileUrl === 'string' && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
+      try {
+        processedFileUrl = JSON.parse(fileUrl);
+        console.log('🔍 renderFilePreview: Parsed JSON string:', processedFileUrl);
+      } catch (error) {
+        console.log('🔍 renderFilePreview: Failed to parse JSON, using as string');
+      }
+    }
     
     // Handle arrays (like imageURL arrays)
-    if (Array.isArray(fileUrl)) {
-      if (fileUrl.length === 0) {
+    if (Array.isArray(processedFileUrl)) {
+      console.log('🔍 renderFilePreview: Processing as array, length:', processedFileUrl.length);
+      if (processedFileUrl.length === 0) {
         return (
           <div className="text-center text-xs text-gray-500">
             sin fotos
@@ -524,7 +542,7 @@ export default function VirtualDatabasePage() {
       }
       
       // Filter valid image URLs
-      const validImages = fileUrl.filter((img: any) => 
+      const validImages = processedFileUrl.filter((img: any) => 
         img && typeof img === 'string' && 
         (img.toLowerCase().includes('.jpg') || img.toLowerCase().includes('.jpeg') || 
          img.toLowerCase().includes('.png') || img.toLowerCase().includes('.gif') || 
@@ -577,7 +595,8 @@ export default function VirtualDatabasePage() {
     }
     
     // Handle single string values
-    if (!fileUrl || typeof fileUrl !== 'string') {
+    if (!processedFileUrl || typeof processedFileUrl !== 'string') {
+      console.log('🔍 renderFilePreview: Not a string, showing error icon');
       return (
         <div className="bg-gray-100 rounded-lg p-2 min-w-[60px] text-center">
           <div className="text-lg text-gray-400">❌</div>
@@ -586,7 +605,7 @@ export default function VirtualDatabasePage() {
       );
     }
     
-    const url = fileUrl.toLowerCase();
+    const url = processedFileUrl.toLowerCase();
     const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
     const isPdf = url.includes('.pdf');
     const isVideo = url.includes('.mp4') || url.includes('.avi') || url.includes('.mov') || url.includes('.webm');
