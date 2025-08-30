@@ -62,23 +62,42 @@ function loadVirtualEnv() {
 }
 
 export async function POST(request: NextRequest) {
-    // Check if required Firebase environment variables are available
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-        !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-        !process.env.FIREBASE_PRIVATE_KEY ||
-        !process.env.FIREBASE_CLIENT_EMAIL) {
-      console.log('⚠️ Firebase environment variables not available, skipping operation');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Firebase not configured' 
-      }, { status: 503 });
+    // Get request body to determine if this is a virtual order
+    const requestBody = await request.json();
+    const { useVirtualDb } = requestBody;
+    
+    // Check if required Firebase environment variables are available based on order type
+    if (useVirtualDb) {
+      // For virtual orders, check virtual Firebase environment variables
+      const virtualEnv = loadVirtualEnv();
+      if (!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID || 
+          !virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL ||
+          !virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY) {
+        console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Virtual Firebase not configured' 
+        }, { status: 503 });
+      }
+    } else {
+      // For regular orders, check regular Firebase environment variables
+      if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+          !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+          !process.env.FIREBASE_PRIVATE_KEY ||
+          !process.env.FIREBASE_CLIENT_EMAIL) {
+        console.log('⚠️ Regular Firebase environment variables not available, skipping operation');
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Regular Firebase not configured' 
+        }, { status: 503 });
+      }
     }
 
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
     const { db } = await import('../../../lib/firebase');
   try {
-    const { client, cartItems, selectedPriceType, comentario, paymentMethod, invoiceNumber, useVirtualDb, shippingCost, subtotal, total } = await request.json();
+    const { client, cartItems, selectedPriceType, comentario, paymentMethod, invoiceNumber, useVirtualDb, shippingCost, subtotal, total } = requestBody;
     
     // Provide fallback for invoiceNumber if not provided
     const finalInvoiceNumber = invoiceNumber || `PED-${Date.now()}`;
