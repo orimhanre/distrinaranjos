@@ -455,7 +455,9 @@ export default function HomePage() {
         setLoading(false);
       } catch (err: any) {
         console.warn('Failed to fetch data:', err);
-        setError("Error al cargar datos.");
+        // Don't set error state, just log and continue with empty data
+        setProducts([]);
+        setWebPhotos({});
         setLoading(false);
       }
     };
