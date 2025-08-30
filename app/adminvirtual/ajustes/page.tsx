@@ -398,68 +398,7 @@ export default function VirtualAjustesPage() {
     );
   }
 
-  // Check if we're in production (Railway)
-  const isProduction = typeof window !== 'undefined' && 
-    (window.location.hostname.includes('railway') || 
-     window.location.hostname.includes('vercel') ||
-     window.location.hostname.includes('distrinaranjos-production'));
 
-  if (isProduction) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl">
-          <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">🚀 Entorno de Producción Detectado</h1>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-3 text-blue-800">ℹ️ Información Importante</h2>
-            <p className="text-blue-700 mb-4">
-              Estás en el entorno de producción de Railway. Las variables de entorno están gestionadas 
-              a través del panel de control de Railway y no pueden ser modificadas desde esta interfaz.
-            </p>
-            
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h3 className="font-semibold text-yellow-800 mb-2">🔧 Para modificar variables:</h3>
-              <ol className="text-yellow-700 text-sm space-y-1">
-                <li>1. Ve al panel de control de Railway</li>
-                <li>2. Selecciona tu proyecto</li>
-                <li>3. Ve a la sección "Variables"</li>
-                <li>4. Agrega o modifica las variables necesarias</li>
-                <li>5. Guarda los cambios</li>
-              </ol>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-800 mb-2">📋 Variables requeridas para el funcionamiento:</h3>
-            <ul className="text-gray-700 text-sm space-y-1">
-              <li>• VIRTUAL_FIREBASE_PROJECT_ID</li>
-              <li>• VIRTUAL_FIREBASE_CLIENT_EMAIL</li>
-              <li>• VIRTUAL_FIREBASE_PRIVATE_KEY</li>
-              <li>• VIRTUAL_CLOUDINARY_CLOUD_NAME</li>
-              <li>• VIRTUAL_CLOUDINARY_API_KEY</li>
-              <li>• VIRTUAL_CLOUDINARY_API_SECRET</li>
-              <li>• VIRTUAL_RESEND_API_KEY</li>
-            </ul>
-          </div>
-
-          <div className="mt-6 flex justify-center space-x-4">
-            <button
-              onClick={() => window.open('https://railway.app/dashboard', '_blank')}
-              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 font-semibold"
-            >
-              Ir a Railway Dashboard
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-gray-600 text-white px-6 py-3 rounded hover:bg-gray-700 font-semibold"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading || permissionLoading) {
     return (
