@@ -37,6 +37,7 @@ export function resetDatabaseSingletons(environment: 'regular' | 'virtual' = 're
 
 // Function to get a fresh database connection (forces reinitialization)
 export function getFreshDatabase(environment: 'regular' | 'virtual' = 'regular') {
+  resetDatabaseSingletons(environment);
   return initDatabase(environment);
 }
 
@@ -46,15 +47,6 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
   }
   
   const dbPath = environment === 'virtual' ? VIRTUAL_DB_PATH : REGULAR_DB_PATH;
-  console.log(`🔍 initDatabase - Environment: ${environment}, Path: ${dbPath}`);
-  
-  // Check if better-sqlite3 is available
-  try {
-    require('better-sqlite3');
-  } catch (error) {
-    console.error('❌ better-sqlite3 not available:', error);
-    throw new Error('Database library not available');
-  }
   
   if (environment === 'virtual') {
     // Check if database is closed or corrupted and reinitialize if needed
@@ -76,9 +68,8 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
         }
         
         virtualDb = new Database(dbPath);
-        console.log(`✅ Virtual database file created/opened: ${dbPath}`);
         createTables(virtualDb, 'virtual');
-        console.log('✅ Virtual database tables created successfully');
+        // console.log('✅ Virtual database initialized successfully');
       } catch (error) {
         console.error('❌ Error initializing virtual database:', error);
         virtualDb = null;
@@ -119,7 +110,6 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
 }
 
 function createTables(db: Database.Database, environment: 'regular' | 'virtual' = 'regular') {
-  console.log(`🔍 Creating tables for ${environment} environment...`);
   // Create different schemas for regular and virtual environments
   let createProductsTable: string;
   
@@ -225,14 +215,12 @@ function createTables(db: Database.Database, environment: 'regular' | 'virtual' 
   `;
   
   db.exec(createProductsTable);
-  console.log(`✅ Products table created for ${environment} environment`);
   db.exec(createWebPhotosTable);
   db.exec(createCategorySubcategoryRelationsTable);
   db.exec(createFcmTokensTable);
   db.exec(createBadgeCountsTable);
   
-  console.log(`✅ All tables created for ${environment} environment`);
-  // Database tables created successfully
+      // Database tables created successfully
 }
 
 // Product CRUD operations
@@ -242,9 +230,7 @@ export class ProductDatabase {
   
   constructor(environment: 'regular' | 'virtual' = 'regular') {
     this.environment = environment;
-    console.log(`🔍 ProductDatabase constructor - Environment: ${environment}`);
     this.db = initDatabase(environment);
-    console.log(`🔍 ProductDatabase initialized for ${environment} environment`);
   }
   
   // Create a new product
@@ -275,12 +261,7 @@ export class ProductDatabase {
     let fields = [
       ...essentialFields.filter(field => allFields.includes(field) || product[field as keyof typeof product] !== undefined),
       ...allFields.filter(field => !essentialFieldsSet.has(field) && product[field as keyof typeof product] !== '')
-    ].slice(0, 15); // Limit to 15 fields to leave room for price
-    
-    console.log(`🔍 Database createProduct - Environment: ${this.environment}`);
-    console.log(`🔍 All product fields:`, Object.keys(product));
-    console.log(`🔍 Essential fields:`, essentialFields);
-    console.log(`🔍 Selected fields for database:`, fields);
+    ].slice(0, 9); // Limit to 9 fields to leave room for price
     
     // ALWAYS include price field for virtual environment
     if (this.environment === 'virtual' && !fields.includes('price')) {
@@ -385,11 +366,8 @@ export class ProductDatabase {
   // Get all products
   getAllProducts(): Product[] {
     try {
-      console.log(`🔍 getAllProducts - Environment: ${this.environment}`);
       // Use a simple, fast query instead of dynamic column building
       const rows = this.db.prepare("SELECT * FROM products ORDER BY name").all();
-      console.log(`🔍 Raw database rows: ${rows.length}`);
-      
       const products = rows.map((row: any) => {
         try {
           return this.rowToProduct(row);
@@ -398,8 +376,6 @@ export class ProductDatabase {
           return null;
         }
       }).filter(product => product !== null);
-      
-      console.log(`🔍 Converted products: ${products.length}`);
       return products;
     } catch (error) {
       console.error('Error getting all products:', error);
