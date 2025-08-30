@@ -253,96 +253,7 @@ export default function DatabasePage() {
       );
     }
     
-    // Try to parse JSON string if it's a string that looks like JSON
-    let processedFileUrl = fileUrl;
-    if (typeof fileUrl === 'string' && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
-      try {
-        processedFileUrl = JSON.parse(fileUrl);
-        console.log('🔍 renderFilePreview: Parsed JSON string:', processedFileUrl);
-      } catch (error) {
-        console.log('🔍 renderFilePreview: Failed to parse JSON, using as string');
-      }
-    }
-    
-    // Handle arrays (like imageURL arrays)
-    if (Array.isArray(processedFileUrl)) {
-      console.log('🔍 renderFilePreview: Processing as array, length:', processedFileUrl.length);
-      if (processedFileUrl.length === 0) {
-        return (
-          <div className="text-center text-xs text-gray-500">
-            sin fotos
-          </div>
-        );
-      }
-      
-      // Extract URLs from any format - need full URLs for images to load
-      const validImages = processedFileUrl.map((img: any) => {
-        if (typeof img === 'string') return img;
-        if (img && typeof img === 'object' && img.url) {
-          // Use full URL (needed for images to load)
-          return img.url;
-        }
-        if (img && typeof img === 'object' && img.filename) {
-          // If we only have filename, we can't load the image
-          return null;
-        }
-        return String(img);
-      }).filter(url => url && url.length > 0);
-      
-      if (validImages.length === 0) {
-        return (
-          <div className="text-center text-xs text-gray-500">
-            sin fotos
-          </div>
-        );
-      }
-      
-      // Show multiple image thumbnails
-      return (
-        <div className="flex flex-wrap gap-1 justify-center">
-          {validImages.slice(0, 4).map((imageUrl: string, index: number) => (
-            <div 
-              key={index}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => {
-                setSelectedImage(imageUrl);
-                setShowImageModal(true);
-              }}
-              title={`${fileName}_${index}: ${imageUrl}`}
-            >
-              <div className="w-8 h-8">
-                <img 
-                  src={`${imageUrl}?t=${Date.now()}`} 
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-full object-cover rounded"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    // Use a placeholder image instead of showing error
-                    target.src = '/placeholder-product.svg';
-                    target.onerror = null; // Prevent infinite loop
-                  }}
-                />
-              </div>
-              {validImages.length > 4 && index === 3 && (
-                <div className="text-xs text-gray-500 mt-1">+{validImages.length - 4}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-    
-    // Handle single string values
-    if (!processedFileUrl || typeof processedFileUrl !== 'string') {
-      return (
-        <div className="bg-gray-100 rounded-lg p-2 min-w-[60px] text-center">
-          <div className="text-lg text-gray-400">❌</div>
-          <div className="text-xs text-gray-400 font-medium">Sin URL</div>
-        </div>
-      );
-    }
-    
-    const url = processedFileUrl.toLowerCase();
+    const url = fileUrl.toLowerCase();
     const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
     const isPdf = url.includes('.pdf');
     const isVideo = url.includes('.mp4') || url.includes('.avi') || url.includes('.mov') || url.includes('.webm');
@@ -380,13 +291,13 @@ export default function DatabasePage() {
         className={`${bgColor} rounded-lg p-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[60px] text-center`}
         onClick={() => {
           if (isImage) {
-            setSelectedImage(processedFileUrl);
+            setSelectedImage(fileUrl);
             setShowImageModal(true);
           } else {
-            window.open(processedFileUrl, '_blank');
+            window.open(fileUrl, '_blank');
           }
         }}
-        title={`${fileName}: ${processedFileUrl}`}
+        title={`${fileName}: ${fileUrl}`}
       >
         <div className={`text-lg ${textColor}`}>{icon}</div>
         <div className={`text-xs ${textColor} font-medium`}>{fileType}</div>
