@@ -44,8 +44,13 @@ export async function POST(request: NextRequest) {
     
     // Clear existing products in SQLite database
     const existingProducts = productDB.getAllProducts();
+    console.log(`🔍 Found ${existingProducts.length} existing products before clearing`);
     productDB.clearAllProducts();
     console.log(`🗑️ Cleared ${existingProducts.length} existing products from SQLite database`);
+    
+    // Verify database is empty
+    const productsAfterClear = productDB.getAllProducts();
+    console.log(`🔍 Products after clearing: ${productsAfterClear.length}`);
     
     // Convert and save products to SQLite database
     let syncedCount = 0;
@@ -117,12 +122,33 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ SQLite sync completed: ${syncedCount} products synced, ${errors.length} errors`);
     
+    // Verify the products were actually saved by checking the database
+    const finalProductCount = productDB.getAllProducts().length;
+    console.log(`🔍 Final product count in database: ${finalProductCount}`);
+    console.log(`🔍 Expected count: ${syncedCount}, Actual count: ${finalProductCount}`);
+    
+    if (finalProductCount === 0 && syncedCount > 0) {
+      console.error(`❌ CRITICAL ISSUE: ${syncedCount} products were supposedly synced but database is empty!`);
+      return NextResponse.json({
+        success: false,
+        message: `Error: ${syncedCount} productos fueron procesados pero no se guardaron en la base de datos`,
+        syncedCount: 0,
+        deletedCount: existingProducts.length,
+        totalRecords: airtableRecords.length,
+        errors: [...errors, 'Products were processed but not saved to database'],
+        timestamp: new Date().toISOString(),
+        cacheBuster: Date.now(),
+        syncTimestamp: new Date().toLocaleString('es-ES')
+      });
+    }
+    
     return NextResponse.json({
       success: true,
       message: `Sincronización de productos completada: ${syncedCount} sincronizados, ${existingProducts.length} eliminados`,
       syncedCount,
       deletedCount: existingProducts.length,
       totalRecords: airtableRecords.length,
+      finalProductCount,
       errors,
       timestamp: new Date().toISOString(),
       cacheBuster: Date.now(),

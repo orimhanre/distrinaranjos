@@ -47,6 +47,7 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
   }
   
   const dbPath = environment === 'virtual' ? VIRTUAL_DB_PATH : REGULAR_DB_PATH;
+  console.log(`🔍 initDatabase - Environment: ${environment}, Path: ${dbPath}`);
   
   if (environment === 'virtual') {
     // Check if database is closed or corrupted and reinitialize if needed
@@ -230,7 +231,9 @@ export class ProductDatabase {
   
   constructor(environment: 'regular' | 'virtual' = 'regular') {
     this.environment = environment;
+    console.log(`🔍 ProductDatabase constructor - Environment: ${environment}`);
     this.db = initDatabase(environment);
+    console.log(`🔍 ProductDatabase initialized for ${environment} environment`);
   }
   
   // Create a new product
