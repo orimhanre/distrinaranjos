@@ -23,6 +23,7 @@ const readTimestamps = () => {
     }
   } catch (error) {
     console.error('Error reading timestamps file:', error);
+    // Return default structure even if file read fails
   }
   return {
     lastProductSync: null,
@@ -98,8 +99,13 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error retrieving virtual sync timestamps:', error);
+    // Return default timestamps instead of error to prevent 500
     return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 });
+      success: true,
+      timestamps: {
+        lastProductSync: null,
+        lastWebPhotosSync: null
+      }
+    });
   }
 }

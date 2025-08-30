@@ -49,6 +49,14 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
   const dbPath = environment === 'virtual' ? VIRTUAL_DB_PATH : REGULAR_DB_PATH;
   console.log(`🔍 initDatabase - Environment: ${environment}, Path: ${dbPath}`);
   
+  // Check if better-sqlite3 is available
+  try {
+    require('better-sqlite3');
+  } catch (error) {
+    console.error('❌ better-sqlite3 not available:', error);
+    throw new Error('Database library not available');
+  }
+  
   if (environment === 'virtual') {
     // Check if database is closed or corrupted and reinitialize if needed
     if (!virtualDb || !virtualDb.open) {

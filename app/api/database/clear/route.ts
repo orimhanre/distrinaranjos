@@ -20,12 +20,24 @@ export async function POST(request: NextRequest) {
       : path.resolve(process.cwd(), 'data/products.db');
     
     // Reset the singleton instance
-    resetDatabaseSingletons(context === 'virtual' ? 'virtual' : 'regular');
+    try {
+      resetDatabaseSingletons(context === 'virtual' ? 'virtual' : 'regular');
+    } catch (resetError) {
+      console.warn('⚠️ Warning: Error resetting database singletons:', resetError);
+      // Continue with file deletion even if reset fails
+    }
     
     // Completely delete the database file
     if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
-      console.log(`🗑️ Deleted database file: ${dbPath}`);
+      try {
+        fs.unlinkSync(dbPath);
+        console.log(`🗑️ Deleted database file: ${dbPath}`);
+      } catch (deleteError) {
+        console.error('❌ Error deleting database file:', deleteError);
+        // Continue with other cleanup operations
+      }
+    } else {
+      console.log(`🗑️ Database file does not exist: ${dbPath}`);
     }
     
     // Clear the column configuration files
