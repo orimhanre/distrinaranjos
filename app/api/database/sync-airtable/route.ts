@@ -204,6 +204,88 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ SQLite sync completed: ${syncedCount} products synced, ${errors.length} errors`);
     
+    // Download images for synced products
+    console.log(`🖼️ Starting image download process...`);
+    let downloadedImages = 0;
+    let imageErrors = 0;
+    
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const https = require('https');
+      
+      // Create images directory if it doesn't exist
+      const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+        console.log(`📁 Created images directory: ${imagesDir}`);
+      }
+      
+      // Get all products and download their images
+      const allProducts = productDB.getAllProducts();
+      for (const product of allProducts) {
+        if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+          for (const imageUrl of product.imageURL) {
+            try {
+              // Extract filename from URL
+              let filename = '';
+              if (typeof imageUrl === 'string') {
+                filename = imageUrl.split('/').pop() || '';
+                filename = filename.split('?')[0]; // Remove query parameters
+              } else if (imageUrl && typeof imageUrl === 'object' && 'filename' in imageUrl) {
+                const filenameObj = imageUrl as { filename: string };
+                filename = filenameObj.filename;
+              } else {
+                continue;
+              }
+              
+              if (!filename) continue;
+              
+              const filePath = path.join(imagesDir, filename);
+              
+              // Skip if file already exists
+              if (fs.existsSync(filePath)) {
+                console.log(`⏭️ Image already exists: ${filename}`);
+                continue;
+              }
+              
+              // Download image from Airtable
+              const airtableImageUrl = `https://dl.airtable.com/.attachments/${filename}`;
+              console.log(`⬇️ Downloading: ${filename}`);
+              
+              const file = fs.createWriteStream(filePath);
+              https.get(airtableImageUrl, (response: any) => {
+                if (response.statusCode === 200) {
+                  response.pipe(file);
+                  file.on('finish', () => {
+                    file.close();
+                    downloadedImages++;
+                    console.log(`✅ Downloaded: ${filename}`);
+                  });
+                } else {
+                  console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
+                  imageErrors++;
+                }
+              }).on('error', (err: any) => {
+                console.log(`❌ Error downloading ${filename}: ${err.message}`);
+                imageErrors++;
+                fs.unlink(filePath, () => {}); // Delete partial file
+              });
+              
+            } catch (error) {
+              console.log(`❌ Error processing image for product ${product.id}: ${error}`);
+              imageErrors++;
+            }
+          }
+        }
+      }
+      
+      console.log(`🖼️ Image download completed: ${downloadedImages} downloaded, ${imageErrors} errors`);
+      
+    } catch (error) {
+      console.log(`❌ Image download process failed: ${error}`);
+    }
+    
     // Verify the products were actually saved by checking the database
     console.log(`🔍 Verifying products were saved to database...`);
     const finalProductCount = productDB.getAllProducts().length;
