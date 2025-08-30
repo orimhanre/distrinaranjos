@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProductDatabase } from '@/lib/database';
 import { Product } from '@/types';
 
-// Virtual database instance
-const virtualProductDB = new ProductDatabase('virtual');
+// Virtual database instance - create fresh instance for each request
+let virtualProductDB: ProductDatabase;
 
 // GET /api/database/virtual-products - Get all virtual products or search
 export async function GET(request: NextRequest) {
@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
     const tipo = searchParams.get('tipo');
 
     console.log('🔍 Fetching virtual products from SQLite database...');
+    
+    // Create fresh database instance for this request
+    virtualProductDB = new ProductDatabase('virtual');
+    console.log('🔍 API: Created fresh ProductDatabase instance for virtual environment');
     
     let products: Product[] = [];
     console.log('🔍 API: About to call virtualProductDB.getAllProducts()');
