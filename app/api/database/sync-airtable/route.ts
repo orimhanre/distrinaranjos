@@ -19,9 +19,7 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 Creating ProductDatabase instance for context: ${context}`);
     
     // Force a fresh database connection to ensure we're using the correct database
-    const { resetDatabaseSingletons, getFreshDatabase } = await import('../../../../lib/database');
-    resetDatabaseSingletons(context);
-    console.log(`🔄 Reset database singletons for ${context} environment`);
+    const { getFreshDatabase } = await import('../../../../lib/database');
     
     // Force a completely fresh database connection
     const freshDb = getFreshDatabase(context);
