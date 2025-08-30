@@ -129,8 +129,6 @@ export async function POST(request: NextRequest) {
           // PERMANENT FIX: For virtual products, ALWAYS use original Airtable URLs
           // This completely avoids Railway filesystem issues
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            console.log(`📸 Virtual product ${product.name} has ${product.imageURL.length} images from Airtable`);
-            
             // Extract URLs from Airtable attachment objects (need full URLs for images to load)
             const processedImageURLs = product.imageURL.map((img: any) => {
               if (typeof img === 'string') return img;
@@ -140,7 +138,6 @@ export async function POST(request: NextRequest) {
               }
               if (img && typeof img === 'object' && img.filename) {
                 // If we only have filename, we can't load the image
-                console.log(`⚠️ Only filename available, can't load image: ${img.filename}`);
                 return null;
               }
               return String(img);
@@ -148,9 +145,6 @@ export async function POST(request: NextRequest) {
             
             // Always use the processed URLs (original Airtable URLs)
             product.imageURL = processedImageURLs;
-            console.log(`📸 Processed ${processedImageURLs.length} image URLs for ${product.name}`);
-          } else {
-            console.log(`📸 No images for virtual product ${product.name}`);
           }
           
           // Save to SQLite database

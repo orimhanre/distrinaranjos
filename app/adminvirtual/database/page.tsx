@@ -550,22 +550,12 @@ export default function VirtualDatabasePage() {
         }
         if (img && typeof img === 'object' && img.filename) {
           // If we only have filename, we can't load the image
-          console.log(`⚠️ Only filename available, can't load image: ${img.filename}`);
           return null;
         }
         return String(img);
       }).filter(url => url && url.length > 0);
       
-      console.log('🔍 renderFilePreview: Valid images found:', validImages);
-      if (validImages.length > 0) {
-        console.log('🔍 renderFilePreview: First image URL:', validImages[0]);
-      } else {
-        console.log('🔍 renderFilePreview: No valid images found. Array content:', processedFileUrl);
-        if (Array.isArray(processedFileUrl) && processedFileUrl.length > 0) {
-          console.log('🔍 renderFilePreview: First array item:', processedFileUrl[0]);
-          console.log('🔍 renderFilePreview: First array item type:', typeof processedFileUrl[0]);
-        }
-      }
+
       
       if (validImages.length === 0) {
         return (
@@ -594,15 +584,10 @@ export default function VirtualDatabasePage() {
                   alt={`Preview ${index + 1}`}
                   className="w-full h-full object-cover rounded"
                   onError={(e) => {
-                    console.log(`❌ Image failed to load: ${imageUrl}, using placeholder`);
-                    console.log(`🔍 Image URL type: ${typeof imageUrl}, starts with: ${imageUrl?.substring(0, 50)}`);
                     const target = e.target as HTMLImageElement;
                     // Use a placeholder image instead of showing error
                     target.src = '/placeholder-product.svg';
                     target.onerror = null; // Prevent infinite loop
-                  }}
-                  onLoad={(e) => {
-                    console.log(`✅ Image loaded successfully: ${imageUrl}`);
                   }}
                 />
               </div>
@@ -617,7 +602,6 @@ export default function VirtualDatabasePage() {
     
     // Handle single string values
     if (!processedFileUrl || typeof processedFileUrl !== 'string') {
-      console.log('🔍 renderFilePreview: Not a string, showing error icon');
       return (
         <div className="bg-gray-100 rounded-lg p-2 min-w-[60px] text-center">
           <div className="text-lg text-gray-400">❌</div>
