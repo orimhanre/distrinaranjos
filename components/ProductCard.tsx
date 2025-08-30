@@ -122,19 +122,29 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
         )}
         
         {/* Stock Status Overlay */}
-        {(product.quantity || 0) <= 0 ? (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-bold">
-              🔴 Agotado
-            </div>
-          </div>
-        ) : (product.quantity || 0) === 1 ? (
-          <div className="absolute top-3 left-3">
-            <div className="bg-orange-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
-              ⚠️ Última unidad
-            </div>
-          </div>
-        ) : null}
+        {(() => {
+          // For virtual products, use stock field; for regular products, use quantity field
+          const stockLevel = product.stock !== undefined ? product.stock : (product.quantity || 0);
+          
+          if (stockLevel <= 0) {
+            return (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-bold">
+                  🔴 Agotado
+                </div>
+              </div>
+            );
+          } else if (stockLevel === 1) {
+            return (
+              <div className="absolute top-3 left-3">
+                <div className="bg-orange-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
+                  ⚠️ Última unidad
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Category Badges */}
         {product.category && (
@@ -299,7 +309,9 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
         
         {/* Ver Producto Button */}
         {(() => {
-          const isOutOfStock = (product.quantity || 0) <= 0;
+          // For virtual products, use stock field; for regular products, use quantity field
+          const stockLevel = product.stock !== undefined ? product.stock : (product.quantity || 0);
+          const isOutOfStock = stockLevel <= 0;
           
           return (
             <button
