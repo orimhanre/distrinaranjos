@@ -1,58 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs } from 'firebase/firestore';
-// Import Firebase configs directly to avoid client-side code in server context
-// Initialize Firebase apps directly for server-side use
-const getFirebaseApps = () => {
-  // Main Firebase config
-  const mainFirebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-  };
 
-  // Virtual Firebase config
-  const virtualFirebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_APP_ID
-  };
-
-  let mainApp = null;
-  let virtualApp = null;
-  let db = null;
-  let virtualDb = null;
-
-  // Initialize main app
-  try {
-    if (mainFirebaseConfig.apiKey && mainFirebaseConfig.projectId) {
-      const existingMainApp = getApps().find(app => app.name === '[DEFAULT]');
-      mainApp = existingMainApp || initializeApp(mainFirebaseConfig);
-      db = getFirestore(mainApp);
-    }
-  } catch (error) {
-    console.log('Main Firebase not available:', error);
-  }
-
-  // Initialize virtual app
-  try {
-    if (virtualFirebaseConfig.apiKey && virtualFirebaseConfig.projectId) {
-      const existingVirtualApp = getApps().find(app => app.name === 'virtual');
-      virtualApp = existingVirtualApp || initializeApp(virtualFirebaseConfig, 'virtual');
-      virtualDb = getFirestore(virtualApp);
-    }
-  } catch (error) {
-    console.log('Virtual Firebase not available:', error);
-  }
-
-  return { db, virtualDb };
-};
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
@@ -89,8 +38,8 @@ export async function GET(
 
     console.log('🔍 Fetching order details for ID:', orderId);
 
-    // Get Firebase apps
-    const { db, virtualDb } = getFirebaseApps();
+    // Get Firebase apps from lib/firebase
+    const { db, virtualDb } = await import('../../../../lib/firebase');
 
     // Try virtual database first (most likely for main website orders)
     let orderDoc = null;

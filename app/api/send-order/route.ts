@@ -14,6 +14,10 @@ function loadVirtualEnv() {
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
       VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
+      VIRTUAL_RESEND_TO_EMAIL: process.env.VIRTUAL_RESEND_TO_EMAIL || '',
+      VIRTUAL_RESEND_FROM_EMAIL: process.env.VIRTUAL_RESEND_FROM_EMAIL || '',
+      VIRTUAL_SHIPPING_FREE_THRESHOLD: process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '',
+      VIRTUAL_SHIPPING_COST: process.env.VIRTUAL_SHIPPING_COST || '',
     };
 
     // If we have environment variables from process.env, use them
@@ -28,7 +32,7 @@ function loadVirtualEnv() {
     const envFilePath = path.join(process.cwd(), '.env.virtual.local');
     
     if (!fs.existsSync(envFilePath)) {
-      console.log('Virtual environment file not found:', envFilePath);
+      // Don't log error for missing .env.virtual.local as it's expected in production
       return envVars;
     }
     
@@ -49,12 +53,17 @@ function loadVirtualEnv() {
     // // console.log('✅ Loaded virtual environment variables from local file (development):', Object.keys(envVars));
     return envVars;
   } catch (error) {
-    console.error('Error loading virtual environment:', error);
+    // During build time or production, file system access might be restricted
+    // Don't log errors for missing .env.virtual.local as it's expected in production
     return {
       VIRTUAL_RESEND_API_KEY: process.env.VIRTUAL_RESEND_API_KEY || '',
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
       VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
+      VIRTUAL_RESEND_TO_EMAIL: process.env.VIRTUAL_RESEND_TO_EMAIL || '',
+      VIRTUAL_RESEND_FROM_EMAIL: process.env.VIRTUAL_RESEND_FROM_EMAIL || '',
+      VIRTUAL_SHIPPING_FREE_THRESHOLD: process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '',
+      VIRTUAL_SHIPPING_COST: process.env.VIRTUAL_SHIPPING_COST || '',
     };
   }
 }

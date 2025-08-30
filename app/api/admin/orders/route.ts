@@ -1,29 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-// Function to load environment variables from .env.virtual.local
+
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic';
+
+// Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    const envPath = join(process.cwd(), '.env.virtual.local');
-    const envContent = readFileSync(envPath, 'utf8');
-    const envVars: { [key: string]: string } = {};
+    // First, try to load from process.env (for Vercel deployment)
+    const envVars: Record<string, string> = {
+      VIRTUAL_AIRTABLE_API_KEY: process.env.VIRTUAL_AIRTABLE_API_KEY || '',
+      VIRTUAL_AIRTABLE_BASE_ID: process.env.VIRTUAL_AIRTABLE_BASE_ID || '',
+      VIRTUAL_AIRTABLE_ACCOUNT_EMAIL: process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || '',
+    };
+
+    // If we have environment variables from process.env, use them
+    if (envVars.VIRTUAL_AIRTABLE_API_KEY) {
+      return envVars;
+    }
+
+    // Fallback to local file for development
+    const fs = require('fs');
+    const path = require('path');
+    const envFilePath = path.join(process.cwd(), '.env.virtual.local');
     
-    envContent.split('\n').forEach(line => {
-      const [key, ...valueParts] = line.split('=');
-      if (key && valueParts.length > 0) {
-        envVars[key.trim()] = valueParts.join('=').trim();
+    if (!fs.existsSync(envFilePath)) {
+      // Don't log error for missing .env.virtual.local as it's expected in production
+      return envVars;
+    }
+    
+    const envContent = fs.readFileSync(envFilePath, 'utf8');
+    
+    envContent.split('\n').forEach((line: string) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const equalIndex = trimmedLine.indexOf('=');
+        if (equalIndex > 0) {
+          const varKey = trimmedLine.substring(0, equalIndex);
+          const varValue = trimmedLine.substring(equalIndex + 1);
+          envVars[varKey] = varValue;
+        }
       }
     });
     
     return envVars;
   } catch (error) {
-    console.error('Error loading .env.virtual.local:', error);
-    return {};
+    // During build time or production, file system access might be restricted
+    // Don't log errors for missing .env.virtual.local as it's expected in production
+    return {
+      VIRTUAL_AIRTABLE_API_KEY: process.env.VIRTUAL_AIRTABLE_API_KEY || '',
+      VIRTUAL_AIRTABLE_BASE_ID: process.env.VIRTUAL_AIRTABLE_BASE_ID || '',
+      VIRTUAL_AIRTABLE_ACCOUNT_EMAIL: process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || '',
+    };
   }
 }
-
-// Load virtual environment variables
-const virtualEnv = loadVirtualEnv();
 
 export async function GET(request: NextRequest) {
     // Check if required environment variables are available for both regular and virtual environments

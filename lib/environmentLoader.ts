@@ -37,7 +37,11 @@ export class EnvironmentLoader {
       // console.log(`📁 Loaded ${Object.keys(envVars).length} variables from ${filePath}`);
       return envVars;
     } catch (error) {
-      console.error(`❌ Error loading environment file ${filePath}:`, error);
+      // During build time or production, file system access might be restricted
+      // Don't log errors for missing .env.virtual.local as it's expected in production
+      if (!filePath.includes('.env.virtual.local')) {
+        console.error(`❌ Error loading environment file ${filePath}:`, error);
+      }
       return {};
     }
   }

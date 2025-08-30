@@ -3,16 +3,15 @@ import jsPDF from 'jspdf';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import path from 'path';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
+
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic';
 
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
     // First, try to load from process.env (for Vercel deployment)
-    const envVars: { [key: string]: string } = {
+    const envVars: Record<string, string> = {
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
       VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
@@ -26,20 +25,33 @@ function loadVirtualEnv() {
     }
 
     // Fallback to local file for development
-    const envPath = join(process.cwd(), '.env.virtual.local');
-    const envContent = readFileSync(envPath, 'utf8');
+    const fs = require('fs');
+    const path = require('path');
+    const envFilePath = path.join(process.cwd(), '.env.virtual.local');
     
-    envContent.split('\n').forEach(line => {
-      const [key, ...valueParts] = line.split('=');
-      if (key && valueParts.length > 0) {
-        envVars[key.trim()] = valueParts.join('=').trim();
+    if (!fs.existsSync(envFilePath)) {
+      // Don't log error for missing .env.virtual.local as it's expected in production
+      return envVars;
+    }
+    
+    const envContent = fs.readFileSync(envFilePath, 'utf8');
+    
+    envContent.split('\n').forEach((line: string) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const equalIndex = trimmedLine.indexOf('=');
+        if (equalIndex > 0) {
+          const varKey = trimmedLine.substring(0, equalIndex);
+          const varValue = trimmedLine.substring(equalIndex + 1);
+          envVars[varKey] = varValue;
+        }
       }
     });
     
-    // // console.log('✅ Loaded virtual environment variables from local file (development):', Object.keys(envVars));
     return envVars;
   } catch (error) {
-    console.error('Error loading virtual environment:', error);
+    // During build time or production, file system access might be restricted
+    // Don't log errors for missing .env.virtual.local as it's expected in production
     return {
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
@@ -47,34 +59,6 @@ function loadVirtualEnv() {
       VIRTUAL_RESEND_API_KEY: process.env.VIRTUAL_RESEND_API_KEY || '',
     };
   }
-}
-
-// Cloudinary will be configured dynamically based on the request context
-
-// Firebase configuration - optional for now
-let app: FirebaseApp | null = null;
-let db: ReturnType<typeof getFirestore> | null = null;
-
-try {
-  const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-  };
-
-  // Only initialize if all required env vars are present
-  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log('✅ Firebase initialized successfully');
-  } else {
-    console.log('⚠️ Firebase environment variables not configured - orders will not be sent to Firestore');
-  }
-} catch (error) {
-  console.log('⚠️ Firebase initialization failed - orders will not be sent to Firestore');
 }
 
 export async function POST(request: NextRequest) {

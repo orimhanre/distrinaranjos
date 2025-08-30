@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '../../../../lib/emailService';
 import crypto from 'crypto';
-import { collection, doc, getDoc, updateDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
-import { virtualDb } from '../../../../lib/firebase';
+
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     // Check if required virtual Firebase environment variables are available
@@ -20,6 +21,136 @@ export async function POST(request: NextRequest) {
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
     const { virtualDb } = await import('../../../../lib/firebase');
+
+    // Helper functions with Firebase functions passed as parameters
+    async function handlePaymentCompleted(data: any) {
+      const payment = data.data;
+      const orderId = payment.reference || payment.orderId;
+      
+      if (!orderId) {
+        console.error('No order reference found in PSE payment');
+        return;
+      }
+
+      try {
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
+        
+        // Look for order in virtualOrders collection
+        const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
+        const q = query(virtualOrdersRef, where('invoiceNumber', '==', orderId));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const orderDoc = querySnapshot.docs[0];
+          const orderData = orderDoc.data();
+          
+          // Update order with payment confirmation
+          await updateDoc(doc(virtualDb, 'virtualOrders', orderDoc.id), {
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            paymentConfirmedAt: new Date(),
+            pseTransactionId: payment.transactionId,
+            psePaymentData: payment,
+            bankName: payment.bankName,
+            accountNumber: payment.accountNumber,
+            lastUpdated: new Date()
+          });
+
+          console.log(`Order ${orderId} payment confirmed via PSE`);
+          
+          // Send confirmation email to customer
+          await sendPaymentConfirmationEmail(orderData);
+        } else {
+          console.error(`Order ${orderId} not found in virtual orders`);
+        }
+      } catch (error) {
+        console.error('Error updating order payment status:', error);
+      }
+    }
+
+    async function handlePaymentFailed(data: any) {
+      const payment = data.data;
+      const orderId = payment.reference || payment.orderId;
+      
+      if (!orderId) {
+        console.error('No order reference found in PSE payment');
+        return;
+      }
+
+      try {
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
+        
+        const orderRef = doc(virtualDb, 'virtualOrders', orderId);
+        await updateDoc(orderRef, {
+          paymentStatus: 'failed',
+          pseTransactionId: payment.transactionId,
+          psePaymentData: payment
+        });
+        
+        console.log(`Order ${orderId} payment failed via PSE`);
+      } catch (error) {
+        console.error('Error updating failed payment status:', error);
+      }
+    }
+
+    async function handlePaymentPending(data: any) {
+  const payment = data.data;
+  const orderId = payment.reference || payment.orderId;
+  
+  if (!orderId) {
+    console.error('No order reference found in PSE payment');
+    return;
+  }
+
+  try {
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { virtualDb } = await import('../../../../lib/firebase');
+    
+    if (!virtualDb) {
+      console.error('Virtual Firebase not configured');
+      return;
+    }
+        
+        const orderRef = doc(virtualDb, 'virtualOrders', orderId);
+        await updateDoc(orderRef, {
+          paymentStatus: 'pending',
+          pseTransactionId: payment.transactionId,
+          psePaymentData: payment
+        });
+        
+        console.log(`Order ${orderId} payment pending via PSE`);
+      } catch (error) {
+        console.error('Error updating pending payment status:', error);
+      }
+    }
+
+    async function sendPaymentConfirmationEmail(orderData: any) {
+      try {
+        const estimatedDelivery = new Date();
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
+
+        await EmailService.sendPaymentConfirmationEmail({
+          customerName: orderData.client?.name || orderData.client?.companyName || 'Cliente',
+          customerEmail: orderData.client?.email || orderData.email || '',
+          orderId: orderData.id || '',
+          orderNumber: orderData.invoiceNumber || orderData.id || '',
+          totalAmount: orderData.totalAmount || 0,
+          paymentMethod: 'Transferencia Bancaria',
+          orderDate: new Date().toLocaleDateString('es-CO'),
+          estimatedDelivery: estimatedDelivery.toLocaleDateString('es-CO')
+        });
+      } catch (error) {
+        console.error('Error sending payment confirmation email:', error);
+      }
+    }
+
   try {
     const body = await request.text();
     const signature = request.headers.get('x-pse-signature');
@@ -62,130 +193,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
-
-async function handlePaymentCompleted(data: any) {
-  const payment = data.data;
-  const orderId = payment.reference || payment.orderId;
-  
-  if (!orderId) {
-    console.error('No order reference found in PSE payment');
-    return;
-  }
-
-  try {
-    if (!virtualDb) {
-      console.error('Virtual Firebase not configured');
-      return;
-    }
-    
-    // Look for order in virtualOrders collection
-    const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
-    const q = query(virtualOrdersRef, where('invoiceNumber', '==', orderId));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      const orderDoc = querySnapshot.docs[0];
-      const orderData = orderDoc.data();
-      
-      // Update order with payment confirmation
-      await updateDoc(doc(virtualDb, 'virtualOrders', orderDoc.id), {
-        paymentStatus: 'paid',
-        status: 'confirmed',
-        paymentConfirmedAt: new Date(),
-        pseTransactionId: payment.transactionId,
-        psePaymentData: payment,
-        bankName: payment.bankName,
-        accountNumber: payment.accountNumber,
-        lastUpdated: new Date()
-      });
-
-      console.log(`Order ${orderId} payment confirmed via PSE`);
-      
-      // Send confirmation email to customer
-      await sendPaymentConfirmationEmail(orderData);
-    } else {
-      console.error(`Order ${orderId} not found in virtualOrders collection`);
-    }
-  } catch (error) {
-    console.error('Error updating order payment status:', error);
-  }
-}
-
-async function handlePaymentFailed(data: any) {
-  const payment = data.data;
-  const orderId = payment.reference || payment.orderId;
-  
-  if (!orderId) {
-    console.error('No order reference found in PSE payment');
-    return;
-  }
-
-  try {
-    if (!virtualDb) {
-      console.error('Virtual Firebase not configured');
-      return;
-    }
-    
-    const orderRef = doc(virtualDb, 'virtualOrders', orderId);
-    await updateDoc(orderRef, {
-      paymentStatus: 'failed',
-      pseTransactionId: payment.transactionId,
-      psePaymentData: payment
-    });
-    
-    console.log(`Order ${orderId} payment failed via PSE`);
-  } catch (error) {
-    console.error('Error updating failed payment status:', error);
-  }
-}
-
-async function handlePaymentPending(data: any) {
-  const payment = data.data;
-  const orderId = payment.reference || payment.orderId;
-  
-  if (!orderId) {
-    console.error('No order reference found in PSE payment');
-    return;
-  }
-
-  try {
-    if (!virtualDb) {
-      console.error('Virtual Firebase not configured');
-      return;
-    }
-    
-    const orderRef = doc(virtualDb, 'virtualOrders', orderId);
-    await updateDoc(orderRef, {
-      paymentStatus: 'pending',
-      pseTransactionId: payment.transactionId,
-      psePaymentData: payment
-    });
-    
-    console.log(`Order ${orderId} payment pending via PSE`);
-  } catch (error) {
-    console.error('Error updating pending payment status:', error);
-  }
-}
-
-async function sendPaymentConfirmationEmail(orderData: any) {
-  try {
-    const estimatedDelivery = new Date();
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
-
-    await EmailService.sendPaymentConfirmationEmail({
-      customerName: orderData.client?.name || orderData.client?.companyName || 'Cliente',
-      customerEmail: orderData.client?.email || orderData.email || '',
-      orderId: orderData.id || '',
-      orderNumber: orderData.invoiceNumber || orderData.id || '',
-      totalAmount: orderData.totalAmount || 0,
-      paymentMethod: 'Transferencia Bancaria',
-      orderDate: new Date().toLocaleDateString('es-CO'),
-      estimatedDelivery: estimatedDelivery.toLocaleDateString('es-CO')
-    });
-  } catch (error) {
-    console.error('Error sending payment confirmation email:', error);
-  }
-} 
 
 export async function GET() {
   // Handle build-time page data collection

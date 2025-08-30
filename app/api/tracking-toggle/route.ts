@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-};
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic';
 
 // Function to update VISITOR_TRACKING_ENABLED in .env.local
 function updateEnvFile(enabled: boolean) {
@@ -85,6 +74,10 @@ export async function POST(request: NextRequest) {
     if (typeof enabled !== 'boolean') {
       return NextResponse.json({ error: 'Invalid enabled value' }, { status: 400 });
     }
+    
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db } = await import('../../../lib/firebase');
     
     // Update Firebase
     await setDoc(doc(db, 'settings', 'tracking'), { 
