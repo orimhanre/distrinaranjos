@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
             
             // Clean filename (remove query parameters)
             filename = filename.split('?')[0];
-          } else if (imageUrl && typeof imageUrl === 'object' && 'filename' in imageUrl && typeof imageUrl.filename === 'string') {
-            filename = imageUrl.filename;
+          } else if (imageUrl && typeof imageUrl === 'object' && imageUrl !== null && 'filename' in imageUrl && typeof (imageUrl as any).filename === 'string') {
+            filename = (imageUrl as any).filename;
           } else {
             continue;
           }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           }
           
           // Download image
-          const actualUrl = typeof imageUrl === 'string' ? imageUrl : imageUrl.url;
+          const actualUrl = typeof imageUrl === 'string' ? imageUrl : (imageUrl as any).url;
           if (!actualUrl) continue;
           
           await downloadImage(actualUrl, filepath);
