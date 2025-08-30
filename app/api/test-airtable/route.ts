@@ -24,45 +24,28 @@ export async function GET(request: NextRequest) {
     // Test basic connection
     const base = new Airtable({ apiKey }).base(baseId);
     
-    // Try to list tables
+    // Try to access the default "Products" table
     try {
-      const tables = await base.tables();
-      console.log('📋 Available tables:', tables.map(t => t.name));
+      const table = base('Products');
+      const records = await table.select({ maxRecords: 1 }).firstPage();
       
       return NextResponse.json({
         success: true,
-        message: 'Airtable connection successful',
-        tables: tables.map(t => t.name),
+        message: 'Airtable connection successful (Products table)',
+        recordCount: records.length,
         apiKeyExists: !!apiKey,
         baseId: baseId
       });
-    } catch (tableError) {
-      console.error('❌ Error listing tables:', tableError);
+    } catch (productError) {
+      console.error('❌ Error accessing Products table:', productError);
       
-      // Try to access the default "Products" table
-      try {
-        const table = base('Products');
-        const records = await table.select({ maxRecords: 1 }).firstPage();
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Airtable connection successful (Products table)',
-          recordCount: records.length,
-          apiKeyExists: !!apiKey,
-          baseId: baseId
-        });
-      } catch (productError) {
-        console.error('❌ Error accessing Products table:', productError);
-        
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to access any tables',
-          tableError: tableError instanceof Error ? tableError.message : 'Unknown error',
-          productError: productError instanceof Error ? productError.message : 'Unknown error',
-          apiKeyExists: !!apiKey,
-          baseId: baseId
-        });
-      }
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to access Products table',
+        productError: productError instanceof Error ? productError.message : 'Unknown error',
+        apiKeyExists: !!apiKey,
+        baseId: baseId
+      });
     }
     
   } catch (error) {
