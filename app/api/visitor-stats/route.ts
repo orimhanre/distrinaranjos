@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { fetchCollection } from '../../../lib/firestoreUtils';
 
 function getMonday(d: Date) {
   d = new Date(d);
@@ -35,7 +34,17 @@ export async function GET() {
   }
 
   try {
-    const visits: Visit[] = await fetchCollection('visits');
+    // Dynamic import to prevent Firebase initialization during build
+    const { db } = await import('../../../lib/firebase');
+    const { collection, getDocs } = await import('firebase/firestore');
+    
+    if (!db) {
+      throw new Error('Firebase database not initialized');
+    }
+    
+    const snapshot = await getDocs(collection(db, 'visits'));
+    const visits: Visit[] = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    
     const now = new Date();
 
     // Week: Monday to Sunday
