@@ -29,19 +29,11 @@ export default function VirtualAjustesPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set()); // All sections closed by default
   const [expandedSubcategories, setExpandedSubcategories] = useState<Set<string>>(new Set()); // All subcategories closed by default
   const [lastUpdated, setLastUpdated] = useState<Record<string, string>>({});
-  const [isProduction, setIsProduction] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
-    // Detect if we're in production (Railway)
-    setIsProduction(
-      typeof window !== 'undefined' && 
-      (window.location.hostname.includes('railway') || 
-       window.location.hostname.includes('vercel') ||
-       window.location.hostname.includes('distrinaranjos-production'))
-    );
   }, []);
 
   useEffect(() => {
@@ -215,6 +207,10 @@ export default function VirtualAjustesPage() {
     }
     
     setIsLoading(false);
+  } catch (error) {
+    console.error('Error loading environment variables:', error);
+    setIsLoading(false);
+  }
   };
 
   const handleEdit = (key: string, currentValue: string) => {
@@ -402,34 +398,6 @@ export default function VirtualAjustesPage() {
     );
   }
 
-  if (isLoading || permissionLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {isLoading ? "Cargando ajustes..." : "Verificando permisos..."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hasPermission) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-        <h1 className="text-xl md:text-2xl font-bold mb-4 text-black text-center">Acceso denegado</h1>
-        <p className="mb-4 text-black text-center">Tu cuenta no está autorizada para ver esta página.</p>
-        <button
-          onClick={handleLogout}
-          className="bg-red-600 text-white px-4 py-3 rounded hover:bg-red-700 font-semibold text-sm md:text-base"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    );
-  }
-
   // Check if we're in production (Railway)
   const isProduction = typeof window !== 'undefined' && 
     (window.location.hostname.includes('railway') || 
@@ -489,6 +457,34 @@ export default function VirtualAjustesPage() {
             </button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (isLoading || permissionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {isLoading ? "Cargando ajustes..." : "Verificando permisos..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <h1 className="text-xl md:text-2xl font-bold mb-4 text-black text-center">Acceso denegado</h1>
+        <p className="mb-4 text-black text-center">Tu cuenta no está autorizada para ver esta página.</p>
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 text-white px-4 py-3 rounded hover:bg-red-700 font-semibold text-sm md:text-base"
+        >
+          Cerrar sesión
+        </button>
       </div>
     );
   }
