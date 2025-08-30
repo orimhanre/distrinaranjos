@@ -19,16 +19,50 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 Creating ProductDatabase instance for context: ${context}`);
     
     // Force a fresh database connection to ensure we're using the correct database
-    const { resetDatabaseSingletons } = await import('../../../../lib/database');
+    const { resetDatabaseSingletons, getFreshDatabase } = await import('../../../../lib/database');
     resetDatabaseSingletons(context);
     console.log(`🔄 Reset database singletons for ${context} environment`);
+    
+    // Force a completely fresh database connection
+    const freshDb = getFreshDatabase(context);
+    console.log(`🔄 Created fresh database connection for ${context} environment`);
     
     productDB = new ProductDatabase(context);
     console.log(`✅ ProductDatabase instance created for ${context} environment`);
     
     // Verify database is working correctly
+    console.log(`🔍 Testing database operations...`);
     const initialProductCount = productDB.getAllProducts().length;
     console.log(`🔍 Initial product count in database: ${initialProductCount}`);
+    
+    // Test database write operation
+    const testProduct = {
+      id: 'test_sync_' + Date.now(),
+      name: 'Test Product',
+      brand: 'Test Brand',
+      type: 'Test Type',
+      colors: ['Test Color'],
+      price: 100,
+      stock: 50
+    };
+    
+    try {
+      productDB.createProduct(testProduct);
+      console.log(`✅ Test product created successfully`);
+      
+      const testCount = productDB.getAllProducts().length;
+      console.log(`🔍 Product count after test creation: ${testCount}`);
+      
+      // Clean up test product
+      productDB.deleteProduct(testProduct.id);
+      console.log(`✅ Test product cleaned up`);
+      
+      const finalTestCount = productDB.getAllProducts().length;
+      console.log(`🔍 Product count after cleanup: ${finalTestCount}`);
+      
+    } catch (testError) {
+      console.error(`❌ Database test failed:`, testError);
+    }
     
     // Test Airtable connection
     const connectionTest = await AirtableService.testConnection();
