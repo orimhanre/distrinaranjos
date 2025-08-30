@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     
     const webPhotos = regularWebPhotosDB.getAllWebPhotos();
     
-    // console.log('API: Returning', Object.keys(webPhotos).length, 'regular webphotos');
+    console.log('API: Returning', Object.keys(webPhotos).length, 'regular webphotos');
     
     return NextResponse.json({
       success: true,

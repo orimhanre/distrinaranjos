@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import { promisify } from 'util';
+import { v2 as cloudinary } from 'cloudinary';
 
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
@@ -20,107 +21,124 @@ export class ImageDownloader {
   private static readonly TIMEOUT = 5000; // Reduced from 10 to 5 seconds for faster timeouts
 
   /**
-   * Ensure images directory exists
+   * Configure Cloudinary for regular environment
    */
-  private static async ensureImagesDir(): Promise<void> {
-    try {
-      await mkdir(this.IMAGES_DIR, { recursive: true });
-    } catch (error) {
-      console.error('Error creating images directory:', error);
+  private static configureCloudinary(): void {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    console.log(`☁️ Cloudinary config check:`, {
+      cloudName: cloudName ? 'Set' : 'Missing',
+      apiKey: apiKey ? 'Set' : 'Missing',
+      apiSecret: apiSecret ? 'Set' : 'Missing'
+    });
+
+    if (cloudName && apiKey && apiSecret) {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+      });
+      console.log(`☁️ Cloudinary configured successfully`);
+    } else {
+      console.error(`❌ Missing Cloudinary credentials`);
+      throw new Error('Missing Cloudinary credentials');
     }
   }
 
   /**
-   * Download a single image from URL
+   * Download image data from URL
    */
-  private static async downloadImage(url: string, filename: string, forceRedownload: boolean = false): Promise<DownloadedImage> {
-    const localPath = path.join(this.IMAGES_DIR, filename);
-    const publicUrl = `/images/products/${filename}`;
-
-    // Check if file already exists to avoid re-downloading (unless forceRedownload is true)
-    if (fs.existsSync(localPath) && !forceRedownload) {
-      console.log(`✅ Image already exists: ${filename}`);
-      return {
-        originalUrl: url,
-        localPath: publicUrl,
-        filename,
-        success: true
-      };
-    }
-    
-    // If forceRedownload is true and file exists, delete it first
-    if (fs.existsSync(localPath) && forceRedownload) {
-      console.log(`🔄 Force re-download: deleting existing file ${filename}`);
-      fs.unlinkSync(localPath);
-    }
-
-    return new Promise((resolve) => {
-      const file = fs.createWriteStream(localPath);
-      
+  private static async downloadImageData(url: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
       const request = https.get(url, { timeout: this.TIMEOUT }, (response) => {
         if (response.statusCode !== 200) {
-          file.close();
-          fs.unlink(localPath, () => {}); // Clean up failed download
-          resolve({
-            originalUrl: url,
-            localPath: '',
-            filename,
-            success: false,
-            error: `HTTP ${response.statusCode}`
-          });
+          reject(new Error(`HTTP ${response.statusCode}`));
           return;
         }
 
-        response.pipe(file);
-
-        file.on('finish', () => {
-          file.close();
-          resolve({
-            originalUrl: url,
-            localPath: publicUrl,
-            filename,
-            success: true
-          });
-        });
-
-        file.on('error', (err) => {
-          file.close();
-          fs.unlink(localPath, () => {}); // Clean up failed download
-          resolve({
-            originalUrl: url,
-            localPath: '',
-            filename,
-            success: false,
-            error: err.message
-          });
-        });
+        const chunks: Buffer[] = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => resolve(Buffer.concat(chunks)));
+        response.on('error', reject);
       });
 
-      request.on('error', (err) => {
-        file.close();
-        fs.unlink(localPath, () => {}); // Clean up failed download
-        resolve({
-          originalUrl: url,
-          localPath: '',
-          filename,
-          success: false,
-          error: err.message
-        });
-      });
-
+      request.on('error', reject);
       request.on('timeout', () => {
         request.destroy();
-        file.close();
-        fs.unlink(localPath, () => {}); // Clean up failed download
-        resolve({
-          originalUrl: url,
-          localPath: '',
-          filename,
-          success: false,
-          error: 'Download timeout'
-        });
+        reject(new Error('Download timeout'));
       });
     });
+  }
+
+  /**
+   * Upload image to Cloudinary
+   */
+  private static async uploadToCloudinary(imageBuffer: Buffer, filename: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'products',
+          public_id: filename.replace(/\.[^/.]+$/, ''), // Remove extension for public_id
+          resource_type: 'image',
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (result) {
+            resolve(result.secure_url);
+          } else {
+            reject(new Error('No result from Cloudinary'));
+          }
+        }
+      );
+
+      uploadStream.end(imageBuffer);
+    });
+  }
+
+  /**
+   * Download and upload a single image to Cloudinary
+   */
+  private static async downloadAndUploadImage(url: string, filename: string, forceRedownload: boolean = false): Promise<DownloadedImage> {
+    try {
+      console.log(`📥 Downloading image from: ${url}`);
+      
+      // Download image data
+      const imageBuffer = await this.downloadImageData(url);
+      
+      // Configure Cloudinary
+      this.configureCloudinary();
+      
+      // Upload to Cloudinary
+      console.log(`☁️ Uploading to Cloudinary: ${filename}`);
+      const cloudinaryUrl = await this.uploadToCloudinary(imageBuffer, filename);
+      
+      console.log(`✅ Successfully uploaded to Cloudinary: ${cloudinaryUrl}`);
+      
+      return {
+        originalUrl: url,
+        localPath: cloudinaryUrl, // Use Cloudinary URL as localPath
+        filename,
+        success: true
+      };
+    } catch (error) {
+      console.error(`❌ Failed to process image ${filename}:`, error);
+      console.error(`❌ Error details:`, {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        url,
+        filename
+      });
+      return {
+        originalUrl: url,
+        localPath: '',
+        filename,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   /**
@@ -152,24 +170,22 @@ export class ImageDownloader {
   }
 
   /**
-   * Download multiple images from URLs (optimized with parallel processing)
+   * Download multiple images and upload to Cloudinary (optimized with parallel processing)
    */
   static async downloadImages(urls: any[], forceRedownload: boolean = false): Promise<DownloadedImage[]> {
-    await this.ensureImagesDir();
-    
     if (urls.length === 0) {
       return [];
     }
 
-    console.log(`🚀 Starting parallel download of ${urls.length} images...`);
+    console.log(`🚀 Starting parallel download and Cloudinary upload of ${urls.length} images...`);
     
     // Process URLs in parallel with higher concurrency limit for faster downloads
-    const CONCURRENCY_LIMIT = 20; // Increased from 10 to 20 for faster downloads
+    const CONCURRENCY_LIMIT = 10; // Reduced from 20 to 10 to avoid overwhelming Cloudinary
     const results: DownloadedImage[] = [];
     
     for (let i = 0; i < urls.length; i += CONCURRENCY_LIMIT) {
       const batch = urls.slice(i, i + CONCURRENCY_LIMIT);
-      console.log(`📦 Downloading batch ${Math.floor(i/CONCURRENCY_LIMIT) + 1}/${Math.ceil(urls.length/CONCURRENCY_LIMIT)} (${batch.length} images)`);
+      console.log(`📦 Processing batch ${Math.floor(i/CONCURRENCY_LIMIT) + 1}/${Math.ceil(urls.length/CONCURRENCY_LIMIT)} (${batch.length} images)`);
       
       const batchPromises = batch.map(async (urlObj, batchIndex) => {
         // Handle Airtable attachment objects
@@ -196,7 +212,7 @@ export class ImageDownloader {
 
         // Retry logic
         while (retries < this.MAX_RETRIES && !success) {
-          result = await this.downloadImage(url, filename, forceRedownload);
+          result = await this.downloadAndUploadImage(url, filename, forceRedownload);
           
           if (result.success) {
             success = true;
@@ -211,9 +227,9 @@ export class ImageDownloader {
 
         // Log progress
         if (result!.success) {
-          console.log(`✅ Downloaded: ${result!.filename}`);
+          console.log(`✅ Processed: ${result!.filename}`);
         } else {
-          console.log(`❌ Failed to download: ${url} - ${result!.error}`);
+          console.log(`❌ Failed to process: ${url} - ${result!.error}`);
         }
         
         return result!;
@@ -223,40 +239,22 @@ export class ImageDownloader {
       const batchResults = await Promise.all(batchPromises);
       results.push(...batchResults);
       
-      console.log(`📊 Downloaded ${results.length}/${urls.length} images so far`);
+      console.log(`📊 Processed ${results.length}/${urls.length} images so far`);
     }
 
-    console.log(`🎉 Parallel download completed: ${results.filter(r => r.success).length}/${urls.length} successful`);
+    console.log(`🎉 Parallel processing completed: ${results.filter(r => r.success).length}/${urls.length} successful`);
     return results;
   }
 
   /**
    * Clean up images that are no longer referenced in current products
+   * Note: For Cloudinary, this would require listing all resources and deleting unused ones
+   * This is a simplified version that just logs the cleanup intention
    */
   static async cleanupUnusedImages(currentProductImages: string[]): Promise<void> {
     try {
-      if (!fs.existsSync(this.IMAGES_DIR)) {
-        return;
-      }
-
-      const files = fs.readdirSync(this.IMAGES_DIR);
-      const currentFilenames = new Set(currentProductImages.map(path => path.split('/').pop()));
-
-      let deletedCount = 0;
-      for (const file of files) {
-        if (!currentFilenames.has(file)) {
-          const filePath = path.join(this.IMAGES_DIR, file);
-          fs.unlinkSync(filePath);
-          deletedCount++;
-          console.log(`🗑️ Cleaned up unused image: ${file}`);
-        }
-      }
-
-      if (deletedCount > 0) {
-        console.log(`🗑️ Cleaned up ${deletedCount} unused product images`);
-      } else {
-        console.log(`✅ No unused product images to clean up`);
-      }
+      console.log(`ℹ️ Cloudinary cleanup: Would clean up unused images from ${currentProductImages.length} current product images`);
+      console.log(`ℹ️ Note: Cloudinary cleanup requires listing all resources and is not implemented for performance reasons`);
     } catch (error) {
       console.error('Error during product image cleanup:', error);
     }
@@ -264,28 +262,13 @@ export class ImageDownloader {
 
   /**
    * Clean up ALL images in the products directory (for fresh sync)
+   * Note: For Cloudinary, this would require deleting all resources in the products folder
+   * This is a simplified version that just logs the cleanup intention
    */
   static async cleanupAllImages(): Promise<void> {
     try {
-      if (!fs.existsSync(this.IMAGES_DIR)) {
-        return;
-      }
-
-      const files = fs.readdirSync(this.IMAGES_DIR);
-      let deletedCount = 0;
-      
-      for (const file of files) {
-        const filePath = path.join(this.IMAGES_DIR, file);
-        fs.unlinkSync(filePath);
-        deletedCount++;
-        console.log(`🗑️ Deleted image: ${file}`);
-      }
-
-      if (deletedCount > 0) {
-        console.log(`🗑️ Cleaned up ALL ${deletedCount} product images for fresh sync`);
-      } else {
-        console.log(`✅ No product images to clean up`);
-      }
+      console.log(`ℹ️ Cloudinary cleanup: Would clean up ALL product images for fresh sync`);
+      console.log(`ℹ️ Note: Cloudinary cleanup requires listing all resources and is not implemented for performance reasons`);
     } catch (error) {
       console.error('Error during complete image cleanup:', error);
     }

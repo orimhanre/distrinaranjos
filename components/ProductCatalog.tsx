@@ -83,10 +83,16 @@ export default function ProductCatalog({ selectedPriceType, onAddToCart, environ
       const cleanUrl = url.trim();
       if (cleanUrl === '') return false;
       
-      // Only accept local paths starting with /
+      // Accept local paths starting with /
       if (cleanUrl.startsWith('/')) return true;
       
-      // Reject external URLs
+      // Accept Cloudinary URLs (for regular environment)
+      if (cleanUrl.includes('res.cloudinary.com')) return true;
+      
+      // Accept Airtable URLs (for both virtual and regular environments)
+      if (cleanUrl.includes('dl.airtable.com')) return true;
+      
+      // Reject other external URLs
       if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
         return false;
       }
@@ -444,10 +450,16 @@ function ProductCard({
       const cleanUrl = url.trim();
       if (cleanUrl === '') return false;
       
-      // Only accept local paths starting with /
+      // Accept local paths starting with /
       if (cleanUrl.startsWith('/')) return true;
       
-      // Reject external URLs
+      // Accept Cloudinary URLs (for regular environment)
+      if (cleanUrl.includes('res.cloudinary.com')) return true;
+      
+      // Accept Airtable URLs (for both virtual and regular environments)
+      if (cleanUrl.includes('dl.airtable.com')) return true;
+      
+      // Reject other external URLs
       if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
         return false;
       }
@@ -488,10 +500,16 @@ function ProductCard({
       const cleanUrl = url.trim();
       if (cleanUrl === '') return false;
       
-      // Only accept local paths starting with /
+      // Accept local paths starting with /
       if (cleanUrl.startsWith('/')) return true;
       
-      // Reject external URLs
+      // Accept Cloudinary URLs (for regular environment)
+      if (cleanUrl.includes('res.cloudinary.com')) return true;
+      
+      // Accept Airtable URLs (for both virtual and regular environments)
+      if (cleanUrl.includes('dl.airtable.com')) return true;
+      
+      // Reject other external URLs
       if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
         return false;
       }
