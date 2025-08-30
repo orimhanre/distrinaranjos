@@ -448,14 +448,24 @@ export default function VirtualDatabasePage() {
 
   const loadProducts = async () => {
     try {
+      console.log('🔍 Frontend: Starting to load virtual products...');
       // Add cache buster to ensure fresh data
       const cacheBuster = Date.now();
       const response = await fetch(`/api/database/virtual-products?cb=${cacheBuster}`);
+      console.log('🔍 Frontend: API response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Frontend: API response data:', {
+          success: data.success,
+          count: data.count,
+          productsLength: data.products?.length || 0
+        });
 
-        
         setProducts(data.products || []);
+        console.log('🔍 Frontend: Products state updated with', data.products?.length || 0, 'products');
+      } else {
+        console.error('🔍 Frontend: API response not ok:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error loading virtual products:', error);
@@ -787,6 +797,11 @@ export default function VirtualDatabasePage() {
   }, [pathname]);
 
   // Filter and sort products
+  console.log('🔍 Frontend: Processing products for display:', {
+    totalProducts: products.length,
+    searchQuery: searchQuery || 'none'
+  });
+  
   const filteredAndSortedProducts = products
     .filter(product => {
       if (!searchQuery) return true;
@@ -807,6 +822,8 @@ export default function VirtualDatabasePage() {
       const nameB = ((b as any).name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
+    
+  console.log('🔍 Frontend: Filtered and sorted products:', filteredAndSortedProducts.length);
 
   const displayedProducts = filteredAndSortedProducts.slice(0, displayCount);
   const displayColumns = Array.isArray(columns) ? columns.filter(col => selectedColumns.includes(col.key)) : [];
