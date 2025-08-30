@@ -126,25 +126,40 @@ export async function POST(request: NextRequest) {
         });
         
         if (product) {
-          // PERMANENT FIX: For virtual products, ALWAYS use original Airtable URLs
-          // This completely avoids Railway filesystem issues
+          // Handle image URLs differently for virtual vs regular environments
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            // Extract URLs from Airtable attachment objects (need full URLs for images to load)
-            const processedImageURLs = product.imageURL.map((img: any) => {
-              if (typeof img === 'string') return img;
-              if (img && typeof img === 'object' && img.url) {
-                // Use the full Airtable URL (needed for images to load)
-                return img.url;
+            if (context === 'virtual') {
+              // For virtual products, ALWAYS use original Airtable URLs
+              // This completely avoids Railway filesystem issues
+              const processedImageURLs = product.imageURL.map((img: any) => {
+                if (typeof img === 'string') return img;
+                if (img && typeof img === 'object' && img.url) {
+                  // Use the full Airtable URL (needed for images to load)
+                  return img.url;
+                }
+                if (img && typeof img === 'object' && img.filename) {
+                  // If we only have filename, we can't load the image
+                  return null;
+                }
+                return String(img);
+              }).filter((url: string | null) => url && url.length > 0);
+              
+              // Always use the processed URLs (original Airtable URLs)
+              product.imageURL = processedImageURLs;
+            } else {
+              // For regular products, download images locally and use local paths
+              console.log(`📥 Regular environment: Downloading images locally for product ${product.id}`);
+              
+              const { ImageDownloader } = await import('@/lib/imageDownloader');
+              const localImageURLs = await ImageDownloader.downloadImages(product.imageURL, product.id);
+              
+              if (localImageURLs && localImageURLs.length > 0) {
+                product.imageURL = localImageURLs;
+                console.log(`✅ Downloaded ${localImageURLs.length} images for product ${product.id}`);
+              } else {
+                console.warn(`⚠️ No images downloaded for product ${product.id}, keeping original URLs`);
               }
-              if (img && typeof img === 'object' && img.filename) {
-                // If we only have filename, we can't load the image
-                return null;
-              }
-              return String(img);
-            }).filter((url: string | null) => url && url.length > 0);
-            
-            // Always use the processed URLs (original Airtable URLs)
-            product.imageURL = processedImageURLs;
+            }
           }
           
           // Save to SQLite database
