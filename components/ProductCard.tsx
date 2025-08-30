@@ -253,7 +253,7 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
           {(() => {
             // Check if this is a promotional product
             const categories = Array.isArray(product.category) ? product.category : [product.category];
-            const hasPromotionalPricing = categories.some((cat: string) => 
+            const hasPromotionalPricing = categories.some((cat: string | undefined) => 
               cat && cat.toLowerCase().includes('promocion')
             );
 
