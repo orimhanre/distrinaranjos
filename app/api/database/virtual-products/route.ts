@@ -19,18 +19,40 @@ export async function GET(request: NextRequest) {
     let products: Product[] = [];
     
     if (search) {
+      // Use search functionality
       products = virtualProductDB.searchProducts(search);
-    } else if (category) {
-      products = virtualProductDB.getProductsByCategory(category);
-    } else if (marca) {
-      products = virtualProductDB.getProductsByMarca(marca);
-    } else if (tipo) {
-      products = virtualProductDB.getProductsByTipo(tipo);
+    } else if (category || marca || tipo) {
+      // For category, marca, or tipo filtering, get all products and filter in memory
+      const allProducts = virtualProductDB.getAllProducts();
+      
+      if (category) {
+        products = allProducts.filter(product => 
+          product.category && 
+          (Array.isArray(product.category) 
+            ? product.category.some(cat => cat.toLowerCase().includes(category.toLowerCase()))
+            : product.category.toLowerCase().includes(category.toLowerCase())
+          )
+        );
+      } else if (marca) {
+        products = allProducts.filter(product => 
+          product.brand && 
+          product.brand.toLowerCase().includes(marca.toLowerCase())
+        );
+      } else if (tipo) {
+        products = allProducts.filter(product => 
+          product.type && 
+          (Array.isArray(product.type) 
+            ? product.type.some(t => t.toLowerCase().includes(tipo.toLowerCase()))
+            : product.type.toLowerCase().includes(tipo.toLowerCase())
+          )
+        );
+      }
     } else {
+      // Get all products
       products = virtualProductDB.getAllProducts();
     }
 
-    console.log(`✅ Found ${products.length} virtual products in SQLite database`);
+    console.log(`✅ Found ${products.length} virtual products`);
     
     return NextResponse.json({
       success: true,
@@ -39,10 +61,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching virtual products from SQLite:', error);
+    console.error('❌ Error fetching virtual products:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to fetch virtual products from SQLite database',
+      error: 'Failed to fetch virtual products',
       products: [],
       count: 0
     }, { status: 500 });
