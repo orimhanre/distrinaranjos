@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
     AirtableService.switchEnvironmentFromContext(context);
     
     // Initialize database for the specified context
+    console.log(`🔍 Creating ProductDatabase instance for context: ${context}`);
     productDB = new ProductDatabase(context);
+    console.log(`✅ ProductDatabase instance created for ${context} environment`);
     
     // Test Airtable connection
     const connectionTest = await AirtableService.testConnection();

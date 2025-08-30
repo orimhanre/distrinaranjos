@@ -69,8 +69,9 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
         }
         
         virtualDb = new Database(dbPath);
+        console.log(`✅ Virtual database file created/opened: ${dbPath}`);
         createTables(virtualDb, 'virtual');
-        // console.log('✅ Virtual database initialized successfully');
+        console.log('✅ Virtual database tables created successfully');
       } catch (error) {
         console.error('❌ Error initializing virtual database:', error);
         virtualDb = null;
@@ -111,6 +112,7 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
 }
 
 function createTables(db: Database.Database, environment: 'regular' | 'virtual' = 'regular') {
+  console.log(`🔍 Creating tables for ${environment} environment...`);
   // Create different schemas for regular and virtual environments
   let createProductsTable: string;
   
@@ -216,12 +218,14 @@ function createTables(db: Database.Database, environment: 'regular' | 'virtual' 
   `;
   
   db.exec(createProductsTable);
+  console.log(`✅ Products table created for ${environment} environment`);
   db.exec(createWebPhotosTable);
   db.exec(createCategorySubcategoryRelationsTable);
   db.exec(createFcmTokensTable);
   db.exec(createBadgeCountsTable);
   
-      // Database tables created successfully
+  console.log(`✅ All tables created for ${environment} environment`);
+  // Database tables created successfully
 }
 
 // Product CRUD operations

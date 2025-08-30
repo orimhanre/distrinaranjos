@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
         }
         
         // Reset only the products database singleton
+        console.log('🔄 Resetting virtual database singleton...');
         resetDatabaseSingletons('virtual');
+        console.log('✅ Virtual database singleton reset completed');
         
         return NextResponse.json({
           success: true,
