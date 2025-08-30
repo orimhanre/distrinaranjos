@@ -116,6 +116,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Declare localWebPhotos variable at top level
+    let localWebPhotos: Record<string, string> = {};
+    
     // For virtual environment, use original Airtable URLs (no local download)
     if (context === 'virtual') {
       console.log('🖼️ Virtual environment: Using original Airtable URLs for WebPhotos');
@@ -144,7 +147,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Download WebPhotos locally (regular environment only)
       console.log('📥 Downloading WebPhotos locally...');
-      const localWebPhotos = await WebPhotoDownloader.downloadWebPhotos(webPhotosFromAirtable);
+      localWebPhotos = await WebPhotoDownloader.downloadWebPhotos(webPhotosFromAirtable);
       
       // Clear existing WebPhotos from database before adding new ones
       console.log('🗑️ Clearing existing WebPhotos from database...');
@@ -170,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean up old files (only for regular environment)
-    if (context !== 'virtual') {
+    if (context !== 'virtual' && Object.keys(localWebPhotos).length > 0) {
       await WebPhotoDownloader.cleanupOldFiles(localWebPhotos);
     }
 
