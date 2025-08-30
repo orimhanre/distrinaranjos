@@ -153,26 +153,76 @@ export async function POST(request: NextRequest) {
               // Always use the processed URLs (original Airtable URLs)
               product.imageURL = processedImageURLs;
                         } else {
-              // For regular products, use original filenames (same as virtual)
-              // This avoids long Airtable URLs and uses clean filenames
-              console.log(`📥 Regular environment: Using original filenames for product ${product.id}`);
+              // For regular products, download images and use local paths
+              console.log(`📥 Regular environment: Downloading images for product ${product.id}`);
+              
+              // Download images before converting URLs
+              const fs = require('fs');
+              const path = require('path');
+              const https = require('https');
+              
+              // Create images directory if it doesn't exist
+              const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+              if (!fs.existsSync(imagesDir)) {
+                fs.mkdirSync(imagesDir, { recursive: true });
+              }
               
               const processedImageURLs = product.imageURL.map((img: any) => {
                 if (typeof img === 'string') return img;
-                if (img && typeof img === 'object' && img.filename) {
-                  // Use the original filename (clean and short)
-                  return `/images/products/${img.filename}`;
-                }
+                
+                let airtableUrl = '';
+                let filename = '';
+                
                 if (img && typeof img === 'object' && img.url) {
-                  // Extract filename from Airtable URL if no filename available
+                  // Get the Airtable URL
+                  airtableUrl = img.url;
+                  // Extract filename from Airtable URL
                   const urlParts = img.url.split('/');
-                  const lastPart = urlParts[urlParts.length - 1];
-                  return `/images/products/${lastPart}`;
+                  filename = urlParts[urlParts.length - 1] || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else if (img && typeof img === 'object' && img.filename) {
+                  // Use the original filename
+                  filename = img.filename;
+                  // Try to construct Airtable URL from filename
+                  airtableUrl = `https://dl.airtable.com/.attachments/${filename}`;
+                } else {
+                  return String(img);
                 }
-                return String(img);
+                
+                if (!filename) return String(img);
+                
+                // Download the image
+                const filePath = path.join(imagesDir, filename);
+                
+                // Skip if file already exists
+                if (!fs.existsSync(filePath) && airtableUrl) {
+                  console.log(`⬇️ Downloading image: ${filename}`);
+                  
+                  const file = fs.createWriteStream(filePath);
+                  https.get(airtableUrl, (response: any) => {
+                    if (response.statusCode === 200) {
+                      response.pipe(file);
+                      file.on('finish', () => {
+                        file.close();
+                        console.log(`✅ Downloaded: ${filename}`);
+                      });
+                    } else {
+                      console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
+                      fs.unlink(filePath, () => {}); // Delete partial file
+                    }
+                  }).on('error', (err: any) => {
+                    console.log(`❌ Error downloading ${filename}: ${err.message}`);
+                    fs.unlink(filePath, () => {}); // Delete partial file
+                  });
+                } else if (fs.existsSync(filePath)) {
+                  console.log(`⏭️ Image already exists: ${filename}`);
+                }
+                
+                // Return local path
+                return `/images/products/${filename}`;
               }).filter((url: string | null) => url && url.length > 0);
               
-              // Use the processed URLs (original filenames)
+              // Use the processed URLs (local paths)
               product.imageURL = processedImageURLs;
             }
           }
