@@ -67,7 +67,7 @@ export class EnvironmentLoader {
   }
 
   static getVirtualEnvironment(): EnvironmentConfig {
-    // console.log('🔍 Loading VIRTUAL environment...');
+    console.log('🔍 Loading VIRTUAL environment...');
     const envPath = path.resolve(process.cwd(), '.env.virtual.local');
     const envVars = this.loadEnvFile(envPath);
 
@@ -78,11 +78,15 @@ export class EnvironmentLoader {
       accountEmail: envVars.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || ''
     };
     
-    // console.log('🔍 Virtual environment config:', {
-    //   apiKeyExists: !!config.apiKey,
-    //   baseId: config.baseId,
-    //   accountEmail: config.accountEmail
-    // });
+    console.log('🔍 Virtual environment config:', {
+      apiKeyExists: !!config.apiKey,
+      baseId: config.baseId,
+      accountEmail: config.accountEmail,
+      apiKeyFromFile: !!envVars.VIRTUAL_AIRTABLE_API_KEY,
+      apiKeyFromEnv: !!process.env.VIRTUAL_AIRTABLE_API_KEY,
+      baseIdFromFile: !!envVars.VIRTUAL_AIRTABLE_BASE_ID,
+      baseIdFromEnv: !!process.env.VIRTUAL_AIRTABLE_BASE_ID
+    });
     
     return config;
   }

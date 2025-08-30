@@ -106,6 +106,8 @@ export class AirtableService {
     console.log('  - API Key exists:', !!config.apiKey);
     console.log('  - Base ID:', config.baseId);
     console.log('  - Account Email:', config.accountEmail);
+    console.log('  - API Key (first 10 chars):', config.apiKey ? config.apiKey.substring(0, 10) + '...' : 'NOT SET');
+    console.log('  - Base ID (first 10 chars):', config.baseId ? config.baseId.substring(0, 10) + '...' : 'NOT SET');
     
     return {
       apiKey: config.apiKey,
