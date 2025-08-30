@@ -18,9 +18,7 @@ export async function POST(request: NextRequest) {
       }, { status: 503 });
     }
 
-    // Only import Firebase when we actually need it
-    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
-    const { virtualDb } = await import('../../../../lib/firebase');
+    // Firebase will be imported in the helper functions when needed
   try {
     const body = await request.text();
     const signature = request.headers.get('x-wompi-signature');
@@ -73,6 +71,10 @@ async function handleTransactionUpdate(data: any) {
     }
 
     try {
+      // Only import Firebase when we actually need it
+      const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+      const { virtualDb } = await import('../../../../lib/firebase');
+      
       if (!virtualDb) {
         console.error('Virtual Firebase not configured');
         return;
@@ -110,8 +112,16 @@ async function handleTransactionUpdate(data: any) {
   } else if (transaction.status === 'DECLINED') {
     // Handle failed payment
     const orderId = transaction.reference;
-    if (orderId && virtualDb) {
+    if (orderId) {
       try {
+        // Only import Firebase when we actually need it
+        const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+        const { virtualDb } = await import('../../../../lib/firebase');
+        
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
         // Look for order in virtualOrders collection
         const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
         const q = query(virtualOrdersRef, where('invoiceNumber', '==', orderId));
@@ -139,8 +149,16 @@ async function handleTransactionCreated(data: any) {
   const transaction = data.data;
   const orderId = transaction.reference;
   
-  if (orderId && virtualDb) {
+  if (orderId) {
     try {
+      // Only import Firebase when we actually need it
+      const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+      const { virtualDb } = await import('../../../../lib/firebase');
+      
+      if (!virtualDb) {
+        console.error('Virtual Firebase not configured');
+        return;
+      }
       // Look for order in virtualOrders collection
       const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
       const q = query(virtualOrdersRef, where('invoiceNumber', '==', orderId));
