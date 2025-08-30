@@ -126,16 +126,22 @@ export async function POST(request: NextRequest) {
         });
         
         if (product) {
-          // For virtual products, keep original Airtable URLs instead of downloading locally
-          // This avoids Railway filesystem issues and is more reliable
+          // PERMANENT FIX: For virtual products, ALWAYS use original Airtable URLs
+          // This completely avoids Railway filesystem issues
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            console.log(`📸 Virtual product ${product.name} has ${product.imageURL.length} images from Airtable:`, {
-              imageURLs: product.imageURL
-            });
+            console.log(`📸 Virtual product ${product.name} has ${product.imageURL.length} images from Airtable`);
             
-            // Keep the original Airtable URLs - don't download locally
-            // This ensures images are always accessible and avoids Railway filesystem issues
-            console.log(`📸 Keeping original Airtable URLs for virtual product ${product.name}`);
+            // Extract URLs from Airtable attachment objects if needed
+            const processedImageURLs = product.imageURL.map((img: any) => {
+              if (typeof img === 'string') return img;
+              if (img && typeof img === 'object' && img.url) return img.url;
+              if (img && typeof img === 'object' && img.filename) return img.filename;
+              return String(img);
+            }).filter((url: string) => url && url.length > 0);
+            
+            // Always use the processed URLs (original Airtable URLs)
+            product.imageURL = processedImageURLs;
+            console.log(`📸 Processed ${processedImageURLs.length} image URLs for ${product.name}`);
           } else {
             console.log(`📸 No images for virtual product ${product.name}`);
           }
