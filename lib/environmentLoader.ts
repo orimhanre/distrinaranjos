@@ -51,16 +51,21 @@ export class EnvironmentLoader {
     const envPath = path.resolve(process.cwd(), '.env.local');
     const envVars = this.loadEnvFile(envPath);
 
+    // Fallback to process.env if file doesn't exist (production environment)
     const config = {
-      apiKey: envVars.NEXT_PUBLIC_AIRTABLE_API_KEY || '',
-      baseId: envVars.NEXT_PUBLIC_AIRTABLE_BASE_ID || '',
-      accountEmail: envVars.AIRTABLE_ACCOUNT_EMAIL || ''
+      apiKey: envVars.NEXT_PUBLIC_AIRTABLE_API_KEY || process.env.NEXT_PUBLIC_AIRTABLE_API_KEY || '',
+      baseId: envVars.NEXT_PUBLIC_AIRTABLE_BASE_ID || process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '',
+      accountEmail: envVars.AIRTABLE_ACCOUNT_EMAIL || process.env.AIRTABLE_ACCOUNT_EMAIL || ''
     };
     
     // console.log('🔍 Regular environment config:', {
     //   apiKeyExists: !!config.apiKey,
     //   baseId: config.baseId,
-    //   accountEmail: config.accountEmail
+    //   accountEmail: config.accountEmail,
+    //   apiKeyFromFile: !!envVars.NEXT_PUBLIC_AIRTABLE_API_KEY,
+    //   apiKeyFromEnv: !!process.env.NEXT_PUBLIC_AIRTABLE_API_KEY,
+    //   baseIdFromFile: !!envVars.NEXT_PUBLIC_AIRTABLE_BASE_ID,
+    //   baseIdFromEnv: !!process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID
     // });
     
     return config;
