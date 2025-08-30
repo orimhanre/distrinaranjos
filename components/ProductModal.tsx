@@ -4,6 +4,7 @@ import { useCart } from '@/lib/cartContext';
 import FlyingAnimation from './FlyingAnimation';
 import { createPortal } from 'react-dom';
 import { Product } from '../types';
+import { getAllRailwayImages } from '../lib/railwayImageHelper';
 
 
 
@@ -145,33 +146,8 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
 
   // Get all product images
   const getProductImages = () => {
-    // Use imageURL property
-    const imageData = product.imageURL;
-    
-    // Handle case where imageData is undefined or empty
-    if (!imageData || imageData.length === 0) {
-      return ['/placeholder-product.svg'];
-    }
-    
-    let images: string[] = imageData;
-    
-    // Handle different URL formats
-    images = images.map(imagePath => {
-      if (imagePath && typeof imagePath === 'string') {
-        // If it's already a full URL (starts with http/https), use it as is
-        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-          return imagePath;
-        }
-        
-        // If it's a relative path that doesn't start with /images/products/, add the prefix
-        if (!imagePath.startsWith('/images/products/')) {
-          return `/images/products/${imagePath}`;
-        }
-      }
-      return imagePath;
-    });
-    
-    return images.length > 0 ? images : ['/placeholder-product.svg'];
+    // Use Railway image helper to handle URLs properly
+    return getAllRailwayImages(product.imageURL);
   };
 
   // Get current image

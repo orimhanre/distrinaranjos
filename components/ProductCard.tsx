@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import ProductModal from './ProductModal';
 import { Product } from '../types';
+import { getRailwayImageUrl } from '../lib/railwayImageHelper';
 
 // Cart functionality is now handled by @/lib/cartContext
 
@@ -23,39 +24,12 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
 
   // Get the first image if it's an array, or use the single image
   const getProductImage = () => {
-    let imagePath = '';
-    
     // Handle both 'imageURL' and 'currentDisplayImage' properties
     // currentDisplayImage is used by AutoRotatingProductCard for rotating display
     const imageData = (product as any).currentDisplayImage || product.imageURL;
     
-    // Handle case where imageData is a string representation of an empty array "[]"
-    if (imageData === '[]' || imageData === 'null' || imageData === null) {
-      return '/placeholder-product.svg';
-    }
-    
-    if (Array.isArray(imageData)) {
-      imagePath = String(imageData[0] || '');
-    } else {
-      imagePath = String(imageData || '');
-    }
-    
-    // Handle different URL formats
-    if (imagePath && typeof imagePath === 'string') {
-      // If it's already a full URL (starts with http/https), use it as is
-      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-      }
-      
-      // If it's a relative path that doesn't start with /images/products/, add the prefix
-      if (!imagePath.startsWith('/images/products/')) {
-        imagePath = `/images/products/${imagePath}`;
-      }
-    }
-    
-    const finalPath = imagePath || '/placeholder-product.svg';
-    
-    return finalPath;
+    // Use Railway image helper to handle URLs properly
+    return getRailwayImageUrl(imageData);
   };
 
   // Clean product name by removing ID part (e.g., "1000 - LONCHERA" becomes "LONCHERA")
