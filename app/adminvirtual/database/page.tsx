@@ -549,6 +549,11 @@ export default function VirtualDatabasePage() {
          img.toLowerCase().includes('.webp') || img.toLowerCase().includes('.svg'))
       );
       
+      console.log('🔍 renderFilePreview: Valid images found:', validImages);
+      if (validImages.length > 0) {
+        console.log('🔍 renderFilePreview: First image URL:', validImages[0]);
+      }
+      
       if (validImages.length === 0) {
         return (
           <div className="text-center text-xs text-gray-500">
