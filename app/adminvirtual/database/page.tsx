@@ -581,12 +581,11 @@ export default function VirtualDatabasePage() {
                   alt={`Preview ${index + 1}`}
                   className="w-full h-full object-cover rounded"
                   onError={(e) => {
+                    console.log(`❌ Image failed to load: ${imageUrl}, using placeholder`);
                     const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `<div class="text-xs text-gray-400">❌</div>`;
-                    }
+                    // Use a placeholder image instead of showing error
+                    target.src = '/placeholder-product.svg';
+                    target.onerror = null; // Prevent infinite loop
                   }}
                 />
               </div>
