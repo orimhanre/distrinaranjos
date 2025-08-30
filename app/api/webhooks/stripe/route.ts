@@ -162,8 +162,19 @@ export async function POST(request: NextRequest) {
 
     async function sendPaymentConfirmationEmail(orderData: any) {
       try {
-        const emailService = new EmailService();
-        await emailService.sendPaymentConfirmationEmail(orderData);
+        const estimatedDelivery = new Date();
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
+
+        await EmailService.sendPaymentConfirmationEmail({
+          customerName: orderData.client?.name || orderData.client?.companyName || 'Cliente',
+          customerEmail: orderData.client?.email || orderData.email || '',
+          orderId: orderData.id || '',
+          orderNumber: orderData.invoiceNumber || orderData.id || '',
+          totalAmount: orderData.totalAmount || 0,
+          paymentMethod: 'Tarjeta de Crédito/Débito',
+          orderDate: new Date().toLocaleDateString('es-CO'),
+          estimatedDelivery: estimatedDelivery.toLocaleDateString('es-CO')
+        });
         console.log('Payment confirmation email sent successfully');
       } catch (error) {
         console.error('Error sending payment confirmation email:', error);
