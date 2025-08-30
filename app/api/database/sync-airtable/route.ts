@@ -140,60 +140,98 @@ export async function POST(request: NextRequest) {
         
         for (const product of allProducts) {
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            for (const imageUrl of product.imageURL) {
+            for (let i = 0; i < product.imageURL.length; i++) {
+              const imageUrl = product.imageURL[i];
               try {
                 if (typeof imageUrl === 'string' && imageUrl.includes('dl.airtable.com')) {
-                  // Extract filename from Airtable URL
-                  const urlParts = imageUrl.split('/');
-                  const filename = urlParts[urlParts.length - 1]?.split('?')[0];
+                  // Create meaningful filename based on product info
+                  const productName = (product as any).name || 'unknown';
+                  const productId = (product as any).id || 'unknown';
+                  const brand = (product as any).brand || 'unknown';
                   
-                  if (filename) {
-                    // Download image using the ImageDownloader
-                    const fs = require('fs');
-                    const path = require('path');
-                    const https = require('https');
+                  // Clean product name for filename
+                  const cleanProductName = productName
+                    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+                    .replace(/\s+/g, '_') // Replace spaces with underscores
+                    .toLowerCase()
+                    .substring(0, 30); // Limit length
+                  
+                  const cleanBrand = brand
+                    .replace(/[^a-zA-Z0-9\s]/g, '')
+                    .replace(/\s+/g, '_')
+                    .toLowerCase()
+                    .substring(0, 20);
+                  
+                  // Get file extension from original URL
+                  const urlParts = imageUrl.split('/');
+                  const originalFilename = urlParts[urlParts.length - 1]?.split('?')[0];
+                  const extension = originalFilename ? originalFilename.split('.').pop() || 'jpg' : 'jpg';
+                  
+                  // Create meaningful filename
+                  const filename = `${cleanBrand}_${cleanProductName}_${productId}_${i + 1}.${extension}`;
+                  
+                  // Download image using the ImageDownloader
+                  const fs = require('fs');
+                  const path = require('path');
+                  const https = require('https');
+                  
+                  // Create images directory if it doesn't exist
+                  const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+                  if (!fs.existsSync(imagesDir)) {
+                    fs.mkdirSync(imagesDir, { recursive: true });
+                  }
+                  
+                  const filePath = path.join(imagesDir, filename);
+                  
+                  // Skip if file already exists
+                  if (!fs.existsSync(filePath)) {
+                    console.log(`⬇️ Downloading image: ${filename} (from ${originalFilename})`);
                     
-                    // Create images directory if it doesn't exist
-                    const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
-                    if (!fs.existsSync(imagesDir)) {
-                      fs.mkdirSync(imagesDir, { recursive: true });
-                    }
-                    
-                    const filePath = path.join(imagesDir, filename);
-                    
-                    // Skip if file already exists
-                    if (!fs.existsSync(filePath)) {
-                      console.log(`⬇️ Downloading image: ${filename}`);
-                      
-                      const file = fs.createWriteStream(filePath);
-                      https.get(imageUrl, (response: any) => {
-                        if (response.statusCode === 200) {
-                          response.pipe(file);
-                          file.on('finish', () => {
-                            file.close();
-                            downloadedImages++;
-                            console.log(`✅ Downloaded: ${filename}`);
-                          });
-                        } else {
-                          console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
-                          imageErrors++;
-                          fs.unlink(filePath, () => {});
-                        }
-                      }).on('error', (err: any) => {
-                        console.log(`❌ Error downloading ${filename}: ${err.message}`);
+                    const file = fs.createWriteStream(filePath);
+                    https.get(imageUrl, (response: any) => {
+                      if (response.statusCode === 200) {
+                        response.pipe(file);
+                        file.on('finish', () => {
+                          file.close();
+                          downloadedImages++;
+                          console.log(`✅ Downloaded: ${filename}`);
+                          
+                          // Update the product's imageURL to use the new local path
+                          const localImageUrl = `/images/products/${filename}`;
+                          product.imageURL[i] = localImageUrl;
+                        });
+                      } else {
+                        console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
                         imageErrors++;
                         fs.unlink(filePath, () => {});
-                      });
-                    } else {
-                      console.log(`⏭️ Image already exists: ${filename}`);
-                      downloadedImages++;
-                    }
+                      }
+                    }).on('error', (err: any) => {
+                      console.log(`❌ Error downloading ${filename}: ${err.message}`);
+                      imageErrors++;
+                      fs.unlink(filePath, () => {});
+                    });
+                  } else {
+                    console.log(`⏭️ Image already exists: ${filename}`);
+                    downloadedImages++;
+                    
+                    // Update the product's imageURL to use the existing local path
+                    const localImageUrl = `/images/products/${filename}`;
+                    product.imageURL[i] = localImageUrl;
                   }
                 }
               } catch (error) {
                 console.log(`❌ Error processing image for product ${product.id}: ${error}`);
                 imageErrors++;
               }
+            }
+            
+            // Update the product in the database with the new image URLs
+            try {
+              if (product.imageURL && Array.isArray(product.imageURL)) {
+                productDB.updateProduct(product.id, { imageURL: product.imageURL });
+              }
+            } catch (updateError) {
+              console.log(`❌ Failed to update product ${product.id} with new image URLs: ${updateError}`);
             }
           }
         }
