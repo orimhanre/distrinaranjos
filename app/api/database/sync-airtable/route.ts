@@ -144,31 +144,17 @@ export async function POST(request: NextRequest) {
               const imageUrl = product.imageURL[i];
               try {
                 if (typeof imageUrl === 'string' && imageUrl.includes('dl.airtable.com')) {
-                  // Create meaningful filename based on product info
-                  const productName = (product as any).name || 'unknown';
-                  const productId = (product as any).id || 'unknown';
-                  const brand = (product as any).brand || 'unknown';
-                  
-                  // Clean product name for filename
-                  const cleanProductName = productName
-                    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
-                    .replace(/\s+/g, '_') // Replace spaces with underscores
-                    .toLowerCase()
-                    .substring(0, 30); // Limit length
-                  
-                  const cleanBrand = brand
-                    .replace(/[^a-zA-Z0-9\s]/g, '')
-                    .replace(/\s+/g, '_')
-                    .toLowerCase()
-                    .substring(0, 20);
-                  
-                  // Get file extension from original URL
+                  // Extract the original Airtable filename (like AJ-900, Massnu-1000, etc.)
                   const urlParts = imageUrl.split('/');
                   const originalFilename = urlParts[urlParts.length - 1]?.split('?')[0];
-                  const extension = originalFilename ? originalFilename.split('.').pop() || 'jpg' : 'jpg';
                   
-                  // Create meaningful filename
-                  const filename = `${cleanBrand}_${cleanProductName}_${productId}_${i + 1}.${extension}`;
+                  if (!originalFilename) {
+                    console.log(`❌ No filename found in URL: ${imageUrl}`);
+                    continue;
+                  }
+                  
+                  // Use the original Airtable filename directly
+                  const filename = originalFilename;
                   
                   // Download image using the ImageDownloader
                   const fs = require('fs');
@@ -185,7 +171,7 @@ export async function POST(request: NextRequest) {
                   
                   // Skip if file already exists
                   if (!fs.existsSync(filePath)) {
-                    console.log(`⬇️ Downloading image: ${filename} (from ${originalFilename})`);
+                    console.log(`⬇️ Downloading image: ${filename} (original Airtable filename)`);
                     
                     const file = fs.createWriteStream(filePath);
                     https.get(imageUrl, (response: any) => {
@@ -227,8 +213,9 @@ export async function POST(request: NextRequest) {
             
             // Update the product in the database with the new image URLs
             try {
-              if (product.imageURL && Array.isArray(product.imageURL)) {
-                productDB.updateProduct(product.id, { imageURL: product.imageURL });
+              const imageURL = product.imageURL;
+              if (imageURL && Array.isArray(imageURL)) {
+                productDB.updateProduct(product.id, { imageURL: imageURL });
               }
             } catch (updateError) {
               console.log(`❌ Failed to update product ${product.id} with new image URLs: ${updateError}`);
