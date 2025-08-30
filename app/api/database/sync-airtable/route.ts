@@ -17,8 +17,18 @@ export async function POST(request: NextRequest) {
     
     // Initialize database for the specified context
     console.log(`🔍 Creating ProductDatabase instance for context: ${context}`);
+    
+    // Force a fresh database connection to ensure we're using the correct database
+    const { resetDatabaseSingletons } = await import('../../../../lib/database');
+    resetDatabaseSingletons(context);
+    console.log(`🔄 Reset database singletons for ${context} environment`);
+    
     productDB = new ProductDatabase(context);
     console.log(`✅ ProductDatabase instance created for ${context} environment`);
+    
+    // Verify database is working correctly
+    const initialProductCount = productDB.getAllProducts().length;
+    console.log(`🔍 Initial product count in database: ${initialProductCount}`);
     
     // Test Airtable connection
     const connectionTest = await AirtableService.testConnection();
@@ -125,9 +135,17 @@ export async function POST(request: NextRequest) {
     console.log(`✅ SQLite sync completed: ${syncedCount} products synced, ${errors.length} errors`);
     
     // Verify the products were actually saved by checking the database
+    console.log(`🔍 Verifying products were saved to database...`);
     const finalProductCount = productDB.getAllProducts().length;
     console.log(`🔍 Final product count in database: ${finalProductCount}`);
     console.log(`🔍 Expected count: ${syncedCount}, Actual count: ${finalProductCount}`);
+    
+    // Additional verification - check if database file exists and has data
+    const fs = require('fs');
+    const dbPath = context === 'virtual' ? 'data/virtual-products.db' : 'data/products.db';
+    const dbExists = fs.existsSync(dbPath);
+    const dbSize = dbExists ? fs.statSync(dbPath).size : 0;
+    console.log(`🔍 Database file exists: ${dbExists}, Size: ${dbSize} bytes`);
     
     if (finalProductCount === 0 && syncedCount > 0) {
       console.error(`❌ CRITICAL ISSUE: ${syncedCount} products were supposedly synced but database is empty!`);
