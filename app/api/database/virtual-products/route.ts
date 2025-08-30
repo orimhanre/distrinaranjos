@@ -8,109 +8,172 @@ const virtualProductDB = new ProductDatabase('virtual');
 // GET /api/database/virtual-products - Get all virtual products or search
 export async function GET(request: NextRequest) {
   try {
-    // // console.log('🔄 Fetching virtual products for iOS app...');
+    // Check if we should use Firebase for virtual environment
+    const useFirebase = process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_API_KEY && 
+                       process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID;
     
-    // Initialize database for virtual environment
-    const productDB = new ProductDatabase('virtual');
-    
-    // Get all products from the database
-    const products = productDB.getAllProducts();
-    
-
-    
-    // Helper function to ensure arrays for category/subcategory
-    const ensureArray = (value: any): string[] => {
-      if (!value) return [];
-      if (Array.isArray(value)) return value.filter(item => item && item.trim());
-      if (typeof value === 'string') {
-        // Try to parse JSON string
-        try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed)) return parsed.filter(item => item && item.trim());
-        } catch {
-          // If parsing fails, treat as single value
-          return value.trim() ? [value.trim()] : [];
-        }
+    if (useFirebase) {
+      // Use Firebase for virtual products
+      console.log('🔄 Fetching virtual products from Firebase...');
+      
+      const { virtualDb } = await import('@/lib/firebase');
+      const { collection, getDocs } = await import('firebase/firestore');
+      
+      if (!virtualDb) {
+        throw new Error('Virtual Firebase database not initialized');
       }
-      return [];
-    };
-
-            // Convert relative image paths to full URLs for iOS app
-        const convertToFullUrls = (urls: any): string[] => {
-          if (!urls) return [];
-          const urlArray = Array.isArray(urls) ? urls : [urls];
-          return urlArray.map(url => {
-            if (typeof url === 'string' && url.startsWith('/')) {
-              // Convert relative path to full URL
-              // Use Mac's IP address for iOS compatibility instead of localhost
-              const baseUrl = process.env.NEXTAUTH_URL || `http://192.168.1.29:${process.env.PORT || 3001}`;
-              return `${baseUrl}${url}`;
-            }
-            return url;
-          }).filter(url => url && typeof url === 'string');
+      
+      const productsRef = collection(virtualDb, 'products');
+      const snapshot = await getDocs(productsRef);
+      
+      const products = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          detail: data.detail || '',
+          price: data.price || 0,
+          category: Array.isArray(data.category) ? data.category : (data.category ? [data.category] : []),
+          subcategory: Array.isArray(data.subcategory) ? data.subcategory : (data.subcategory ? [data.subcategory] : []),
+          subCategory: data.subCategory || data.subcategory || '',
+          brand: data.brand || '',
+          type: Array.isArray(data.type) ? data.type : (data.type ? [data.type] : []),
+          imageURL: Array.isArray(data.imageURL) ? data.imageURL : (data.imageURL ? [data.imageURL] : []),
+          quantity: data.stock || data.quantity || 0,
+          stock: data.stock || 0,
+          isActive: data.isActive !== false,
+          webPhotoUrl: data.webPhotoUrl || '',
+          airtableId: data.airtableId || data.id || '',
+          SKU: data.SKU || '',
+          commercialName: data.commercialName || '',
+          materials: data.materials || '',
+          dimensions: data.dimensions || '',
+          capacity: data.capacity || '',
+          colors: Array.isArray(data.colors) ? data.colors : (data.colors ? [data.colors] : []),
+          distriPrice: data.distriPrice || 0,
+          lastUpdated: data.lastUpdated || data.updatedAt || '',
+          isProductStarred: data.isProductStarred || false
         };
-
-    // Transform products for API response
-    const transformedProducts = products.map(product => {
-      const fullImageUrls = convertToFullUrls(product.imageURL);
+      });
       
-
+      console.log(`✅ Loaded ${products.length} products from Firebase`);
       
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        detail: product.detail, // Add the detail field
-        price: product.price || 0,
-        category: ensureArray(product.category),
-        subcategory: ensureArray(product.subCategory),
-        subCategory: product.subCategory, // Add the subCategory field directly
-        brand: product.brand,
-        type: ensureArray(product.type),
-        imageURL: fullImageUrls,
-        quantity: product.stock || 0, // Use stock field directly for virtual products
-        stock: product.stock || 0, // Also include stock field for admin interface
-        isActive: product.isActive !== false, // Default to true if not specified
-        webPhotoUrl: product.webPhotoUrl,
-        airtableId: product.airtableId || product.id,
-        // Add any other fields that might be needed
-        SKU: product.SKU,
-        commercialName: product.commercialName,
-        materials: product.materials,
-        dimensions: product.dimensions,
-        capacity: product.capacity,
-        colors: Array.isArray(product.colors) ? product.colors : (product.colors ? [product.colors] : []),
-        distriPrice: product.distriPrice,
-        lastUpdated: product.lastUpdated,
-        isProductStarred: product.isProductStarred || product.isProductStarredAirtable || false
+      // Add cache control headers to prevent caching
+      const response = NextResponse.json({
+        success: true,
+        products: products,
+        count: products.length,
+        timestamp: Date.now(),
+        source: 'firebase'
+      });
+      
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('X-Cache-Buster', Date.now().toString());
+      
+      return response;
+    } else {
+      // Fallback to local SQLite database
+      console.log('🔄 Fetching virtual products from local SQLite database...');
+      
+      // Initialize database for virtual environment
+      const productDB = new ProductDatabase('virtual');
+      
+      // Get all products from the database
+      const products = productDB.getAllProducts();
+      
+      // Helper function to ensure arrays for category/subcategory
+      const ensureArray = (value: any): string[] => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(item => item && item.trim());
+        if (typeof value === 'string') {
+          // Try to parse JSON string
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed.filter(item => item && item.trim());
+          } catch {
+            // If parsing fails, treat as single value
+            return value.trim() ? [value.trim()] : [];
+          }
+        }
+        return [];
       };
-    });
-    
-    // Add cache control headers to prevent caching
-    const response = NextResponse.json({
-      success: true,
-      products: transformedProducts,
-      count: transformedProducts.length,
-      timestamp: Date.now() // Add timestamp to force cache refresh
-    });
-    
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    response.headers.set('X-Cache-Buster', Date.now().toString());
-    response.headers.set('Last-Modified', new Date().toUTCString());
-    
-    return response;
-    
+
+      // Convert relative image paths to full URLs for iOS app
+      const convertToFullUrls = (urls: any): string[] => {
+        if (!urls) return [];
+        const urlArray = Array.isArray(urls) ? urls : [urls];
+        return urlArray.map(url => {
+          if (typeof url === 'string' && url.startsWith('/')) {
+            // Convert relative path to full URL
+            // Use Mac's IP address for iOS compatibility instead of localhost
+            const baseUrl = process.env.NEXTAUTH_URL || `http://192.168.1.29:${process.env.PORT || 3001}`;
+            return `${baseUrl}${url}`;
+          }
+          return url;
+        }).filter(url => url && typeof url === 'string');
+      };
+
+      // Transform products for API response
+      const transformedProducts = products.map(product => {
+        const fullImageUrls = convertToFullUrls(product.imageURL);
+        
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          detail: product.detail, // Add the detail field
+          price: product.price || 0,
+          category: ensureArray(product.category),
+          subcategory: ensureArray(product.subCategory),
+          subCategory: product.subCategory, // Add the subCategory field directly
+          brand: product.brand,
+          type: ensureArray(product.type),
+          imageURL: fullImageUrls,
+          quantity: product.stock || 0, // Use stock field directly for virtual products
+          stock: product.stock || 0, // Also include stock field for admin interface
+          isActive: product.isActive !== false, // Default to true if not specified
+          webPhotoUrl: product.webPhotoUrl,
+          airtableId: product.airtableId || product.id,
+          // Add any other fields that might be needed
+          SKU: product.SKU,
+          commercialName: product.commercialName,
+          materials: product.materials,
+          dimensions: product.dimensions,
+          capacity: product.capacity,
+          colors: Array.isArray(product.colors) ? product.colors : (product.colors ? [product.colors] : []),
+          distriPrice: product.distriPrice,
+          lastUpdated: product.lastUpdated,
+          isProductStarred: product.isProductStarred || product.isProductStarredAirtable || false
+        };
+      });
+      
+      // Add cache control headers to prevent caching
+      const response = NextResponse.json({
+        success: true,
+        products: transformedProducts,
+        count: transformedProducts.length,
+        timestamp: Date.now(), // Add timestamp to force cache refresh
+        source: 'sqlite'
+      });
+      
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('X-Cache-Buster', Date.now().toString());
+      
+      return response;
+    }
   } catch (error) {
-    console.error('❌ Error fetching virtual products:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch products',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    console.error('❌ Error loading virtual products:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      products: [],
+      count: 0
+    }, { status: 500 });
   }
 }
 
