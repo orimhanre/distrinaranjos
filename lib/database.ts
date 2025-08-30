@@ -37,7 +37,6 @@ export function resetDatabaseSingletons(environment: 'regular' | 'virtual' = 're
 
 // Function to get a fresh database connection (forces reinitialization)
 export function getFreshDatabase(environment: 'regular' | 'virtual' = 'regular') {
-  resetDatabaseSingletons(environment);
   return initDatabase(environment);
 }
 
