@@ -2,9 +2,10 @@
 
 import React from 'react';
 import ProductCard from './ProductCard';
+import { Product } from '../types';
 
 interface AutoRotatingProductCardProps {
-  product: any;
+  product: Product;
   className?: string;
   [key: string]: any;
 }
@@ -26,8 +27,8 @@ export default function AutoRotatingProductCard({ product, className, ...props }
     }
     
     // Add fallback image if available
-    if (product.image && !images.includes(product.image)) {
-      images.push(product.image);
+    if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0 && !images.includes(product.imageURL[0])) {
+      images.push(product.imageURL[0]);
     }
     
     // Filter out empty/null images and remove duplicates
@@ -43,7 +44,7 @@ export default function AutoRotatingProductCard({ product, className, ...props }
     // Debug logging
     console.log('AutoRotatingProductCard - Product:', product.name);
     console.log('AutoRotatingProductCard - Original imageURL:', product.imageURL);
-    console.log('AutoRotatingProductCard - Original image:', product.image);
+    console.log('AutoRotatingProductCard - Original image:', product.imageURL);
     console.log('AutoRotatingProductCard - Filtered images:', filteredImages);
     console.log('AutoRotatingProductCard - Images count:', filteredImages.length);
     
@@ -78,7 +79,7 @@ export default function AutoRotatingProductCard({ product, className, ...props }
   // Create a modified product object with the current rotating image
   // Preserve the original imageURL array for ProductModal while showing current image for ProductCard
   const modifiedProduct = React.useMemo(() => {
-    const currentImage = productImages[currentImageIndex] || product.imageURL || product.image;
+    const currentImage = productImages[currentImageIndex] || (product.imageURL && Array.isArray(product.imageURL) ? product.imageURL[0] : '');
     console.log('AutoRotatingProductCard - Current image index:', currentImageIndex);
     console.log('AutoRotatingProductCard - Current image:', currentImage);
     

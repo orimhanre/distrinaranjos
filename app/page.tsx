@@ -30,8 +30,8 @@ function AutoRotatingProductCard({ product, className, ...props }: any) {
     }
     
     // Add fallback image if available
-    if (product.image && !images.includes(product.image)) {
-      images.push(product.image);
+    if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0 && !images.includes(product.imageURL[0])) {
+      images.push(product.imageURL[0]);
     }
     
     // Filter out empty/null images and remove duplicates

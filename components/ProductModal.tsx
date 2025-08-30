@@ -236,7 +236,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
         originalPrice: originalPrice,
         isPromotional: hasPromotionalPricing || false,
         quantity,
-        image: Array.isArray((product as any).imageURL || product.image) ? ((product as any).imageURL || product.image)[0] : (product as any).imageURL || product.image || '',
+                    image: Array.isArray(product.imageURL) ? product.imageURL[0] : product.imageURL || '',
         category: product.category || '', // Preserve all categories (array or string)
         subCategory: (product as any).subCategory || '',
         brand: product.brand || '',
