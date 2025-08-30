@@ -374,8 +374,11 @@ export class ProductDatabase {
   // Get all products
   getAllProducts(): Product[] {
     try {
+      console.log(`🔍 getAllProducts - Environment: ${this.environment}`);
       // Use a simple, fast query instead of dynamic column building
       const rows = this.db.prepare("SELECT * FROM products ORDER BY name").all();
+      console.log(`🔍 Raw database rows: ${rows.length}`);
+      
       const products = rows.map((row: any) => {
         try {
           return this.rowToProduct(row);
@@ -384,6 +387,8 @@ export class ProductDatabase {
           return null;
         }
       }).filter(product => product !== null);
+      
+      console.log(`🔍 Converted products: ${products.length}`);
       return products;
     } catch (error) {
       console.error('Error getting all products:', error);

@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Fetching virtual products from SQLite database...');
     
     let products: Product[] = [];
+    console.log('🔍 API: About to call virtualProductDB.getAllProducts()');
     
     if (search) {
       // Use search functionality
@@ -49,7 +50,9 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // Get all products
+      console.log('🔍 API: Calling getAllProducts()...');
       products = virtualProductDB.getAllProducts();
+      console.log('🔍 API: getAllProducts() returned', products.length, 'products');
     }
 
     console.log(`✅ Found ${products.length} virtual products`);
