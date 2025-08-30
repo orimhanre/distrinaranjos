@@ -10,17 +10,20 @@ export const dynamic = 'force-dynamic';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Vercel deployment)
+    // First, try to load from process.env (for Railway deployment)
     const envVars: Record<string, string> = {
       VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
       VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
       VIRTUAL_RESEND_API_KEY: process.env.VIRTUAL_RESEND_API_KEY || '',
+      VIRTUAL_FIREBASE_PROJECT_ID: process.env.VIRTUAL_FIREBASE_PROJECT_ID || '',
+      VIRTUAL_FIREBASE_CLIENT_EMAIL: process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL || '',
+      VIRTUAL_FIREBASE_PRIVATE_KEY: process.env.VIRTUAL_FIREBASE_PRIVATE_KEY || '',
     };
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_CLOUDINARY_CLOUD_NAME && envVars.VIRTUAL_CLOUDINARY_API_KEY && envVars.VIRTUAL_CLOUDINARY_API_SECRET) {
-      console.log('✅ Using environment variables from process.env (Vercel deployment)');
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
       return envVars;
     }
 
@@ -57,6 +60,9 @@ function loadVirtualEnv() {
       VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
       VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
       VIRTUAL_RESEND_API_KEY: process.env.VIRTUAL_RESEND_API_KEY || '',
+      VIRTUAL_FIREBASE_PROJECT_ID: process.env.VIRTUAL_FIREBASE_PROJECT_ID || '',
+      VIRTUAL_FIREBASE_CLIENT_EMAIL: process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL || '',
+      VIRTUAL_FIREBASE_PRIVATE_KEY: process.env.VIRTUAL_FIREBASE_PRIVATE_KEY || '',
     };
   }
 }
