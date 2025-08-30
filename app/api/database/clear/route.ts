@@ -15,9 +15,9 @@ export async function POST(request: NextRequest) {
     
     console.log(`🗑️ Clearing ${context} database`);
     
-    // Check if we're in a production environment
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT;
-    console.log(`🗑️ Environment: ${process.env.NODE_ENV}, isProduction: ${isProduction}`);
+    // Check if we're in a production environment (Railway)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+    console.log(`🗑️ Environment: ${process.env.NODE_ENV}, Railway: ${process.env.RAILWAY_ENVIRONMENT}, isProduction: ${isProduction}`);
     
     // In production, just return success immediately to prevent any 500 errors
     if (isProduction) {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     console.error('Error clearing database:', error);
     
     // Always return success in production to prevent 500 errors
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT;
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
     
     if (isProduction) {
       console.log('🗑️ Production environment: Returning success despite error');
