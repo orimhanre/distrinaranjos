@@ -184,7 +184,9 @@ export async function POST(request: NextRequest) {
                           
                           // Update the product's imageURL to use the new local path
                           const localImageUrl = `/images/products/${filename}`;
-                          product.imageURL[i] = localImageUrl;
+                          if (product.imageURL && Array.isArray(product.imageURL)) {
+                            product.imageURL[i] = localImageUrl;
+                          }
                         });
                       } else {
                         console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
@@ -202,7 +204,9 @@ export async function POST(request: NextRequest) {
                     
                     // Update the product's imageURL to use the existing local path
                     const localImageUrl = `/images/products/${filename}`;
-                    product.imageURL[i] = localImageUrl;
+                    if (product.imageURL && Array.isArray(product.imageURL)) {
+                      product.imageURL[i] = localImageUrl;
+                    }
                   }
                 }
               } catch (error) {
