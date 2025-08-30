@@ -541,17 +541,36 @@ export default function VirtualDatabasePage() {
         );
       }
       
-      // Filter valid image URLs
-      const validImages = processedFileUrl.filter((img: any) => 
-        img && typeof img === 'string' && 
-        (img.toLowerCase().includes('.jpg') || img.toLowerCase().includes('.jpeg') || 
-         img.toLowerCase().includes('.png') || img.toLowerCase().includes('.gif') || 
-         img.toLowerCase().includes('.webp') || img.toLowerCase().includes('.svg'))
-      );
+      // Filter valid image URLs - accept both file extensions and Airtable URLs
+      const validImages = processedFileUrl.filter((img: any) => {
+        if (!img || typeof img !== 'string') return false;
+        
+        const lowerImg = img.toLowerCase();
+        
+        // Check for file extensions
+        const hasImageExtension = lowerImg.includes('.jpg') || lowerImg.includes('.jpeg') || 
+                                 lowerImg.includes('.png') || lowerImg.includes('.gif') || 
+                                 lowerImg.includes('.webp') || lowerImg.includes('.svg');
+        
+        // Check for Airtable URLs
+        const isAirtableUrl = lowerImg.includes('dl.airtable.com') || lowerImg.includes('airtable.com');
+        
+        // Check for other common image hosting URLs
+        const isImageHostingUrl = lowerImg.includes('cloudinary.com') || lowerImg.includes('imgur.com') || 
+                                 lowerImg.includes('images.unsplash.com') || lowerImg.includes('picsum.photos');
+        
+        return hasImageExtension || isAirtableUrl || isImageHostingUrl;
+      });
       
       console.log('🔍 renderFilePreview: Valid images found:', validImages);
       if (validImages.length > 0) {
         console.log('🔍 renderFilePreview: First image URL:', validImages[0]);
+      } else {
+        console.log('🔍 renderFilePreview: No valid images found. Array content:', processedFileUrl);
+        if (Array.isArray(processedFileUrl) && processedFileUrl.length > 0) {
+          console.log('🔍 renderFilePreview: First array item:', processedFileUrl[0]);
+          console.log('🔍 renderFilePreview: First array item type:', typeof processedFileUrl[0]);
+        }
       }
       
       if (validImages.length === 0) {
