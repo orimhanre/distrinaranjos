@@ -145,8 +145,8 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
 
   // Get all product images
   const getProductImages = () => {
-    // Always use imageURL, fallback to image if imageURL doesn't exist
-    const imageData = (product as any).imageURL || product.image;
+    // Use imageURL property
+    const imageData = product.imageURL;
     
     // Handle case where imageData is a string representation of an empty array "[]"
     if (imageData === '[]' || imageData === 'null' || imageData === null) {
