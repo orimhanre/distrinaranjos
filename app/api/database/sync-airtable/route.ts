@@ -124,21 +124,40 @@ export async function POST(request: NextRequest) {
         if (product) {
           // Download images if needed
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+            console.log(`📸 Processing images for product ${product.name}:`, {
+              originalImageURLs: product.imageURL,
+              count: product.imageURL.length
+            });
+            
             try {
               const downloadedImages = await ImageDownloader.downloadImages(product.imageURL);
+              console.log(`📸 Download results for ${product.name}:`, {
+                totalDownloaded: downloadedImages.length,
+                successful: downloadedImages.filter(img => img.success).length,
+                failed: downloadedImages.filter(img => !img.success).length
+              });
+              
               if (downloadedImages && downloadedImages.length > 0) {
                 // Extract local paths from downloaded images
                 const localPaths = downloadedImages
                   .filter(img => img.success)
                   .map(img => img.localPath);
                 if (localPaths.length > 0) {
+                  console.log(`📸 Updated imageURL for ${product.name}:`, {
+                    from: product.imageURL,
+                    to: localPaths
+                  });
                   product.imageURL = localPaths;
+                } else {
+                  console.log(`⚠️ No successful image downloads for ${product.name}`);
                 }
               }
             } catch (imageError) {
               console.warn(`⚠️ Failed to download images for product ${product.name}:`, imageError);
               // Continue with original URLs if download fails
             }
+          } else {
+            console.log(`📸 No images to process for product ${product.name}`);
           }
           
           // Save to SQLite database

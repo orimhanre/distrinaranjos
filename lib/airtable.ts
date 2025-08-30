@@ -171,32 +171,50 @@ export class AirtableService {
     
     // Helper function to extract URLs from Airtable attachment objects
     const extractImageUrls = (value: any): string[] => {
-      if (!value) return [];
+      console.log(`🔍 extractImageUrls called with:`, {
+        value,
+        type: typeof value,
+        isArray: Array.isArray(value),
+        length: Array.isArray(value) ? value.length : 'N/A'
+      });
+      
+      if (!value) {
+        console.log(`🔍 extractImageUrls: No value, returning empty array`);
+        return [];
+      }
       
       if (typeof value === 'string') {
+        console.log(`🔍 extractImageUrls: String value, returning:`, [value]);
         return [value];
       }
       
       if (Array.isArray(value)) {
+        console.log(`🔍 extractImageUrls: Array value, processing ${value.length} items`);
         // Handle array of attachments - extract URLs from all attachments
-        return value
+        const urls = value
           .map(attachment => {
             if (typeof attachment === 'object' && attachment.url) {
+              console.log(`🔍 extractImageUrls: Found attachment object with URL:`, attachment.url);
               return attachment.url;
             }
             if (typeof attachment === 'string') {
+              console.log(`🔍 extractImageUrls: Found string attachment:`, attachment);
               return attachment;
             }
+            console.log(`🔍 extractImageUrls: Skipping invalid attachment:`, attachment);
             return null;
           })
           .filter(url => url !== null);
+        console.log(`🔍 extractImageUrls: Extracted ${urls.length} URLs from array:`, urls);
+        return urls;
       }
       
       if (typeof value === 'object' && value.url) {
-        // Handle single attachment object
+        console.log(`🔍 extractImageUrls: Single attachment object with URL:`, value.url);
         return [value.url];
       }
       
+      console.log(`🔍 extractImageUrls: No valid URLs found, returning empty array`);
       return [];
     };
     
