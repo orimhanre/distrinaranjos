@@ -154,6 +154,9 @@ export class AirtableService {
   static convertAirtableToProduct(airtableRecord: AirtableProduct) {
     const fields = airtableRecord.fields;
     
+    console.log(`🔍 Converting Airtable record ${airtableRecord.id} in ${this.currentEnvironment} environment`);
+    console.log(`🔍 Available fields:`, Object.keys(fields));
+    
 
     
     // Helper function to extract URLs from Airtable attachment objects
@@ -338,7 +341,16 @@ export class AirtableService {
       console.log(`⚠️ No brand field found, setting default: ${product.brand}`);
     }
 
-          return product;
+    console.log(`✅ Final converted product:`, {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      price: product.price,
+      stock: product.stock,
+      imageURL: product.imageURL
+    });
+
+    return product;
   }
 
   /**

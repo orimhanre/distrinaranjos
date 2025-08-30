@@ -12,6 +12,9 @@ export async function POST(request: NextRequest) {
     
     console.log(`🔄 Starting Airtable sync for ${context} environment...`);
     
+    // Switch Airtable environment based on context
+    AirtableService.switchEnvironmentFromContext(context);
+    
     // Initialize database for the specified context
     productDB = new ProductDatabase(context);
     
@@ -48,9 +51,25 @@ export async function POST(request: NextRequest) {
     let syncedCount = 0;
     const errors: string[] = [];
     
+    console.log(`🔍 Current Airtable environment: ${AirtableService.getCurrentEnvironment()}`);
+    console.log(`🔍 Total records to process: ${airtableRecords.length}`);
+    
     for (const airtableRecord of airtableRecords) {
       try {
+        console.log(`🔍 Processing record ${airtableRecord.id}:`, {
+          fields: Object.keys(airtableRecord.fields),
+          hasName: !!airtableRecord.fields.Name,
+          hasBrand: !!airtableRecord.fields.Brand
+        });
+        
         const product = AirtableService.convertAirtableToProduct(airtableRecord);
+        console.log(`🔍 Converted product:`, {
+          id: product?.id,
+          name: product?.name,
+          brand: product?.brand,
+          hasImageURL: !!product?.imageURL
+        });
+        
         if (product) {
           // Download images if needed
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
