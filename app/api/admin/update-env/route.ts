@@ -149,9 +149,9 @@ export async function GET(request: NextRequest) {
     // Prepare response with defaults for missing values
     const responseVars = {
       // Resend
-      RESEND_API_KEY: envVars.RESEND_API_KEY || '',
-      RESEND_FROM_EMAIL: envVars.RESEND_FROM_EMAIL || '',
-      RESEND_TO_EMAIL: envVars.RESEND_TO_EMAIL || 'orhanimre@gmail.com',
+      RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+      RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || '',
+      RESEND_TO_EMAIL: process.env.RESEND_TO_EMAIL || 'orhanimre@gmail.com',
       
       // Cloudinary
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
