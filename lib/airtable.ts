@@ -158,6 +158,14 @@ export class AirtableService {
     
     console.log(`🔍 Converting Airtable record ${airtableRecord.id} in ${this.currentEnvironment} environment`);
     console.log(`🔍 Available fields:`, Object.keys(fields));
+    console.log(`🔍 Stock/Quantity fields check:`, {
+      hasStock: !!fields.Stock,
+      hasQuantity: !!fields.Quantity,
+      hasstock: !!fields.stock,
+      hasquantity: !!fields.quantity,
+      stockValue: fields.Stock || fields.stock,
+      quantityValue: fields.Quantity || fields.quantity
+    });
     
 
     
@@ -323,10 +331,26 @@ export class AirtableService {
       }
     } else {
       // Virtual environment - use 'stock' field only
-      if (product.stock === undefined || product.stock === null) {
+      // Check for various possible field names from Airtable
+      const possibleStockFields = ['Stock', 'stock', 'Quantity', 'quantity', 'Qty', 'qty'];
+      let stockValue = null;
+      
+      for (const fieldName of possibleStockFields) {
+        if (fields[fieldName] !== undefined && fields[fieldName] !== null) {
+          stockValue = fields[fieldName];
+          console.log(`📦 Virtual environment: found stock value in field '${fieldName}': ${stockValue}`);
+          break;
+        }
+      }
+      
+      if (stockValue !== null) {
+        product.stock = parseInt(String(stockValue)) || 0;
+        console.log(`📦 Virtual environment: set stock to ${product.stock}`);
+      } else {
         product.stock = 0;
         console.log(`⚠️ Virtual environment: no stock field found, setting default: stock: 0`);
       }
+      
       // Remove quantity field for virtual environment - use stock only
       delete product.quantity;
       console.log(`📦 Virtual environment: using stock field only: ${product.stock}`);
