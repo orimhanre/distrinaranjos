@@ -824,44 +824,7 @@ export default function VirtualDatabasePage() {
     }
   };
 
-  // Test functions for debugging
-  const testDatabase = async () => {
-    try {
-      console.log('🧪 Testing virtual database...');
-      const response = await fetch('/api/test-virtual-db');
-      const result = await response.json();
-      console.log('🧪 Test result:', result);
-      alert(`Test completed! Check console for details.\nDB exists: ${result.results?.dbExists}\nProducts: ${result.results?.productCount}`);
-    } catch (error) {
-      console.error('❌ Test failed:', error);
-      alert('Test failed! Check console for details.');
-    }
-  };
 
-  const testFrontend = async () => {
-    try {
-      console.log('🔧 Testing frontend functionality...');
-      
-      // Test GET request
-      const getResponse = await fetch('/api/test-virtual-frontend');
-      const getResult = await getResponse.json();
-      console.log('🔧 GET test result:', getResult);
-      
-      // Test POST request
-      const postResponse = await fetch('/api/test-virtual-frontend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ test: 'data', timestamp: Date.now() })
-      });
-      const postResult = await postResponse.json();
-      console.log('🔧 POST test result:', postResult);
-      
-      alert(`Frontend test completed!\nGET: ${getResult.success ? '✅' : '❌'}\nPOST: ${postResult.success ? '✅' : '❌'}\nCheck console for details.`);
-    } catch (error) {
-      console.error('❌ Frontend test failed:', error);
-      alert('Frontend test failed! Check console for details.');
-    }
-  };
 
   // Initialize data
   useEffect(() => {
@@ -1107,33 +1070,7 @@ export default function VirtualDatabasePage() {
               </span>
             </button>
 
-            {/* Test Database Button */}
-            <button
-              onClick={testDatabase}
-              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-yellow-600 hover:bg-yellow-700 text-white transition-colors duration-200"
-            >
-              <span>🧪</span>
-              <span className="hidden sm:inline">
-                Test Database
-              </span>
-              <span className="sm:hidden">
-                Test DB
-              </span>
-            </button>
 
-            {/* Test Frontend Button */}
-            <button
-              onClick={testFrontend}
-              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-orange-600 hover:bg-orange-700 text-white transition-colors duration-200"
-            >
-              <span>🔧</span>
-              <span className="hidden sm:inline">
-                Test Frontend
-              </span>
-              <span className="sm:hidden">
-                Test FE
-              </span>
-            </button>
 
           </div>
 

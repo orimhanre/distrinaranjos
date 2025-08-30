@@ -30,8 +30,8 @@ function AutoRotatingProductCard({ product, className, ...props }: any) {
     }
     
     // Add fallback image if available
-    if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0 && !images.includes(product.imageURL[0])) {
-      images.push(product.imageURL[0]);
+    if (product.image && !images.includes(product.image)) {
+      images.push(product.image);
     }
     
     // Filter out empty/null images and remove duplicates
@@ -455,9 +455,7 @@ export default function HomePage() {
         setLoading(false);
       } catch (err: any) {
         console.warn('Failed to fetch data:', err);
-        // Don't set error state, just log and continue with empty data
-        setProducts([]);
-        setWebPhotos({});
+        setError("Error al cargar datos.");
         setLoading(false);
       }
     };
