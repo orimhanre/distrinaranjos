@@ -261,7 +261,12 @@ export class ProductDatabase {
     let fields = [
       ...essentialFields.filter(field => allFields.includes(field) || product[field as keyof typeof product] !== undefined),
       ...allFields.filter(field => !essentialFieldsSet.has(field) && product[field as keyof typeof product] !== '')
-    ].slice(0, 9); // Limit to 9 fields to leave room for price
+    ].slice(0, 15); // Limit to 15 fields to leave room for price
+    
+    console.log(`🔍 Database createProduct - Environment: ${this.environment}`);
+    console.log(`🔍 All product fields:`, Object.keys(product));
+    console.log(`🔍 Essential fields:`, essentialFields);
+    console.log(`🔍 Selected fields for database:`, fields);
     
     // ALWAYS include price field for virtual environment
     if (this.environment === 'virtual' && !fields.includes('price')) {

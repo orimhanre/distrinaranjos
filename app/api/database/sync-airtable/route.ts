@@ -91,8 +91,22 @@ export async function POST(request: NextRequest) {
           }
           
           // Save to SQLite database
-          productDB.createProduct(product);
-          syncedCount++;
+          console.log(`💾 Saving product to database:`, {
+            id: product.id,
+            name: product.name,
+            brand: product.brand,
+            price: product.price,
+            stock: product.stock
+          });
+          
+          try {
+            productDB.createProduct(product);
+            syncedCount++;
+            console.log(`✅ Successfully saved product ${product.id}`);
+          } catch (saveError) {
+            console.error(`❌ Failed to save product ${product.id}:`, saveError);
+            errors.push(`Failed to save product ${product.id}: ${saveError}`);
+          }
         }
       } catch (error) {
         const errorMsg = `Failed to sync product ${airtableRecord.id}: ${error}`;
