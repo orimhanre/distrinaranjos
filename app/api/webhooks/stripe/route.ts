@@ -52,6 +52,123 @@ export async function POST(request: NextRequest) {
     // Only import Firebase when we actually need it
     const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
     const { virtualDb } = await import('../../../../lib/firebase');
+
+    // Helper functions with Firebase functions passed as parameters
+    async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+      const orderId = paymentIntent.metadata.orderId;
+      if (!orderId) {
+        console.error('No order ID found in payment intent metadata');
+        return;
+      }
+
+      try {
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
+        
+        const orderRef = doc(virtualDb, 'virtualOrders', orderId);
+        const orderSnap = await getDoc(orderRef);
+        
+        if (orderSnap.exists()) {
+          const orderData = orderSnap.data();
+          
+          // Update order with payment confirmation
+          await updateDoc(orderRef, {
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            paymentConfirmedAt: new Date(),
+            stripePaymentIntentId: paymentIntent.id,
+            stripePaymentData: paymentIntent
+          });
+
+          console.log(`Order ${orderId} payment confirmed via Stripe`);
+          
+          // Send confirmation email to customer
+          await sendPaymentConfirmationEmail(orderData);
+        } else {
+          console.error(`Order ${orderId} not found`);
+        }
+      } catch (error) {
+        console.error('Error updating order payment status:', error);
+      }
+    }
+
+    async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+      const orderId = paymentIntent.metadata.orderId;
+      if (!orderId) {
+        console.error('No order ID found in payment intent metadata');
+        return;
+      }
+
+      try {
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
+        
+        const orderRef = doc(virtualDb, 'virtualOrders', orderId);
+        await updateDoc(orderRef, {
+          paymentStatus: 'failed',
+          stripePaymentIntentId: paymentIntent.id,
+          stripePaymentData: paymentIntent
+        });
+        
+        console.log(`Order ${orderId} payment failed via Stripe`);
+      } catch (error) {
+        console.error('Error updating failed payment status:', error);
+      }
+    }
+
+    async function handleChargeSucceeded(charge: Stripe.Charge) {
+      const orderId = charge.metadata.orderId;
+      if (!orderId) {
+        console.error('No order ID found in charge metadata');
+        return;
+      }
+
+      try {
+        if (!virtualDb) {
+          console.error('Virtual Firebase not configured');
+          return;
+        }
+        
+        const orderRef = doc(virtualDb, 'virtualOrders', orderId);
+        const orderSnap = await getDoc(orderRef);
+        
+        if (orderSnap.exists()) {
+          const orderData = orderSnap.data();
+          
+          // Update order with payment confirmation
+          await updateDoc(orderRef, {
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            paymentConfirmedAt: new Date(),
+            stripeChargeId: charge.id,
+            stripeChargeData: charge
+          });
+
+          console.log(`Order ${orderId} payment confirmed via Stripe charge`);
+          
+          // Send confirmation email to customer
+          await sendPaymentConfirmationEmail(orderData);
+        } else {
+          console.error(`Order ${orderId} not found`);
+        }
+      } catch (error) {
+        console.error('Error updating order payment status:', error);
+      }
+    }
+
+    async function sendPaymentConfirmationEmail(orderData: any) {
+      try {
+        const emailService = new EmailService();
+        await emailService.sendPaymentConfirmationEmail(orderData);
+        console.log('Payment confirmation email sent successfully');
+      } catch (error) {
+        console.error('Error sending payment confirmation email:', error);
+      }
+    }
   try {
     if (!stripe) {
       console.error('Stripe not initialized');
@@ -101,131 +218,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Stripe webhook error:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
-  }
-}
-
-async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  const orderId = paymentIntent.metadata.orderId;
-  if (!orderId) {
-    console.error('No order ID found in payment intent metadata');
-    return;
-  }
-
-    try {
-      if (!virtualDb) {
-        console.error('Virtual Firebase not configured');
-        return;
-      }
-      
-      const orderRef = doc(virtualDb, 'virtualOrders', orderId);
-      const orderSnap = await getDoc(orderRef);
-      
-      if (orderSnap.exists()) {
-        const orderData = orderSnap.data();
-        
-        // Update order with payment confirmation
-        await updateDoc(orderRef, {
-          paymentStatus: 'paid',
-          status: 'confirmed',
-          paymentConfirmedAt: new Date(),
-          stripePaymentIntentId: paymentIntent.id,
-          stripePaymentData: paymentIntent
-        });
-
-        console.log(`Order ${orderId} payment confirmed via Stripe`);
-        
-        // Send confirmation email to customer
-        await sendPaymentConfirmationEmail(orderData);
-      } else {
-        console.error(`Order ${orderId} not found`);
-      }
-    } catch (error) {
-      console.error('Error updating order payment status:', error);
-    }
-}
-
-async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const orderId = paymentIntent.metadata.orderId;
-  if (!orderId) {
-    console.error('No order ID found in payment intent metadata');
-    return;
-  }
-
-  try {
-    if (!virtualDb) {
-      console.error('Virtual Firebase not configured');
-      return;
-    }
-    
-    const orderRef = doc(virtualDb, 'virtualOrders', orderId);
-    await updateDoc(orderRef, {
-      paymentStatus: 'failed',
-      stripePaymentIntentId: paymentIntent.id,
-      stripePaymentData: paymentIntent
-    });
-    
-    console.log(`Order ${orderId} payment failed via Stripe`);
-  } catch (error) {
-    console.error('Error updating failed payment status:', error);
-  }
-}
-
-async function handleChargeSucceeded(charge: Stripe.Charge) {
-  const orderId = charge.metadata.orderId;
-  if (!orderId) {
-    console.error('No order ID found in charge metadata');
-    return;
-  }
-
-  try {
-    if (!virtualDb) {
-      console.error('Virtual Firebase not configured');
-      return;
-    }
-    
-    const orderRef = doc(virtualDb, 'virtualOrders', orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (orderSnap.exists()) {
-      const orderData = orderSnap.data();
-      
-      // Update order with payment confirmation
-      await updateDoc(orderRef, {
-        paymentStatus: 'paid',
-        status: 'confirmed',
-        paymentConfirmedAt: new Date(),
-        stripeChargeId: charge.id,
-        stripeChargeData: charge
-      });
-
-      console.log(`Order ${orderId} payment confirmed via Stripe charge`);
-      
-      // Send confirmation email to customer
-      await sendPaymentConfirmationEmail(orderData);
-    } else {
-      console.error(`Order ${orderId} not found`);
-    }
-  } catch (error) {
-    console.error('Error updating order payment status:', error);
-  }
-}
-
-async function sendPaymentConfirmationEmail(orderData: any) {
-  try {
-    const estimatedDelivery = new Date();
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
-
-    await EmailService.sendPaymentConfirmationEmail({
-      customerName: orderData.client?.name || orderData.client?.companyName || 'Cliente',
-      customerEmail: orderData.client?.email || orderData.email || '',
-      orderId: orderData.id || '',
-      orderNumber: orderData.invoiceNumber || orderData.id || '',
-      totalAmount: orderData.totalAmount || 0,
-      paymentMethod: 'Tarjeta de Crédito/Débito',
-      orderDate: new Date().toLocaleDateString('es-CO'),
-      estimatedDelivery: estimatedDelivery.toLocaleDateString('es-CO')
-    });
-  } catch (error) {
-    console.error('Error sending payment confirmation email:', error);
   }
 }
