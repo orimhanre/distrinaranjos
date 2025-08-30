@@ -33,12 +33,12 @@ export class ImageDownloader {
   /**
    * Download a single image from URL
    */
-  private static async downloadImage(url: string, filename: string): Promise<DownloadedImage> {
+  private static async downloadImage(url: string, filename: string, forceRedownload: boolean = false): Promise<DownloadedImage> {
     const localPath = path.join(this.IMAGES_DIR, filename);
     const publicUrl = `/images/products/${filename}`;
 
-    // Check if file already exists to avoid re-downloading
-    if (fs.existsSync(localPath)) {
+    // Check if file already exists to avoid re-downloading (unless forceRedownload is true)
+    if (fs.existsSync(localPath) && !forceRedownload) {
       console.log(`✅ Image already exists: ${filename}`);
       return {
         originalUrl: url,
@@ -46,6 +46,12 @@ export class ImageDownloader {
         filename,
         success: true
       };
+    }
+    
+    // If forceRedownload is true and file exists, delete it first
+    if (fs.existsSync(localPath) && forceRedownload) {
+      console.log(`🔄 Force re-download: deleting existing file ${filename}`);
+      fs.unlinkSync(localPath);
     }
 
     return new Promise((resolve) => {
@@ -148,7 +154,7 @@ export class ImageDownloader {
   /**
    * Download multiple images from URLs (optimized with parallel processing)
    */
-  static async downloadImages(urls: any[]): Promise<DownloadedImage[]> {
+  static async downloadImages(urls: any[], forceRedownload: boolean = false): Promise<DownloadedImage[]> {
     await this.ensureImagesDir();
     
     if (urls.length === 0) {
@@ -190,7 +196,7 @@ export class ImageDownloader {
 
         // Retry logic
         while (retries < this.MAX_RETRIES && !success) {
-          result = await this.downloadImage(url, filename);
+          result = await this.downloadImage(url, filename, forceRedownload);
           
           if (result.success) {
             success = true;

@@ -94,6 +94,31 @@ export async function POST(request: NextRequest) {
     productDB.clearAllProducts();
     console.log(`🗑️ Cleared ${existingProducts.length} existing products from SQLite database`);
     
+    // Clear images directory to force re-download of images
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+      
+      if (fs.existsSync(imagesDir)) {
+        const files = fs.readdirSync(imagesDir);
+        console.log(`🗑️ Found ${files.length} existing image files in ${imagesDir}`);
+        
+        // Remove all image files
+        for (const file of files) {
+          const filePath = path.join(imagesDir, file);
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ Deleted image file: ${file}`);
+        }
+        console.log(`🗑️ Cleared ${files.length} image files from images directory`);
+      } else {
+        console.log(`📁 Images directory does not exist: ${imagesDir}`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to clear images directory:`, error);
+      // Continue with sync even if image clearing fails
+    }
+    
     // Verify database is empty
     const productsAfterClear = productDB.getAllProducts();
     console.log(`🔍 Products after clearing: ${productsAfterClear.length}`);
@@ -130,7 +155,7 @@ export async function POST(request: NextRequest) {
             });
             
             try {
-              const downloadedImages = await ImageDownloader.downloadImages(product.imageURL);
+              const downloadedImages = await ImageDownloader.downloadImages(product.imageURL, true); // Force re-download
               console.log(`📸 Download results for ${product.name}:`, {
                 totalDownloaded: downloadedImages.length,
                 successful: downloadedImages.filter(img => img.success).length,
