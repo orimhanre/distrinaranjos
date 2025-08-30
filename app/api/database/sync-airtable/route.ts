@@ -230,8 +230,21 @@ export async function POST(request: NextRequest) {
               // Extract filename from URL
               let filename = '';
               if (typeof imageUrl === 'string') {
-                filename = imageUrl.split('/').pop() || '';
-                filename = filename.split('?')[0]; // Remove query parameters
+                // Handle both local paths and Airtable URLs
+                if (imageUrl.startsWith('/images/products/')) {
+                  // Local path - extract filename
+                  filename = imageUrl.split('/').pop() || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else if (imageUrl.includes('dl.airtable.com')) {
+                  // Airtable URL - extract attachment ID
+                  const urlParts = imageUrl.split('/');
+                  filename = urlParts[urlParts.length - 1] || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else {
+                  // Unknown format, skip
+                  console.log(`⚠️ Unknown image URL format: ${imageUrl}`);
+                  continue;
+                }
               } else if (imageUrl && typeof imageUrl === 'object' && 'filename' in imageUrl) {
                 const filenameObj = imageUrl as { filename: string };
                 filename = filenameObj.filename;
@@ -249,7 +262,7 @@ export async function POST(request: NextRequest) {
                 continue;
               }
               
-              // Download image from Airtable
+              // Try to download from Airtable using the filename as attachment ID
               const airtableImageUrl = `https://dl.airtable.com/.attachments/${filename}`;
               console.log(`⬇️ Downloading: ${filename}`);
               
@@ -265,6 +278,7 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
                   imageErrors++;
+                  fs.unlink(filePath, () => {}); // Delete partial file
                 }
               }).on('error', (err: any) => {
                 console.log(`❌ Error downloading ${filename}: ${err.message}`);
