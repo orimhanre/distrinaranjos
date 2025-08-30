@@ -7,10 +7,23 @@ import { getMessaging, MulticastMessage } from 'firebase-admin/messaging';
 
 function loadVirtualEnv() {
   try {
+    // First, try to load from process.env (for Railway deployment)
+    const envVars: Record<string, string> = {
+      VIRTUAL_FIREBASE_PROJECT_ID: process.env.VIRTUAL_FIREBASE_PROJECT_ID || '',
+      VIRTUAL_FIREBASE_CLIENT_EMAIL: process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL || '',
+      VIRTUAL_FIREBASE_PRIVATE_KEY: process.env.VIRTUAL_FIREBASE_PRIVATE_KEY || '',
+    };
+
+    // If we have environment variables from process.env, use them
+    if (envVars.VIRTUAL_FIREBASE_PROJECT_ID && envVars.VIRTUAL_FIREBASE_CLIENT_EMAIL && envVars.VIRTUAL_FIREBASE_PRIVATE_KEY) {
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
+      return envVars;
+    }
+
+    // Fallback to local file for development
     const virtualEnvPath = path.resolve(process.cwd(), '.env.virtual.local');
     if (fs.existsSync(virtualEnvPath)) {
       const content = fs.readFileSync(virtualEnvPath, 'utf8');
-      const envVars: { [key: string]: string } = {};
 
       content.split('\n').forEach(line => {
         const trimmedLine = line.trim();
@@ -29,7 +42,13 @@ function loadVirtualEnv() {
   } catch (error) {
     // Silent error handling
   }
-  return {};
+  
+  // Return process.env fallback
+  return {
+    VIRTUAL_FIREBASE_PROJECT_ID: process.env.VIRTUAL_FIREBASE_PROJECT_ID || '',
+    VIRTUAL_FIREBASE_CLIENT_EMAIL: process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL || '',
+    VIRTUAL_FIREBASE_PRIVATE_KEY: process.env.VIRTUAL_FIREBASE_PRIVATE_KEY || '',
+  };
 }
 
 interface OrderNotificationPayload {
@@ -44,15 +63,17 @@ interface OrderNotificationPayload {
 }
 
 export async function POST(request: NextRequest) {
-    // Check if required Firebase environment variables are available
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-        !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-        !process.env.FIREBASE_PRIVATE_KEY ||
-        !process.env.FIREBASE_CLIENT_EMAIL) {
-      console.log('⚠️ Firebase environment variables not available, skipping operation');
+    // Load virtual environment variables first
+    const virtualEnv = loadVirtualEnv();
+    
+    // Check if required virtual Firebase environment variables are available
+    if (!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID || 
+        !virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL ||
+        !virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY) {
+      console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
       return NextResponse.json({ 
         success: false, 
-        error: 'Firebase not configured' 
+        error: 'Virtual Firebase not configured' 
       }, { status: 503 });
     }
 
@@ -62,8 +83,6 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📱 Push notification request received');
     
-    // Load virtual environment variables
-    const virtualEnv = loadVirtualEnv();
     console.log('🔍 Virtual env keys loaded:', Object.keys(virtualEnv).filter(key => key.includes('FIREBASE')));
     
     // Initialize Firebase Admin - always initialize for this API
