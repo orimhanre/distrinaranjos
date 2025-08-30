@@ -5,7 +5,7 @@ import { resetDatabaseSingletons } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  let context = 'regular';
+  let context = 'virtual';
   
   try {
     console.log('🗑️ [Railway] Starting database clear...');
@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
     // Get context from request
     try {
       const body = await request.json();
-      context = body.context || 'regular';
+      context = body.context || 'virtual';
       console.log('🗑️ [Railway] Context from body:', context);
     } catch (parseError) {
-      context = request.headers.get('x-context') || 'regular';
+      context = request.headers.get('x-context') || 'virtual';
       console.log('🗑️ [Railway] Context from header:', context);
     }
     
