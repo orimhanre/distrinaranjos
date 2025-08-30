@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import ProductModal from './ProductModal';
+import { Product } from '../types';
 
 // Cart functionality is now handled by @/lib/cartContext
 
@@ -13,25 +14,7 @@ import ProductModal from './ProductModal';
 // ============================================================================
 
 interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    price: number;
-  
-    price2?: number;
-    image?: string | string[];
-    imageURL?: string | string[];
-    category: string | string[];
-    brand: string;
-    colors?: string[];
-    type?: string;
-    capacity?: string;
-    materials?: string;
-    dimensions?: string;
-    subCategory?: string | string[];
-    SKN?: string;
-    quantity?: number;
-  };
+  product: Product;
   className?: string;
 }
 
