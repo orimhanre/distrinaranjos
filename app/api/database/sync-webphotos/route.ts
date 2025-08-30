@@ -116,34 +116,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Download WebPhotos locally
-    console.log('📥 Downloading WebPhotos locally...');
-    const localWebPhotos = await WebPhotoDownloader.downloadWebPhotos(webPhotosFromAirtable);
-    
-    // Clear existing WebPhotos from database before adding new ones
-    console.log('🗑️ Clearing existing WebPhotos from database...');
-    webPhotosDB.clearAllWebPhotos();
-    
-    // Save local paths to database
-    for (const [name, localPath] of Object.entries(localWebPhotos)) {
-      try {
-        const success = webPhotosDB.upsertWebPhoto(name, localPath);
-        
-        if (success) {
-          syncedCount++;
-          console.log(`✅ Synced WebPhoto: ${name} -> ${localPath}`);
-        } else {
-          errors.push(`Failed to sync WebPhoto: ${name}`);
+    // For virtual environment, use original Airtable URLs (no local download)
+    if (context === 'virtual') {
+      console.log('🖼️ Virtual environment: Using original Airtable URLs for WebPhotos');
+      
+      // Clear existing WebPhotos from database before adding new ones
+      console.log('🗑️ Clearing existing WebPhotos from database...');
+      webPhotosDB.clearAllWebPhotos();
+      
+      // Save original Airtable URLs to database
+      for (const [name, imageUrl] of Object.entries(webPhotosFromAirtable)) {
+        try {
+          const success = webPhotosDB.upsertWebPhoto(name, imageUrl);
+          
+          if (success) {
+            syncedCount++;
+            console.log(`✅ Synced WebPhoto: ${name} -> ${imageUrl}`);
+          } else {
+            errors.push(`Failed to sync WebPhoto: ${name}`);
+          }
+        } catch (error) {
+          const errorMessage = `Error saving WebPhoto ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          console.error(errorMessage);
+          errors.push(errorMessage);
         }
-      } catch (error) {
-        const errorMessage = `Error saving WebPhoto ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        console.error(errorMessage);
-        errors.push(errorMessage);
+      }
+    } else {
+      // Download WebPhotos locally (regular environment only)
+      console.log('📥 Downloading WebPhotos locally...');
+      const localWebPhotos = await WebPhotoDownloader.downloadWebPhotos(webPhotosFromAirtable);
+      
+      // Clear existing WebPhotos from database before adding new ones
+      console.log('🗑️ Clearing existing WebPhotos from database...');
+      webPhotosDB.clearAllWebPhotos();
+      
+      // Save local paths to database
+      for (const [name, localPath] of Object.entries(localWebPhotos)) {
+        try {
+          const success = webPhotosDB.upsertWebPhoto(name, localPath);
+          
+          if (success) {
+            syncedCount++;
+            console.log(`✅ Synced WebPhoto: ${name} -> ${localPath}`);
+          } else {
+            errors.push(`Failed to sync WebPhoto: ${name}`);
+          }
+        } catch (error) {
+          const errorMessage = `Error saving WebPhoto ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          console.error(errorMessage);
+          errors.push(errorMessage);
+        }
       }
     }
 
-    // Clean up old files
-    await WebPhotoDownloader.cleanupOldFiles(localWebPhotos);
+    // Clean up old files (only for regular environment)
+    if (context !== 'virtual') {
+      await WebPhotoDownloader.cleanupOldFiles(localWebPhotos);
+    }
 
     // Update cache buster timestamp
     cacheBuster.updateSyncTimestamp();

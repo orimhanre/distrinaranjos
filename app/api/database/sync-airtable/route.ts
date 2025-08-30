@@ -178,40 +178,43 @@ export async function POST(request: NextRequest) {
       console.log(`📋 Database appears to be empty or newly created, skipping deletion phase`);
     }
     
-    // Convert and sync each record with optimizations
+    // Convert and sync each record sequentially for better reliability
     let syncedCount = 0;
     const errors: string[] = [];
     const totalRecords = airtableRecords.length;
     let processedRecords = 0;
 
-    // Process records in larger batches for maximum performance
-    const BATCH_SIZE = 100;
-    const batches = [];
-    
-    for (let i = 0; i < airtableRecords.length; i += BATCH_SIZE) {
-      batches.push(airtableRecords.slice(i, i + BATCH_SIZE));
-    }
+    console.log(`🔄 Processing ${totalRecords} records sequentially...`);
 
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
+    // Process records one by one to avoid database conflicts
+    for (let i = 0; i < airtableRecords.length; i++) {
+      const airtableRecord = airtableRecords[i];
+      processedRecords++;
+      
+      try {
+        // Skip records that might have problematic data
+        if (!airtableRecord.id) {
+          console.warn(`⚠️ Skipping record without ID at index ${i}`);
+          continue;
+        }
 
-      // Process batch in parallel
-      const batchPromises = batch.map(async (airtableRecord) => {
-        try {
-          // Skip records that might have problematic data
-          if (!airtableRecord.id) {
-            return { success: false, error: 'Missing ID' };
-          }
+        console.log(`🔄 Processing record ${i + 1}/${totalRecords}: ${airtableRecord.id}`);
 
-          // Use the original record without limiting array fields
-          const product = AirtableService.convertAirtableToProduct(airtableRecord);
-          
-          // Validate product data before saving
-          if (!product.id) {
-            throw new Error('Missing product ID');
-          }
+        // Convert Airtable record to product
+        const product = AirtableService.convertAirtableToProduct(airtableRecord);
+        
+        // Validate product data before saving
+        if (!product.id) {
+          console.warn(`⚠️ Skipping product without ID: ${airtableRecord.id}`);
+          continue;
+        }
 
-          // Download images if they exist and convert to local URLs
+        // For virtual environment, use original Airtable URLs (no local download)
+        if (context === 'virtual') {
+          console.log(`🖼️ Virtual environment: Using original Airtable URLs for ${product.id}`);
+          // Keep original imageURL as is - no local download needed
+        } else {
+          // Download images if they exist and convert to local URLs (regular environment only)
           const imageUrls = product.imageURL || product.ImageURL;
           if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
             try {
@@ -227,62 +230,49 @@ export async function POST(request: NextRequest) {
                 product.ImageURL = localImageUrls;
               }
             } catch (error) {
+              console.warn(`⚠️ Image download failed for ${product.id}:`, error);
               // Continue with original URLs if download fails
             }
           }
-
-          // Check if product already exists
-          const existingProduct = productDB.getProduct(product.id);
-          
-          if (existingProduct) {
-            // Update existing product for both environments
-            const updatedProduct = productDB.updateProduct(product.id, product);
-            if (updatedProduct) {
-              return { success: true, type: 'update', product };
-            } else {
-              throw new Error('Failed to update product');
-            }
-          } else {
-            // Create new product
-            const createdProduct = productDB.createProduct(product);
-            
-            if (createdProduct) {
-              return { success: true, type: 'create', product };
-            } else {
-              throw new Error('Failed to create product');
-            }
-          }
-        } catch (error) {
-          const errorMsg = `Failed to sync product ${airtableRecord.id}: ${error instanceof Error ? error.message : String(error)}`;
-          
-          // Skip problematic records instead of failing the entire sync
-          if (error instanceof Error && error.message.includes('SQLite3 can only bind')) {
-            return { success: false, error: 'Data type issues' };
-          }
-          
-          return { success: false, error: errorMsg };
         }
-      });
 
-      // Wait for batch to complete
-      const batchResults = await Promise.all(batchPromises);
-      
-      // Use database transaction for batch operations
-      const successfulResults = batchResults.filter(result => result.success);
-      const failedResults = batchResults.filter(result => !result.success);
-      const batchErrors: string[] = batchResults
-        .filter(result => !result.success)
-        .map(result => result.error)
-        .filter((error): error is string => error !== undefined);
-      
-      // Count successful operations
-      const creates = successfulResults.filter(r => r.type === 'create');
-      const updates = successfulResults.filter(r => r.type === 'update');
-      
-      syncedCount += successfulResults.length;
-      errors.push(...batchErrors);
-
-      processedRecords += batch.length;
+        // Check if product already exists
+        const existingProduct = productDB.getProduct(product.id);
+        
+        if (existingProduct) {
+          // Update existing product
+          const updatedProduct = productDB.updateProduct(product.id, product);
+          if (updatedProduct) {
+            syncedCount++;
+            console.log(`✅ Updated product: ${product.id}`);
+          } else {
+            throw new Error('Failed to update product');
+          }
+        } else {
+          // Create new product
+          const createdProduct = productDB.createProduct(product);
+          
+          if (createdProduct) {
+            syncedCount++;
+            console.log(`✅ Created product: ${product.id}`);
+          } else {
+            throw new Error('Failed to create product');
+          }
+        }
+        
+        // Progress update every 10 records
+        if (processedRecords % 10 === 0) {
+          console.log(`📊 Progress: ${processedRecords}/${totalRecords} records processed, ${syncedCount} synced`);
+        }
+        
+      } catch (error) {
+        const errorMsg = `Failed to sync product ${airtableRecord.id}: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(`❌ ${errorMsg}`);
+        errors.push(errorMsg);
+        
+        // Continue with next record instead of failing the entire sync
+        continue;
+      }
     }
 
     // Note: Image cleanup is now manual only - no automatic cleanup during sync

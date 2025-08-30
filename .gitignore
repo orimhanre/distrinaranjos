@@ -70,3 +70,9 @@ Thumbs.db
 *.log
 logs/
 .DS_Store
+
+# Database files
+*.db
+data/*.db
+data/virtual-*.json
+data/*-sync-timestamps.json
