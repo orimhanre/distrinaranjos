@@ -77,7 +77,14 @@ export default function VirtualDatabasePage() {
         message: '🧹 Limpiando imágenes no utilizadas...'
       });
       
-      const response = await fetch('/api/cleanup-images', { method: 'POST' });
+      // VIRTUAL-ONLY: Only clean up virtual database images
+      const response = await fetch('/api/cleanup-images', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ context: 'virtual' }), // Only virtual context
+      });
       const result = await response.json();
       
       if (result.success) {
