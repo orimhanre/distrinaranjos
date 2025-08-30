@@ -5,7 +5,7 @@ import { Product } from '../../types';
 interface WebPhoto {
   id: string;
   name: string;
-  imageUrl: string;
+  imageURL: string;
 }
 
 export default function DatabaseViewerPage() {
@@ -104,9 +104,9 @@ export default function DatabaseViewerPage() {
               {products.slice(0, 9).map((product) => (
                 <div key={product.id} className="border rounded-lg p-4">
                   <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                  {product.imageUrl && (
+                  {product.imageURL && (
                     <img 
-                      src={product.imageUrl} 
+                      src={Array.isArray(product.imageURL) ? product.imageURL[0] : product.imageURL} 
                       alt={product.name}
                       className="w-full h-32 object-cover rounded mb-2"
                     />
@@ -134,7 +134,7 @@ export default function DatabaseViewerPage() {
               {webPhotos.slice(0, 12).map((photo) => (
                 <div key={photo.id} className="border rounded-lg p-2">
                   <img 
-                    src={photo.imageUrl} 
+                    src={photo.imageURL} 
                     alt={photo.name}
                     className="w-full h-24 object-cover rounded mb-2"
                   />
