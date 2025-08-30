@@ -242,7 +242,7 @@ async function processBackgroundTasks(
     });
     
     if (foundOrder) {
-      const pdfGenerationUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001';
+      const pdfGenerationUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos-production.up.railway.app';
       
       // Transform order items for PDF generation
       const cartItems = foundOrder.items?.map((item: any) => ({
@@ -1165,7 +1165,7 @@ async function processBackgroundTasks(
     };
 
     // Send push notification without waiting for response (non-blocking)
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'}/api/push-notifications/send-order-notification`, {
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos-production.up.railway.app'}/api/push-notifications/send-order-notification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
