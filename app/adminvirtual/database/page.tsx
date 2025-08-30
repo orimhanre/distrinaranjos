@@ -1083,6 +1083,30 @@ export default function VirtualDatabasePage() {
               </span>
             </button>
 
+            {/* Test Database Button */}
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/test-virtual-db');
+                  const result = await response.json();
+                  console.log('🧪 Test result:', result);
+                  alert(`Test completed! Check console for details.\nDB exists: ${result.results.dbExists}\nProducts: ${result.results.productCount}`);
+                } catch (error) {
+                  console.error('Test failed:', error);
+                  alert('Test failed! Check console for details.');
+                }
+              }}
+              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-yellow-600 hover:bg-yellow-700 text-white transition-colors duration-200"
+            >
+              <span>🧪</span>
+              <span className="hidden sm:inline">
+                Test Database
+              </span>
+              <span className="sm:hidden">
+                Test DB
+              </span>
+            </button>
+
           </div>
 
           {/* Sync Results */}
