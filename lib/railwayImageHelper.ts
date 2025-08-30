@@ -25,14 +25,9 @@ export function getRailwayImageUrl(imageData: any): string {
       return url;
     }
     
-    // If it's a local path, check if we're on Railway
-    if (url.startsWith('/images/products/')) {
+    // If it's a local path or filename, we can't serve it on Railway
+    if (url.startsWith('/images/products/') || url.includes('.')) {
       // On Railway, we can't serve local files, so return placeholder
-      return '/placeholder-product.svg';
-    }
-    
-    // If it's just a filename, we can't serve it on Railway
-    if (url.includes('.')) {
       return '/placeholder-product.svg';
     }
     
