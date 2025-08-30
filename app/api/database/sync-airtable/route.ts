@@ -148,24 +148,26 @@ export async function POST(request: NextRequest) {
               // Always use the processed URLs (original Airtable URLs)
               product.imageURL = processedImageURLs;
                         } else {
-              // For regular products, also use original Airtable URLs (same as virtual)
-              // This avoids Railway filesystem issues and ensures images are always accessible
-              console.log(`📥 Regular environment: Using original Airtable image URLs for product ${product.id}`);
+              // For regular products, use original filenames (same as virtual)
+              // This avoids long Airtable URLs and uses clean filenames
+              console.log(`📥 Regular environment: Using original filenames for product ${product.id}`);
               
               const processedImageURLs = product.imageURL.map((img: any) => {
                 if (typeof img === 'string') return img;
-                if (img && typeof img === 'object' && img.url) {
-                  // Use the full Airtable URL (needed for images to load)
-                  return img.url;
-                }
                 if (img && typeof img === 'object' && img.filename) {
-                  // If we only have filename, we can't load the image
-                  return null;
+                  // Use the original filename (clean and short)
+                  return `/images/products/${img.filename}`;
+                }
+                if (img && typeof img === 'object' && img.url) {
+                  // Extract filename from Airtable URL if no filename available
+                  const urlParts = img.url.split('/');
+                  const lastPart = urlParts[urlParts.length - 1];
+                  return `/images/products/${lastPart}`;
                 }
                 return String(img);
               }).filter((url: string | null) => url && url.length > 0);
               
-              // Use the processed URLs (original Airtable URLs)
+              // Use the processed URLs (original filenames)
               product.imageURL = processedImageURLs;
             }
           }
