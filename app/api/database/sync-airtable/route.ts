@@ -134,23 +134,98 @@ export async function POST(request: NextRequest) {
           // Handle image URLs differently for virtual vs regular environments
                   if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
 
-          // For both virtual and regular environments, ALWAYS use original Airtable URLs
-          // This completely avoids Railway filesystem issues
-          const processedImageURLs = product.imageURL.map((img: any) => {
-            if (typeof img === 'string') return img;
-            if (img && typeof img === 'object' && img.url) {
-              // Use the full Airtable URL (needed for images to load)
-              return img.url;
+          if (context === 'virtual') {
+              // For virtual products, ALWAYS use original Airtable URLs
+              // This completely avoids Railway filesystem issues
+              const processedImageURLs = product.imageURL.map((img: any) => {
+                if (typeof img === 'string') return img;
+                if (img && typeof img === 'object' && img.url) {
+                  // Use the full Airtable URL (needed for images to load)
+                  return img.url;
+                }
+                if (img && typeof img === 'object' && img.filename) {
+                  // If we only have filename, we can't load the image
+                  return null;
+                }
+                return String(img);
+              }).filter((url: string | null) => url && url.length > 0);
+              
+              // Always use the processed URLs (original Airtable URLs)
+              product.imageURL = processedImageURLs;
+                        } else {
+              // For regular products, download images and use local paths
+              console.log(`📥 Regular environment: Downloading images for product ${product.id}`);
+              
+              // Download images before converting URLs
+              const fs = require('fs');
+              const path = require('path');
+              const https = require('https');
+              
+              // Create images directory if it doesn't exist
+              const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+              if (!fs.existsSync(imagesDir)) {
+                fs.mkdirSync(imagesDir, { recursive: true });
+              }
+              
+              const processedImageURLs = product.imageURL.map((img: any) => {
+                if (typeof img === 'string') return img;
+                
+                let airtableUrl = '';
+                let filename = '';
+                
+                if (img && typeof img === 'object' && img.url) {
+                  // Get the Airtable URL
+                  airtableUrl = img.url;
+                  // Extract filename from Airtable URL
+                  const urlParts = img.url.split('/');
+                  filename = urlParts[urlParts.length - 1] || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else if (img && typeof img === 'object' && img.filename) {
+                  // Use the original filename
+                  filename = img.filename;
+                  // Try to construct Airtable URL from filename
+                  airtableUrl = `https://dl.airtable.com/.attachments/${filename}`;
+                } else {
+                  return String(img);
+                }
+                
+                if (!filename) return String(img);
+                
+                // Download the image
+                const filePath = path.join(imagesDir, filename);
+                
+                // Skip if file already exists
+                if (!fs.existsSync(filePath) && airtableUrl) {
+                  console.log(`⬇️ Downloading image: ${filename}`);
+                  
+                  const file = fs.createWriteStream(filePath);
+                  https.get(airtableUrl, (response: any) => {
+                    if (response.statusCode === 200) {
+                      response.pipe(file);
+                      file.on('finish', () => {
+                        file.close();
+                        console.log(`✅ Downloaded: ${filename}`);
+                      });
+                    } else {
+                      console.log(`❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
+                      fs.unlink(filePath, () => {}); // Delete partial file
+                    }
+                  }).on('error', (err: any) => {
+                    console.log(`❌ Error downloading ${filename}: ${err.message}`);
+                    fs.unlink(filePath, () => {}); // Delete partial file
+                  });
+                } else if (fs.existsSync(filePath)) {
+                  console.log(`⏭️ Image already exists: ${filename}`);
+                }
+                
+                // Return local path
+                return `/images/products/${filename}`;
+              }).filter((url: string | null) => url && url.length > 0);
+              
+              // Use the processed URLs (local paths)
+              product.imageURL = processedImageURLs;
             }
-            if (img && typeof img === 'object' && img.filename) {
-              // If we only have filename, we can't load the image
-              return null;
-            }
-            return String(img);
-          }).filter((url: string | null) => url && url.length > 0);
-          
-          // Always use the processed URLs (original Airtable URLs)
-          product.imageURL = processedImageURLs;
+          }
           
           // Save to SQLite database
           console.log(`💾 Saving product to database:`, {
@@ -179,8 +254,53 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ SQLite sync completed: ${syncedCount} products synced, ${errors.length} errors`);
     
-    // Skip image download on Railway - we use Airtable URLs directly
-    console.log(`🖼️ Skipping image download - using Airtable URLs directly`);
+    // Download images for synced products
+    console.log(`🖼️ Starting image download process...`);
+    let downloadedImages = 0;
+    let imageErrors = 0;
+    
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const https = require('https');
+      
+      // Create images directory if it doesn't exist
+      const imagesDir = path.join(process.cwd(), 'public', 'images', 'products');
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+        console.log(`📁 Created images directory: ${imagesDir}`);
+      }
+      
+      // Get all products and download their images
+      const allProducts = productDB.getAllProducts();
+      for (const product of allProducts) {
+        if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+          for (const imageUrl of product.imageURL) {
+            try {
+              // Extract filename from URL
+              let filename = '';
+              if (typeof imageUrl === 'string') {
+                // Handle both local paths and Airtable URLs
+                if (imageUrl.startsWith('/images/products/')) {
+                  // Local path - extract filename
+                  filename = imageUrl.split('/').pop() || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else if (imageUrl.includes('dl.airtable.com')) {
+                  // Airtable URL - extract attachment ID
+                  const urlParts = imageUrl.split('/');
+                  filename = urlParts[urlParts.length - 1] || '';
+                  filename = filename.split('?')[0]; // Remove query parameters
+                } else {
+                  // Unknown format, skip
+                  console.log(`⚠️ Unknown image URL format: ${imageUrl}`);
+                  continue;
+                }
+              } else if (imageUrl && typeof imageUrl === 'object' && 'filename' in imageUrl) {
+                const filenameObj = imageUrl as { filename: string };
+                filename = filenameObj.filename;
+              } else {
+                continue;
+              }
               
               if (!filename) continue;
               
