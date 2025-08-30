@@ -87,7 +87,9 @@ export async function checkVirtualAdminPermission(email: string): Promise<boolea
     
     // If not in main database, try virtual database
     if (!virtualDb) {
-      console.error('Virtual database not available');
+      console.warn('Virtual database not available, falling back to main database');
+      // Cache the result as false since virtual database is not available
+      adminPermissionCache.set(cacheKey, { hasPermission: false, timestamp: now });
       return false;
     }
     
@@ -105,6 +107,8 @@ export async function checkVirtualAdminPermission(email: string): Promise<boolea
       return hasPermission;
     } catch (virtualError) {
       console.error('Error accessing virtual database:', virtualError);
+      // Cache the result as false since there was an error
+      adminPermissionCache.set(cacheKey, { hasPermission: false, timestamp: now });
       return false;
     }
   } catch (error) {

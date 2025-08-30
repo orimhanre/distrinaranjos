@@ -107,10 +107,12 @@ export default function VirtualDatabasePage() {
 
   // Clear database with confirmation
   const clearDatabase = async () => {
+    console.log('🗑️ Clear database button clicked');
     setShowClearConfirm(true);
   };
 
   const confirmClearDatabase = async () => {
+    console.log('🗑️ Confirm clear database button clicked');
     setShowClearConfirm(false);
     setClearing(true);
     
@@ -400,6 +402,11 @@ export default function VirtualDatabasePage() {
   useEffect(() => {
     setDisplayCount(25);
   }, [searchQuery]);
+
+  // Debug modal state
+  useEffect(() => {
+    console.log('🗑️ showClearConfirm state changed:', showClearConfirm);
+  }, [showClearConfirm]);
 
   // Save selected columns to localStorage
   const saveSelectedColumns = (columns: string[]) => {
@@ -1612,7 +1619,8 @@ export default function VirtualDatabasePage() {
 
       {/* Custom Clear Database Confirmation Modal */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
+          {(() => { console.log('🗑️ Modal should be visible, showClearConfirm:', showClearConfirm); return null; })()}
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 overflow-hidden">
             {/* Header */}
             <div className="bg-red-50 border-b border-red-200 px-6 py-4">
