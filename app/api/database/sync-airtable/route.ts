@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
     productDB = new ProductDatabase(context);
     console.log(`✅ ProductDatabase instance created for ${context} environment`);
     
+    // Force database schema reset to ensure correct schema
+    console.log(`🔄 Forcing database schema reset for ${context} environment`);
+    const resetSuccess = productDB.resetDatabaseSchema();
+    console.log(`🔄 Database schema reset result: ${resetSuccess}`);
+    
     // Verify database is working correctly
     console.log(`🔍 Testing database operations...`);
     const initialProductCount = productDB.getAllProducts().length;
