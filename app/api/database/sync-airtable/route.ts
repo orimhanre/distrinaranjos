@@ -151,7 +151,11 @@ export async function POST(request: NextRequest) {
               console.log(`📥 Regular environment: Downloading images locally for product ${product.id}`);
               
               const { ImageDownloader } = await import('@/lib/imageDownloader');
-              const localImageURLs = await ImageDownloader.downloadImages(product.imageURL, product.id);
+              const downloadedImages = await ImageDownloader.downloadImages(product.imageURL);
+              
+              // Extract successful local paths from downloaded images
+              const successfulDownloads = downloadedImages.filter(img => img.success);
+              const localImageURLs = successfulDownloads.map(img => img.localPath);
               
               if (localImageURLs && localImageURLs.length > 0) {
                 product.imageURL = localImageURLs;
