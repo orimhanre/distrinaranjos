@@ -541,16 +541,17 @@ export default function VirtualDatabasePage() {
         );
       }
       
-      // Extract filenames from any format - prefer filenames over URLs
+      // Extract URLs from any format - need full URLs for images to load
       const validImages = processedFileUrl.map((img: any) => {
         if (typeof img === 'string') return img;
-        if (img && typeof img === 'object' && img.filename) {
-          // Use filename (shorter and cleaner)
-          return img.filename;
-        }
         if (img && typeof img === 'object' && img.url) {
-          // Fallback to URL if no filename
+          // Use full URL (needed for images to load)
           return img.url;
+        }
+        if (img && typeof img === 'object' && img.filename) {
+          // If we only have filename, we can't load the image
+          console.log(`⚠️ Only filename available, can't load image: ${img.filename}`);
+          return null;
         }
         return String(img);
       }).filter(url => url && url.length > 0);

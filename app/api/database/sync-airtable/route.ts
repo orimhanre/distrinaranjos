@@ -131,19 +131,20 @@ export async function POST(request: NextRequest) {
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
             console.log(`📸 Virtual product ${product.name} has ${product.imageURL.length} images from Airtable`);
             
-            // Extract original filenames from Airtable attachment objects
+            // Extract URLs from Airtable attachment objects (need full URLs for images to load)
             const processedImageURLs = product.imageURL.map((img: any) => {
               if (typeof img === 'string') return img;
-              if (img && typeof img === 'object' && img.filename) {
-                // Use the original filename from Airtable (much shorter)
-                return img.filename;
-              }
               if (img && typeof img === 'object' && img.url) {
-                // Fallback to URL if no filename
+                // Use the full Airtable URL (needed for images to load)
                 return img.url;
               }
+              if (img && typeof img === 'object' && img.filename) {
+                // If we only have filename, we can't load the image
+                console.log(`⚠️ Only filename available, can't load image: ${img.filename}`);
+                return null;
+              }
               return String(img);
-            }).filter((url: string) => url && url.length > 0);
+            }).filter((url: string | null) => url && url.length > 0);
             
             // Always use the processed URLs (original Airtable URLs)
             product.imageURL = processedImageURLs;
