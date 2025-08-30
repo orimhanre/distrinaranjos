@@ -107,26 +107,13 @@ export default function VirtualDatabasePage() {
 
   // Clear database with confirmation
   const clearDatabase = async () => {
-    console.log('🗑️ Clear database button clicked');
     setShowClearConfirm(true);
   };
 
   const confirmClearDatabase = async () => {
-    console.log('🗑️ Confirm clear database button clicked');
     setShowClearConfirm(false);
     setClearing(true);
-    
-    console.log('🗑️ Starting virtual database clear...');
-    
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('🗑️ Clear operation timed out after 30 seconds');
-      setClearing(false);
-      setClearResult({ success: false, message: 'Operación cancelada por timeout' });
-    }, 30000);
-    
     try {
-      console.log('🗑️ Sending clear request to API...');
       const response = await fetch('/api/database/clear', {
         method: 'POST',
         headers: {
@@ -134,48 +121,25 @@ export default function VirtualDatabasePage() {
         },
         body: JSON.stringify({ context: 'virtual' }),
       });
-      
-      console.log('🗑️ API response status:', response.status);
       const result = await response.json();
-      console.log('🗑️ API response result:', result);
-      
       setClearResult(result);
       if (result.success) {
-        console.log('✅ Database clear successful, updating UI...');
-        
         // Clear sync timestamps when database is cleared
         setLastProductSync(null);
         setLastWebPhotosSync(null);
         localStorage.removeItem('adminvirtual-last-product-sync');
         localStorage.removeItem('adminvirtual-last-webphotos-sync');
         
-        // Clear columns and selected columns when database is cleared
-        setColumns([]);
-        setSelectedColumns([]);
-        localStorage.removeItem('virtual-admin-selected-columns');
-        
-        // Clear products and webPhotos state
-        setProducts([]);
-        setWebPhotos({});
-        
         // Add a small delay to ensure file system operations are complete
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Reload data to confirm everything is cleared
-        console.log('🔄 Reloading data after clear...');
         await loadProducts();
         await loadWebPhotos();
         await fetchColumns();
-        
-        console.log('✅ Database clear process completed');
-      } else {
-        console.error('❌ Database clear failed:', result.message || result.error);
       }
     } catch (error) {
-      console.error('🗑️ Error during database clear:', error);
-      setClearResult({ success: false, message: `Error al limpiar base de datos: ${error}` });
+      setClearResult({ success: false, message: 'Error al limpiar base de datos' });
     } finally {
-      clearTimeout(timeoutId);
       setClearing(false);
     }
   };
@@ -403,10 +367,7 @@ export default function VirtualDatabasePage() {
     setDisplayCount(25);
   }, [searchQuery]);
 
-  // Debug modal state
-  useEffect(() => {
-    console.log('🗑️ showClearConfirm state changed:', showClearConfirm);
-  }, [showClearConfirm]);
+
 
   // Save selected columns to localStorage
   const saveSelectedColumns = (columns: string[]) => {
@@ -1619,8 +1580,7 @@ export default function VirtualDatabasePage() {
 
       {/* Custom Clear Database Confirmation Modal */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
-          {(() => { console.log('🗑️ Modal should be visible, showClearConfirm:', showClearConfirm); return null; })()}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 overflow-hidden">
             {/* Header */}
             <div className="bg-red-50 border-b border-red-200 px-6 py-4">
