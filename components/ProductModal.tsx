@@ -148,18 +148,12 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
     // Use imageURL property
     const imageData = product.imageURL;
     
-    // Handle case where imageData is a string representation of an empty array "[]"
-    if (imageData === '[]' || imageData === 'null' || imageData === null) {
+    // Handle case where imageData is undefined or empty
+    if (!imageData || imageData.length === 0) {
       return ['/placeholder-product.svg'];
     }
     
-    let images: string[] = [];
-    
-    if (Array.isArray(imageData)) {
-      images = imageData;
-    } else {
-      images = [imageData || ''];
-    }
+    let images: string[] = imageData;
     
     // Handle different URL formats
     images = images.map(imagePath => {
