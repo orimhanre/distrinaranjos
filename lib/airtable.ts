@@ -233,24 +233,31 @@ export class AirtableService {
         if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
           return value;
         }
+        if (typeof value === 'object') {
+          // Special handling for image attachments - convert to URL arrays
+          if (fieldName) {
+            const fieldNameLower = fieldName.toLowerCase();
+            if (fieldNameLower.includes('image') || 
+                fieldNameLower.includes('photo') || 
+                fieldNameLower.includes('attachment') ||
+                fieldNameLower.includes('url') ||
+                fieldNameLower === 'imageurl' ||
+                fieldNameLower === 'image_url'
+            ) {
+              console.log(`🔍 Processing image field: ${fieldName} with value:`, value);
+              const urls = extractImageUrls(value);
+              console.log(`🔍 Extracted URLs:`, urls);
+              return urls.length > 0 ? urls : null;
+            }
+          }
+          
+          // For non-image objects, stringify them
+          return JSON.stringify(value);
+        }
+        
         if (Array.isArray(value)) {
           // For multi-select fields, keep as array for proper handling
           return value;
-        }
-        if (typeof value === 'object') {
-          // Special handling for image attachments - convert to URL arrays
-          if (fieldName && (
-            fieldName.toLowerCase().includes('image') || 
-            fieldName.toLowerCase().includes('photo') || 
-            fieldName.toLowerCase().includes('attachment') ||
-            fieldName.toLowerCase().includes('url') ||
-            fieldName.toLowerCase() === 'imageurl' ||
-            fieldName.toLowerCase() === 'image_url'
-          )) {
-            const urls = extractImageUrls(value);
-            return urls.length > 0 ? urls : null;
-          }
-          return JSON.stringify(value);
         }
         // Convert any other type to string
         return String(value);
@@ -270,8 +277,15 @@ export class AirtableService {
     // Process ALL fields from Airtable with original case
     for (const [fieldName, fieldValue] of Object.entries(fields)) {
       // Preserve original case from Airtable
+      console.log(`🔍 Processing field: ${fieldName} (type: ${typeof fieldValue})`);
       const processedValue = safeValue(fieldValue, fieldName);
       product[fieldName] = processedValue;
+    }
+    
+    // For virtual environment, if no images are found, use placeholder images
+    if (this.currentEnvironment === 'virtual' && (!product.imageURL || product.imageURL.length === 0)) {
+      console.log(`🖼️ Virtual environment: No images found for product ${product.id}, using placeholder`);
+      product.imageURL = ['/placeholder-product.svg'];
     }
     
 

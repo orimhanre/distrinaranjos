@@ -799,6 +799,10 @@ export default function VirtualDatabasePage() {
             });
             console.log(`🔄 Forced refresh of ${images.length} WebPhotos images`);
           }, 1000);
+          
+          // Dispatch WebPhotos sync completion event for components to refresh
+          window.dispatchEvent(new CustomEvent('webphotos-sync-complete'));
+          console.log('🔄 WebPhotos sync completion event dispatched');
         } catch (cacheError) {
           console.warn('⚠️ Cache refresh failed:', cacheError);
         }

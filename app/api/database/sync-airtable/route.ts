@@ -213,6 +213,12 @@ export async function POST(request: NextRequest) {
         if (context === 'virtual') {
           console.log(`🖼️ Virtual environment: Using original Airtable URLs for ${product.id}`);
           // Keep original imageURL as is - no local download needed
+          
+          // Ensure virtual environment products have placeholder images if no images are available
+          if (!product.imageURL || product.imageURL.length === 0) {
+            console.log(`🖼️ Virtual environment: Adding placeholder image for product ${product.id}`);
+            product.imageURL = ['/placeholder-product.svg'];
+          }
         } else {
           // Download images if they exist and convert to local URLs (regular environment only)
           const imageUrls = product.imageURL || product.ImageURL;
@@ -280,6 +286,24 @@ export async function POST(request: NextRequest) {
 
     // Populate category-subcategory relations from synced products
     const relationsCreated = productDB.populateCategoryRelations();
+
+    // Post-sync cleanup for virtual environment: ensure all products have placeholder images
+    if (context === 'virtual') {
+      console.log('🖼️ Virtual environment: Running post-sync cleanup to ensure placeholder images...');
+      const allProducts = productDB.getAllProducts();
+      let placeholderCount = 0;
+      
+      for (const product of allProducts) {
+        if (!product.imageURL || product.imageURL.length === 0) {
+          console.log(`🖼️ Adding placeholder image to product: ${product.id} - ${product.name}`);
+          const updatedProduct = { ...product, imageURL: ['/placeholder-product.svg'] };
+          productDB.updateProduct(product.id, updatedProduct);
+          placeholderCount++;
+        }
+      }
+      
+      console.log(`🖼️ Post-sync cleanup completed: ${placeholderCount} products updated with placeholder images`);
+    }
 
     // Update sync timestamp directly
     const syncTimestamp = new Date().toLocaleString('es-ES');
