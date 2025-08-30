@@ -107,13 +107,17 @@ export default function VirtualDatabasePage() {
 
   // Clear database with confirmation
   const clearDatabase = async () => {
+    console.log('🗑️ Clear database button clicked');
     setShowClearConfirm(true);
+    console.log('🗑️ showClearConfirm set to true');
   };
 
   const confirmClearDatabase = async () => {
+    console.log('🗑️ Confirm clear database button clicked');
     setShowClearConfirm(false);
     setClearing(true);
     try {
+      console.log('🗑️ Making API call to /api/database/clear');
       const response = await fetch('/api/database/clear', {
         method: 'POST',
         headers: {
@@ -121,9 +125,12 @@ export default function VirtualDatabasePage() {
         },
         body: JSON.stringify({ context: 'virtual' }),
       });
+      console.log('🗑️ API response status:', response.status);
       const result = await response.json();
+      console.log('🗑️ API response result:', result);
       setClearResult(result);
       if (result.success) {
+        console.log('🗑️ Clear successful, updating UI');
         // Clear sync timestamps when database is cleared
         setLastProductSync(null);
         setLastWebPhotosSync(null);
@@ -136,8 +143,11 @@ export default function VirtualDatabasePage() {
         await loadProducts();
         await loadWebPhotos();
         await fetchColumns();
+      } else {
+        console.log('🗑️ Clear failed:', result.message);
       }
     } catch (error) {
+      console.log('🗑️ Clear error:', error);
       setClearResult({ success: false, message: 'Error al limpiar base de datos' });
     } finally {
       setClearing(false);
@@ -1581,6 +1591,7 @@ export default function VirtualDatabasePage() {
       {/* Custom Clear Database Confirmation Modal */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          {(() => { console.log('🗑️ Modal is rendering, showClearConfirm:', showClearConfirm); return null; })()}
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 overflow-hidden">
             {/* Header */}
             <div className="bg-red-50 border-b border-red-200 px-6 py-4">
