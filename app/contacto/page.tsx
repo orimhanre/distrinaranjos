@@ -1,11 +1,14 @@
-import Link from 'next/link';
+'use client';
 
-export const metadata = {
-  title: 'Contacto - DistriNaranjos',
-  description: 'Información de contacto de DistriNaranjos',
-};
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function ContactoPage() {
+  const [mapsApiKey, setMapsApiKey] = useState<string>('');
+
+  useEffect(() => {
+    setMapsApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '');
+  }, []);
   return (
     <div className="min-h-screen bg-gray-100 py-4 sm:py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -146,17 +149,23 @@ export default function ContactoPage() {
             
             <div className="space-y-4">
               <div className="relative w-full h-96 sm:h-96 md:h-96 rounded-lg overflow-hidden shadow-md">
-                <iframe
-                  src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Cra.+46+%2347-66+Loc.+9901+Medellín+Colombia"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0, minHeight: '384px' }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación de DistriNaranjos"
-                  suppressHydrationWarning={true}
-                ></iframe>
+                {mapsApiKey ? (
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/place?key=${mapsApiKey}&q=Cra.+46+%2347-66+Loc.+9901+Medellín+Colombia`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, minHeight: '384px' }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Ubicación de DistriNaranjos"
+                    suppressHydrationWarning={true}
+                  ></iframe>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <p className="text-gray-500">Mapa no disponible - API key no configurada</p>
+                  </div>
+                )}
               </div>
               
               <div className="text-center">
