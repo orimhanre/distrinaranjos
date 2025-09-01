@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
     });
     
     // Verify we're using the correct base ID
-    if (context === 'virtual' && config.baseId !== 'appyNH3iztQpMqHAY') {
-      console.error(`❌ WRONG BASE ID! Expected: appyNH3iztQpMqHAY, Got: ${config.baseId}`);
-    } else if (context === 'regular' && config.baseId !== 'appDCsBKlJPhUVcMr') {
-      console.error(`❌ WRONG BASE ID! Expected: appDCsBKlJPhUVcMr, Got: ${config.baseId}`);
+    if (context === 'virtual' && config.baseId !== process.env.VIRTUAL_AIRTABLE_BASE_ID) {
+      console.error(`❌ WRONG BASE ID! Expected: ${process.env.VIRTUAL_AIRTABLE_BASE_ID}, Got: ${config.baseId}`);
+    } else if (context === 'regular' && config.baseId !== process.env.AIRTABLE_BASE_ID) {
+      console.error(`❌ WRONG BASE ID! Expected: ${process.env.AIRTABLE_BASE_ID}, Got: ${config.baseId}`);
     } else {
       console.log(`✅ Correct base ID for ${context} environment: ${config.baseId}`);
     }
@@ -210,24 +210,24 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-                  // For virtual environment, download images locally with original filenames
-          if (context === 'virtual') {
-            console.log(`🖼️ Virtual environment: Downloading images locally for ${product.id}`);
-            
-            const imageAttachments = product.imageURL || product.ImageURL;
-            if (imageAttachments && Array.isArray(imageAttachments) && imageAttachments.length > 0) {
-                          try {
+        // For virtual environment, download images locally with original filenames
+        if (context === 'virtual') {
+          console.log(`🖼️ Virtual environment: Downloading images locally for ${product.id}`);
+          
+          const imageAttachments = product.imageURL || product.ImageURL;
+          if (imageAttachments && Array.isArray(imageAttachments) && imageAttachments.length > 0) {
+            try {
               const localImageUrls = await VirtualPhotoDownloader.downloadProductImages(imageAttachments);
-            
-            if (localImageUrls.length > 0) {
-              product.imageURL = localImageUrls;
-              product.ImageURL = localImageUrls;
-              console.log(`✅ Virtual environment: Downloaded ${localImageUrls.length} images for ${product.id}`);
-            } else {
-              // If no images downloaded successfully, use placeholder
-              console.log(`🖼️ Virtual environment: No images downloaded, using placeholder for ${product.id}`);
-              product.imageURL = ['/placeholder-product.svg'];
-            }
+              
+              if (localImageUrls.length > 0) {
+                product.imageURL = localImageUrls;
+                product.ImageURL = localImageUrls;
+                console.log(`✅ Virtual environment: Downloaded ${localImageUrls.length} images for ${product.id}`);
+              } else {
+                // If no images downloaded successfully, use placeholder
+                console.log(`🖼️ Virtual environment: No images downloaded, using placeholder for ${product.id}`);
+                product.imageURL = ['/placeholder-product.svg'];
+              }
             } catch (error) {
               console.warn(`⚠️ Virtual image download failed for ${product.id}:`, error);
               // Use placeholder if download fails
@@ -360,8 +360,27 @@ export async function POST(request: NextRequest) {
       // Update product sync timestamp
       timestamps.lastProductSync = syncTimestamp;
       
-      // Write updated timestamps
+      // Write updated timestamps to file
       writeFileSync(TIMESTAMPS_FILE, JSON.stringify(timestamps, null, 2), 'utf8');
+      
+      // Also update via API endpoint for immediate web page updates
+      try {
+        const baseUrl = process.env.RAILWAY_STATIC_URL || 'http://localhost:3000';
+        const apiResponse = await fetch(`${baseUrl}/api/admin/virtual-sync-timestamps`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'products', timestamp: syncTimestamp })
+        });
+        
+        if (apiResponse.ok) {
+          console.log('✅ Timestamp updated via API endpoint');
+        } else {
+          console.warn('⚠️ Failed to update timestamp via API endpoint');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ Error updating timestamp via API endpoint:', apiError);
+      }
+      
     } catch (error) {
       console.warn('⚠️ Failed to update sync timestamp:', error);
     }
@@ -410,16 +429,24 @@ export async function POST(request: NextRequest) {
         const { WebPhotosDatabase } = await import('@/lib/database');
         const webPhotosDB = new WebPhotosDatabase('virtual');
         const currentWebPhotos = webPhotosDB.getAllWebPhotos();
-        const currentWebPhotoFilenames = new Set<string>(
+        
+        // Ensure currentWebPhotos is an array and handle it safely
+        const currentWebPhotoFilenames = new Set<string>();
+        if (Array.isArray(currentWebPhotos)) {
           currentWebPhotos
-            .map((webPhoto: any) => webPhoto.imageUrl)
-            .filter((url: string) => url && url.length > 0)
-            .map((url: string) => {
-              // Extract filename from URL
-              const urlParts = url.split('/');
-              return urlParts[urlParts.length - 1];
-            })
-        );
+            .filter((webPhoto: any) => webPhoto && webPhoto.imageUrl)
+            .forEach((webPhoto: any) => {
+              const url = webPhoto.imageUrl;
+              if (url && typeof url === 'string' && url.length > 0) {
+                // Extract filename from URL
+                const urlParts = url.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                if (filename) {
+                  currentWebPhotoFilenames.add(filename);
+                }
+              }
+            });
+        }
         
         // Clean up unused images
         await VirtualPhotoDownloader.cleanupUnusedImages(currentProductFilenames, 'products');

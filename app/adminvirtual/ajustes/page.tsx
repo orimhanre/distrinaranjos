@@ -103,8 +103,8 @@ export default function VirtualAjustesPage() {
           { key: 'VIRTUAL_FIREBASE_ACCOUNT_EMAIL', value: envVars.VIRTUAL_FIREBASE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Firebase', category: 'firebase', isSecret: false },
           
           // Airtable
-          { key: 'VIRTUAL_AIRTABLE_API_KEY', value: envVars.VIRTUAL_AIRTABLE_API_KEY || 'patfzZxPHONwkhZPN.da7c68ed49bff5a194b578eace74ce8a1431f583723b475412e04e0f321815f7', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
-          { key: 'VIRTUAL_AIRTABLE_BASE_ID', value: envVars.VIRTUAL_AIRTABLE_BASE_ID || 'appyNH3iztQpMqHAY', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
+          { key: 'VIRTUAL_AIRTABLE_API_KEY', value: envVars.VIRTUAL_AIRTABLE_API_KEY || '', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
+          { key: 'VIRTUAL_AIRTABLE_BASE_ID', value: envVars.VIRTUAL_AIRTABLE_BASE_ID || '', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
           { key: 'VIRTUAL_AIRTABLE_ACCOUNT_EMAIL', value: envVars.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Airtable', category: 'airtable', isSecret: false },
           
           // Shipping
@@ -166,8 +166,8 @@ export default function VirtualAjustesPage() {
           { key: 'VIRTUAL_FIREBASE_ACCOUNT_EMAIL', value: process.env.VIRTUAL_FIREBASE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Firebase', category: 'firebase', isSecret: false },
           
           // Airtable
-          { key: 'VIRTUAL_AIRTABLE_API_KEY', value: process.env.VIRTUAL_AIRTABLE_API_KEY || 'patfzZxPHONwkhZPN.da7c68ed49bff5a194b578eace74ce8a1431f583723b475412e04e0f321815f7', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
-          { key: 'VIRTUAL_AIRTABLE_BASE_ID', value: process.env.VIRTUAL_AIRTABLE_BASE_ID || 'appyNH3iztQpMqHAY', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
+          { key: 'VIRTUAL_AIRTABLE_API_KEY', value: process.env.VIRTUAL_AIRTABLE_API_KEY || '', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
+          { key: 'VIRTUAL_AIRTABLE_BASE_ID', value: process.env.VIRTUAL_AIRTABLE_BASE_ID || '', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
           { key: 'VIRTUAL_AIRTABLE_ACCOUNT_EMAIL', value: process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Airtable', category: 'airtable', isSecret: false },
           
           // Shipping
