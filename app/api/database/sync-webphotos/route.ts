@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AirtableService } from '@/lib/airtable';
 import { WebPhotosDatabase } from '@/lib/database';
 import { WebPhotoDownloader } from '@/lib/webPhotoDownloader';
+import { VirtualPhotoDownloader } from '@/lib/virtualPhotoDownloader';
 import { cacheBuster } from '@/lib/cacheBuster';
 
 // Create database instance based on context
@@ -119,30 +120,60 @@ export async function POST(request: NextRequest) {
     // Declare localWebPhotos variable at top level
     let localWebPhotos: Record<string, string> = {};
     
-    // For virtual environment, use original Airtable URLs (no local download)
+    // For virtual environment, download WebPhotos locally with stable names
     if (context === 'virtual') {
-      console.log('🖼️ Virtual environment: Using original Airtable URLs for WebPhotos');
+      console.log('🖼️ Virtual environment: Downloading WebPhotos locally with stable names');
       
-      // Clear existing WebPhotos from database before adding new ones
-      console.log('🗑️ Clearing existing WebPhotos from database...');
-      webPhotosDB.clearAllWebPhotos();
-      
-      // Save original Airtable URLs to database
-      for (const [name, imageUrl] of Object.entries(webPhotosFromAirtable)) {
-        try {
-          const success = webPhotosDB.upsertWebPhoto(name, imageUrl);
+      try {
+        // Convert Record to array format for VirtualPhotoDownloader with original filenames
+        const webPhotosArray = Object.entries(webPhotosFromAirtable).map(([name, url]) => {
+          // Find the original WebPhoto object to get the original filename
+          const originalWebPhoto = airtableRecords.find(record => {
+            const webPhoto = AirtableService.convertAirtableToWebPhoto(record);
+            return webPhoto.name === name;
+          });
           
-          if (success) {
-            syncedCount++;
-            console.log(`✅ Synced WebPhoto: ${name} -> ${imageUrl}`);
-          } else {
-            errors.push(`Failed to sync WebPhoto: ${name}`);
+          const originalFilename = originalWebPhoto ? 
+            AirtableService.convertAirtableToWebPhoto(originalWebPhoto).originalFilename : '';
+          
+          return {
+            name,
+            imageUrl: url,
+            originalFilename: originalFilename
+          };
+        });
+        
+        // Download WebPhotos locally
+        const localImageUrls = await VirtualPhotoDownloader.downloadWebPhotos(webPhotosArray);
+        
+        // Clear existing WebPhotos from database before adding new ones
+        console.log('🗑️ Clearing existing WebPhotos from database...');
+        webPhotosDB.clearAllWebPhotos();
+        
+        // Save local WebPhoto paths to database
+        for (let i = 0; i < localImageUrls.length; i++) {
+          const localPath = localImageUrls[i];
+          const name = webPhotosArray[i]?.name || `webphoto_${i}`;
+          
+          try {
+            const success = webPhotosDB.upsertWebPhoto(name, localPath);
+            
+            if (success) {
+              syncedCount++;
+              console.log(`✅ Synced WebPhoto: ${name} -> ${localPath}`);
+            } else {
+              errors.push(`Failed to sync WebPhoto: ${name}`);
+            }
+          } catch (error) {
+            const errorMessage = `Error saving WebPhoto ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            console.error(errorMessage);
+            errors.push(errorMessage);
           }
-        } catch (error) {
-          const errorMessage = `Error saving WebPhoto ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.error(errorMessage);
-          errors.push(errorMessage);
         }
+      } catch (error) {
+        const errorMessage = `Error downloading WebPhotos: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        console.error(errorMessage);
+        errors.push(errorMessage);
       }
     } else {
       // Download WebPhotos locally (regular environment only)
@@ -172,9 +203,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Clean up old files (only for regular environment)
-    if (context !== 'virtual' && Object.keys(localWebPhotos).length > 0) {
-      await WebPhotoDownloader.cleanupOldFiles(localWebPhotos);
+    // Clean up old files
+    if (Object.keys(localWebPhotos).length > 0) {
+      if (context === 'virtual') {
+        // For virtual environment, use VirtualPhotoDownloader cleanup
+        try {
+          console.log('🧹 Cleaning up unused virtual WebPhotos...');
+          const usedFilenames = new Set<string>(
+            Object.values(localWebPhotos).map(url => {
+              const urlParts = url.split('/');
+              return urlParts[urlParts.length - 1];
+            })
+          );
+          await VirtualPhotoDownloader.cleanupUnusedImages(usedFilenames, 'webphotos');
+          console.log('✅ Virtual WebPhotos cleanup completed');
+        } catch (cleanupError) {
+          console.warn('⚠️ Virtual WebPhotos cleanup failed:', cleanupError);
+        }
+      } else {
+        // For regular environment, use WebPhotoDownloader cleanup
+        await WebPhotoDownloader.cleanupOldFiles(localWebPhotos);
+      }
     }
 
     // Update cache buster timestamp
@@ -196,7 +245,10 @@ export async function POST(request: NextRequest) {
       }
       
       // Read existing timestamps
-      let timestamps = {
+      let timestamps: {
+        lastProductSync: string | null;
+        lastWebPhotosSync: string | null;
+      } = {
         lastProductSync: null,
         lastWebPhotosSync: null
       };
@@ -211,7 +263,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Update WebPhotos sync timestamp
-      // timestamps.lastWebPhotosSync = syncTimestamp;
+      timestamps.lastWebPhotosSync = syncTimestamp;
       
       // Write updated timestamps
       writeFileSync(TIMESTAMPS_FILE, JSON.stringify(timestamps, null, 2), 'utf8');

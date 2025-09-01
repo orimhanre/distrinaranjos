@@ -602,7 +602,7 @@ export default function Header() {
       </header>
 
       {/* Mobile Navigation - Main navigation bar - Outside header for full width */}
-      <div className="md:hidden border-t border-orange-500/30 fixed left-0 right-0 z-35" style={{ backgroundColor: '#1f2937', top: '75px', width: '100%', maxWidth: '100vw' }}>
+      <div className="md:hidden border-t border-orange-500/30 fixed left-0 right-0 z-35" style={{ backgroundColor: '#1f2937', top: '72px', width: '100%', maxWidth: '100vw' }}>
         <div className="overflow-x-auto scrollbar-hide" style={{ overflow: 'visible' }}>
           <div className="flex space-x-1 pl-3 pr-2 py-1 min-w-max justify-between items-center" style={{ overflow: 'visible' }}>
             <div className="flex space-x-1">
@@ -701,7 +701,7 @@ export default function Header() {
         <div 
           className="md:hidden fixed inset-0 z-30"
           onClick={closeAllMobileDropdowns}
-          style={{ top: '100px', backgroundColor: 'transparent', width: '100%', maxWidth: '100vw' }}
+          style={{ top: '97px', backgroundColor: 'transparent', width: '100%', maxWidth: '100vw' }}
         />
       )}
 
@@ -710,7 +710,7 @@ export default function Header() {
         <div 
           className="md:hidden fixed left-0 right-0 z-40 bg-white shadow-lg border-t border-gray-200 max-h-64 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
-          style={{ width: '100%', maxWidth: '100vw', top: '115px' }}
+          style={{ width: '100%', maxWidth: '100vw', top: '112px' }}
         >
           <div className="py-2">
             {brands.length === 0 && <div className="px-8 py-2 text-gray-500">Cargando marcas...</div>}
@@ -746,7 +746,7 @@ export default function Header() {
         <div 
           className="md:hidden fixed left-0 right-0 z-40 bg-white shadow-lg border-t border-gray-200 max-h-64 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
-          style={{ width: '100%', maxWidth: '100vw', top: '115px' }}
+          style={{ width: '100%', maxWidth: '100vw', top: '112px' }}
         >
           <div className="py-2">
             {categories.length === 0 && <div className="px-4 py-2 text-gray-500">Cargando categorías...</div>}
@@ -771,7 +771,7 @@ export default function Header() {
         <div 
           className="md:hidden fixed left-0 right-0 z-40 bg-white shadow-lg border-t border-gray-200 max-h-64 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
-          style={{ top: '115px' }}
+          style={{ top: '112px' }}
         >
           <div className="py-2">
             {types.length === 0 && <div className="px-2 py-2 text-gray-500">Cargando tipos...</div>}

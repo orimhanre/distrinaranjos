@@ -73,6 +73,7 @@ const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
 const [orderToDelete, setOrderToDelete] = useState<VirtualOrder | null>(null);
 const [searchTerm, setSearchTerm] = useState("");
 const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
 // Tracking modal states
 const [trackingModalOpen, setTrackingModalOpen] = useState<boolean>(false);
@@ -1887,6 +1888,39 @@ const filtered = orders.filter(order => {
 return filtered;
 }, [orders, showArchived, filterStatus, debouncedSearchTerm, searchInOrder]);
 
+// Helper to get grouping key (Google account email) and display name
+const getOrderEmail = (order: VirtualOrder): string => {
+  const email = (order.customerEmail && order.customerEmail.trim() !== '')
+    ? order.customerEmail
+    : (order.client?.email || 'Sin email');
+  return email;
+};
+
+const getCustomerDisplayNameForOrder = (order: VirtualOrder): string => {
+  if (order.client?.name && order.client?.surname) {
+    return `${order.client.name} ${order.client.surname}`;
+  }
+  if (order.client?.companyName && order.client.companyName.trim() !== '') {
+    return order.client.companyName;
+  }
+  if (order.customerName && order.customerName.trim() !== '') {
+    return order.customerName;
+  }
+  return getOrderEmail(order);
+};
+
+const toggleGroupExpansion = (email: string) => {
+  setExpandedGroups(prev => {
+    const newSet = new Set(prev);
+    if (newSet.has(email)) {
+      newSet.delete(email);
+    } else {
+      newSet.add(email);
+    }
+    return newSet;
+  });
+};
+
 // Show loading while authentication and permissions are being checked
 if (loading || permissionLoading) {
 return (
@@ -2469,7 +2503,53 @@ return (
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {filteredOrders.map((order, index) => (
+                {(() => {
+                  const groups = {} as Record<string, VirtualOrder[]>;
+                  for (const o of filteredOrders) {
+                    const key = getOrderEmail(o);
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(o);
+                  }
+                  const sortedEmails = Object.keys(groups).sort();
+                  const globalIndexById = new Map<string, number>();
+                  filteredOrders.forEach((o, idx) => globalIndexById.set(o.id, idx));
+                  const rows: React.ReactNode[] = [];
+                  for (const email of sortedEmails) {
+                    const ordersInGroup = groups[email].sort((a, b) => (globalIndexById.get(a.id)! - globalIndexById.get(b.id)!));
+                    const displayName = getCustomerDisplayNameForOrder(ordersInGroup[0]);
+                    const isExpanded = expandedGroups.has(email);
+                    rows.push(
+                      <tr key={`group-${email}`} className="bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => toggleGroupExpansion(email)}>
+                        <td colSpan={8} className="px-4 py-4 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">{sortedEmails.indexOf(email) + 1}</span>
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-medium text-gray-900">{displayName}</h3>
+                                <p className="text-xs text-gray-500">{email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-500">{ordersInGroup.length} pedidos</span>
+                              <svg 
+                                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                    if (isExpanded) {
+                      ordersInGroup.forEach((order) => {
+                        const index = globalIndexById.get(order.id)!;
+                        rows.push(
                   <tr key={`${order.id}-${index}`} className="hover:bg-gray-50 border-b border-gray-300">
                     <td className="w-12 px-1 py-4 whitespace-nowrap text-sm text-gray-500 font-medium border border-gray-300">
                       {index + 1}
@@ -2696,7 +2776,12 @@ return (
                       </div>
                     </td>
                   </tr>
-                ))}
+                      );
+                      });
+                    }
+                  }
+                  return rows;
+                })()}
               </tbody>
             </table>
           </div>
@@ -2705,7 +2790,51 @@ return (
         {/* Mobile Compact View */}
         <div className="md:hidden">
           <div className="space-y-3">
-            {filteredOrders.map((order, index) => (
+            {(() => {
+              const groups = {} as Record<string, VirtualOrder[]>;
+              for (const o of filteredOrders) {
+                const key = getOrderEmail(o);
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(o);
+              }
+              const sortedEmails = Object.keys(groups).sort();
+              const globalIndexById = new Map<string, number>();
+              filteredOrders.forEach((o, idx) => globalIndexById.set(o.id, idx));
+              const cards: React.ReactNode[] = [];
+              for (const email of sortedEmails) {
+                const ordersInGroup = groups[email].sort((a, b) => (globalIndexById.get(a.id)! - globalIndexById.get(b.id)!));
+                const displayName = getCustomerDisplayNameForOrder(ordersInGroup[0]);
+                const isExpanded = expandedGroups.has(email);
+                cards.push(
+                  <div key={`m-group-${email}`} className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors shadow-sm" onClick={() => toggleGroupExpansion(email)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-600">{sortedEmails.indexOf(email) + 1}</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">{displayName}</h3>
+                          <p className="text-xs text-gray-500">{email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">{ordersInGroup.length} pedidos</span>
+                        <svg 
+                          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                );
+                if (isExpanded) {
+                  ordersInGroup.forEach((order) => {
+                  const index = globalIndexById.get(order.id)!;
+                  cards.push(
               <div key={`${order.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
                 {/* Compact Header Row */}
                 <div className="flex items-center justify-between mb-2">
@@ -2908,7 +3037,12 @@ return (
                   </div>
                 </div>
               </div>
-            ))}
+                  );
+                  });
+                }
+              }
+              return cards;
+            })()}
           </div>
         </div>
       </div>

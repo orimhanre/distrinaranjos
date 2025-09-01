@@ -169,9 +169,9 @@ export class AirtableService {
     
 
     
-    // Helper function to extract URLs from Airtable attachment objects
-    const extractImageUrls = (value: any): string[] => {
-      console.log(`🔍 extractImageUrls called with:`, {
+    // Helper function to extract attachment objects (preserving original filenames)
+    const extractImageAttachments = (value: any): any[] => {
+      console.log(`🔍 extractImageAttachments called with:`, {
         value,
         type: typeof value,
         isArray: Array.isArray(value),
@@ -179,42 +179,42 @@ export class AirtableService {
       });
       
       if (!value) {
-        console.log(`🔍 extractImageUrls: No value, returning empty array`);
+        console.log(`🔍 extractImageAttachments: No value, returning empty array`);
         return [];
       }
       
       if (typeof value === 'string') {
-        console.log(`🔍 extractImageUrls: String value, returning:`, [value]);
+        console.log(`🔍 extractImageAttachments: String value, returning:`, [value]);
         return [value];
       }
       
       if (Array.isArray(value)) {
-        console.log(`🔍 extractImageUrls: Array value, processing ${value.length} items`);
-        // Handle array of attachments - extract URLs from all attachments
-        const urls = value
+        console.log(`🔍 extractImageAttachments: Array value, processing ${value.length} items`);
+        // Handle array of attachments - preserve original attachment objects
+        const attachments = value
           .map(attachment => {
             if (typeof attachment === 'object' && attachment.url) {
-              console.log(`🔍 extractImageUrls: Found attachment object with URL:`, attachment.url);
-              return attachment.url;
-            }
-            if (typeof attachment === 'string') {
-              console.log(`🔍 extractImageUrls: Found string attachment:`, attachment);
+              console.log(`🔍 extractImageAttachments: Found attachment object with filename:`, attachment.filename);
               return attachment;
             }
-            console.log(`🔍 extractImageUrls: Skipping invalid attachment:`, attachment);
+            if (typeof attachment === 'string') {
+              console.log(`🔍 extractImageAttachments: Found string attachment:`, attachment);
+              return attachment;
+            }
+            console.log(`🔍 extractImageAttachments: Skipping invalid attachment:`, attachment);
             return null;
           })
-          .filter(url => url !== null);
-        console.log(`🔍 extractImageUrls: Extracted ${urls.length} URLs from array:`, urls);
-        return urls;
+          .filter(attachment => attachment !== null);
+        console.log(`🔍 extractImageAttachments: Extracted ${attachments.length} attachments from array`);
+        return attachments;
       }
       
       if (typeof value === 'object' && value.url) {
-        console.log(`🔍 extractImageUrls: Single attachment object with URL:`, value.url);
-        return [value.url];
+        console.log(`🔍 extractImageAttachments: Single attachment object with filename:`, value.filename);
+        return [value];
       }
       
-      console.log(`🔍 extractImageUrls: No valid URLs found, returning empty array`);
+      console.log(`🔍 extractImageAttachments: No valid attachments found, returning empty array`);
       return [];
     };
     
@@ -245,9 +245,9 @@ export class AirtableService {
                 fieldNameLower === 'image_url'
             ) {
               console.log(`🔍 Processing image field: ${fieldName} with value:`, value);
-              const urls = extractImageUrls(value);
-              console.log(`🔍 Extracted URLs:`, urls);
-              return urls.length > 0 ? urls : null;
+              const attachments = extractImageAttachments(value);
+              console.log(`🔍 Extracted attachments:`, attachments);
+              return attachments.length > 0 ? attachments : null;
             }
           }
           
@@ -589,33 +589,44 @@ export class AirtableService {
     // Debug logging to see the actual field structure
     console.log('🔍 Airtable WebPhoto fields:', JSON.stringify(fields, null, 2));
     
-    // Helper function to extract URL from Airtable attachment object
-    const extractUrl = (value: any): string => {
+    // Helper function to extract URL and filename from Airtable attachment object
+    const extractUrlAndFilename = (value: any): { url: string; filename: string } => {
       if (typeof value === 'string') {
-        return value;
+        return { url: value, filename: '' };
       }
       if (Array.isArray(value) && value.length > 0) {
         // Handle array of attachments
         const firstAttachment = value[0];
         if (typeof firstAttachment === 'object' && firstAttachment.url) {
-          return firstAttachment.url;
+          return { 
+            url: firstAttachment.url, 
+            filename: firstAttachment.filename || '' 
+          };
         }
       }
       if (typeof value === 'object' && value.url) {
         // Handle single attachment object
-        return value.url;
+        return { 
+          url: value.url, 
+          filename: value.filename || '' 
+        };
       }
-      return '';
+      return { url: '', filename: '' };
     };
     
     // Try different possible field names for image URL with better error handling
     let imageUrl = '';
+    let originalFilename = '';
     try {
-      imageUrl = extractUrl(fields.image || fields.imageURL || fields.ImageURL || fields.URL || fields.Image || fields.Photo || '');
+      const result = extractUrlAndFilename(fields.image || fields.imageURL || fields.ImageURL || fields.URL || fields.Image || fields.Photo || '');
+      imageUrl = result.url;
+      originalFilename = result.filename;
       console.log('🔍 Extracted imageUrl:', imageUrl);
+      console.log('🔍 Extracted originalFilename:', originalFilename);
     } catch (error) {
       console.error('❌ Error extracting imageUrl:', error);
       imageUrl = '';
+      originalFilename = '';
     }
     
     // Normalize the name to use underscores instead of hyphens for consistency
@@ -635,6 +646,7 @@ export class AirtableService {
       id: airtableRecord.id,
       name: normalizedName,
       imageUrl: imageUrl,
+      originalFilename: originalFilename,
       updatedAt: new Date().toISOString()
     };
   }

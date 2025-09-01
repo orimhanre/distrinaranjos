@@ -33,12 +33,16 @@ export async function GET(request: NextRequest) {
     };
 
             // Convert relative image paths to full URLs for iOS app
-        const convertToFullUrls = (urls: any): string[] => {
+        const convertToFullUrls = (urls: any, forAdmin: boolean = false): string[] => {
           if (!urls) return [];
           const urlArray = Array.isArray(urls) ? urls : [urls];
           return urlArray.map(url => {
             if (typeof url === 'string' && url.startsWith('/')) {
-              // Convert relative path to full URL
+              // For admin interface, keep relative paths
+              if (forAdmin) {
+                return url;
+              }
+              // Convert relative path to full URL for iOS app
               // Use Mac's IP address for iOS compatibility instead of localhost
               const baseUrl = process.env.NEXTAUTH_URL || `http://192.168.1.29:${process.env.PORT || 3001}`;
               return `${baseUrl}${url}`;
@@ -47,9 +51,14 @@ export async function GET(request: NextRequest) {
           }).filter(url => url && typeof url === 'string');
         };
 
+    // Check if request is from admin interface (by checking referer or user agent)
+    const userAgent = request.headers.get('user-agent') || '';
+    const referer = request.headers.get('referer') || '';
+    const isAdminRequest = referer.includes('/adminvirtual') || userAgent.includes('admin');
+    
     // Transform products for API response
     const transformedProducts = products.map(product => {
-      const fullImageUrls = convertToFullUrls(product.imageURL);
+      const fullImageUrls = convertToFullUrls(product.imageURL, isAdminRequest);
       
 
       

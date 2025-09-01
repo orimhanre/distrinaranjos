@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
@@ -35,7 +35,8 @@ interface Column {
     }
   };
 
-export default function VirtualDatabasePage() {
+// Error boundary wrapper component
+function VirtualDatabasePageContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
@@ -260,9 +261,14 @@ export default function VirtualDatabasePage() {
                             setExternalSyncNotification('📱 iOS App triggered Product Sync');
                             setTimeout(() => setExternalSyncNotification(null), 3000);
                             
-                            // Reload data when sync is detected
-                            await loadProducts();
-                            await fetchColumns();
+                            // Reload data when sync is detected with error handling
+                            try {
+                                await loadProducts();
+                                await fetchColumns();
+                            } catch (error) {
+                                console.error('❌ Error reloading data after product sync:', error);
+                                // Don't crash the component, just log the error
+                            }
                         }
                     }
                     
@@ -281,13 +287,19 @@ export default function VirtualDatabasePage() {
                             setExternalSyncNotification('📱 iOS App triggered WebPhotos Sync');
                             setTimeout(() => setExternalSyncNotification(null), 3000);
                             
-                            // Reload data when sync is detected
-                            await loadWebPhotos();
+                            // Reload data when sync is detected with error handling
+                            try {
+                                await loadWebPhotos();
+                            } catch (error) {
+                                console.error('❌ Error reloading data after WebPhotos sync:', error);
+                                // Don't crash the component, just log the error
+                            }
                         }
                     }
                 }
             } catch (error) {
                 console.error('❌ Error checking for timestamp updates:', error);
+                // Don't crash the component, just log the error and continue
             }
         };
 
@@ -684,6 +696,80 @@ export default function VirtualDatabasePage() {
     );
   };
 
+  const renderUrlsList = (fileUrl: any, fileName: string) => {
+    // Try to parse JSON string if it's a string that looks like JSON
+    let processedFileUrl = fileUrl;
+    if (typeof fileUrl === 'string' && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
+      try {
+        processedFileUrl = JSON.parse(fileUrl);
+      } catch (error) {
+        // Use as string if parsing fails
+      }
+    }
+    
+    // Handle arrays (like imageURL arrays)
+    if (Array.isArray(processedFileUrl)) {
+      if (processedFileUrl.length === 0) {
+        return (
+          <div className="text-center text-xs text-gray-500">
+            sin URLs
+          </div>
+        );
+      }
+      
+      // Extract URLs from any format
+      const validUrls = processedFileUrl.map((img: any) => {
+        if (typeof img === 'string') return img;
+        if (img && typeof img === 'object' && img.url) {
+          return img.url;
+        }
+        return String(img);
+      }).filter(url => url && url.length > 0);
+      
+      if (validUrls.length === 0) {
+        return (
+          <div className="text-center text-xs text-gray-500">
+            sin URLs
+          </div>
+        );
+      }
+      
+      // Show URLs in a compact format
+      return (
+        <div className="max-w-xs">
+          {validUrls.slice(0, 3).map((url: string, index: number) => (
+            <div key={index} className="text-xs text-gray-600 break-all mb-1">
+              {url.length > 50 ? `${url.substring(0, 50)}...` : url}
+            </div>
+          ))}
+          {validUrls.length > 3 && (
+            <div className="text-xs text-gray-500">
+              +{validUrls.length - 3} más
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // Handle single string values
+    if (!processedFileUrl || typeof processedFileUrl !== 'string') {
+      return (
+        <div className="text-center text-xs text-gray-500">
+          sin URLs
+        </div>
+      );
+    }
+    
+    // Single URL
+    return (
+      <div className="max-w-xs">
+        <div className="text-xs text-gray-600 break-all">
+          {processedFileUrl.length > 50 ? `${processedFileUrl.substring(0, 50)}...` : processedFileUrl}
+        </div>
+      </div>
+    );
+  };
+
   // Sync from Airtable (Virtual Environment)
   const syncFromAirtable = async () => {
     try {
@@ -882,10 +968,27 @@ export default function VirtualDatabasePage() {
 
   const displayedProducts = filteredAndSortedProducts.slice(0, displayCount);
   const displayColumns = Array.isArray(columns) ? columns.filter(col => selectedColumns.includes(col.key)) : [];
-  const allDisplayColumns = [
+  
+  // Create columns with URL columns for attachment fields
+  const baseColumns = [
     ...(selectedColumns.includes('id') ? [{ key: 'id', label: 'ID', type: 'text' }] : []),
     ...displayColumns
   ];
+  
+  // Add URL columns for attachment fields
+  const allDisplayColumns = baseColumns.reduce((acc: any[], column) => {
+    acc.push(column);
+    if (column.type === 'attachment') {
+      acc.push({
+        key: `${column.key}_urls`,
+        label: `${column.label} URLs`,
+        type: 'text',
+        isUrlColumn: true,
+        originalField: column.key
+      });
+    }
+    return acc;
+  }, []);
 
   if (loading || permissionLoading) {
     return (
@@ -1358,6 +1461,9 @@ export default function VirtualDatabasePage() {
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
                   Mostrando {displayedProducts.length} de {products.length} productos con {allDisplayColumns.length} columnas
+                  {allDisplayColumns.some(col => col.isUrlColumn) && (
+                    <span className="text-blue-600 ml-1">(incluye columnas de URLs)</span>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -1421,7 +1527,10 @@ export default function VirtualDatabasePage() {
                         <tr key={product.id || index} className="hover:bg-gray-50">
                           {allDisplayColumns.map((column) => (
                             <td key={column.key} className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 border border-gray-300">
-                              {column.type === 'attachment' ? (
+                              {column.isUrlColumn ? (
+                                // Render URLs for attachment fields
+                                renderUrlsList((product as any)[column.originalField], `${column.key}_${index}`)
+                              ) : column.type === 'attachment' ? (
                                 renderFilePreview((product as any)[column.key], `${column.key}_${index}`)
                               ) : (
                                 formatValue((product as any)[column.key], column.type)
@@ -1438,6 +1547,9 @@ export default function VirtualDatabasePage() {
                 <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-xs text-gray-600">
                     Mostrando {displayedProducts.length} de {products.length} productos con {allDisplayColumns.length} columnas
+                    {allDisplayColumns.some(col => col.isUrlColumn) && (
+                      <span className="text-blue-600 ml-1">(incluye columnas de URLs)</span>
+                    )}
                   </div>
                   {displayedProducts.length < filteredAndSortedProducts.length && (
                     <div className="flex gap-2">
@@ -1625,6 +1737,65 @@ export default function VirtualDatabasePage() {
       )}
 
 
+    </div>
+  );
+}
+
+// Error boundary wrapper
+export default function VirtualDatabasePage() {
+  return (
+    <ErrorBoundary fallback={<ErrorFallback />}>
+      <VirtualDatabasePageContent />
+    </ErrorBoundary>
+  );
+}
+
+// Simple error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('❌ React error caught in VirtualDatabasePage:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+
+    return this.props.children;
+  }
+}
+
+// Error fallback component
+function ErrorFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          Error en la página
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Ha ocurrido un error al cargar la página de la base de datos.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Recargar página
+        </button>
+      </div>
     </div>
   );
 } 

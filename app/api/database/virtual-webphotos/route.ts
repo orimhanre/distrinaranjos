@@ -28,9 +28,27 @@ export async function GET(request: NextRequest) {
     const stmt = db.prepare('SELECT name, imageUrl FROM webphotos');
     const rows = stmt.all() as any[];
     
+    // Convert relative image paths to full URLs for iOS app
+    const convertToFullUrls = (url: string): string => {
+      if (typeof url === 'string' && url.startsWith('/')) {
+        // Convert relative path to full URL for iOS app
+        // Use Mac's IP address for iOS compatibility instead of localhost
+        const baseUrl = process.env.NEXTAUTH_URL || `http://192.168.1.29:${process.env.PORT || 3001}`;
+        return `${baseUrl}${url}`;
+      }
+      return url;
+    };
+
+    // Check if request is from admin interface (by checking referer or user agent)
+    const userAgent = request.headers.get('user-agent') || '';
+    const referer = request.headers.get('referer') || '';
+    const isAdminRequest = referer.includes('/adminvirtual') || userAgent.includes('admin');
+
     const webPhotos: Record<string, string> = {};
     rows.forEach(row => {
-      webPhotos[row.name] = row.imageUrl;
+      // For admin interface, keep relative paths; for iOS app, convert to full URLs
+      const imageUrl = isAdminRequest ? row.imageUrl : convertToFullUrls(row.imageUrl);
+      webPhotos[row.name] = imageUrl;
     });
     
     // // console.log('API: Returning', Object.keys(webPhotos).length, 'virtual webphotos');
@@ -38,7 +56,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       webPhotos,
-      count: Object.keys(webPhotos).length
+      count: Object.keys(webPhotos).length,
+      timestamp: Date.now() // Add timestamp to force cache refresh
     });
   } catch (error) {
     console.error('API Error fetching virtual webphotos:', error);

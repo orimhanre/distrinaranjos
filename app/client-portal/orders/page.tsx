@@ -46,6 +46,8 @@ interface Order {
       size: number;
     }>;
   }>;
+  // Bank info parsed from comentario
+  bankInfo?: string;
 }
 
 export default function ClientPortalOrdersPage() {
@@ -130,6 +132,7 @@ export default function ClientPortalOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dbInitialized, setDbInitialized] = useState(false);
+  const [productDetails, setProductDetails] = useState<Record<string, any>>({});
 
 
   useEffect(() => {
@@ -146,6 +149,30 @@ export default function ClientPortalOrdersPage() {
       setDbInitialized(false);
     }
   }, [user, virtualDb]);
+
+  // Function to fetch product details from Firestore
+  const fetchProductDetails = async (productIds: string[]) => {
+    if (!virtualDb || productIds.length === 0) return {};
+    
+    const details: Record<string, any> = {};
+    
+    try {
+      for (const productId of productIds) {
+        if (!productDetails[productId]) {
+          const productRef = doc(virtualDb, 'virtualProducts', productId);
+          const productDoc = await getDoc(productRef);
+          
+          if (productDoc.exists()) {
+            details[productId] = productDoc.data();
+          }
+        }
+      }
+      return details;
+    } catch (error) {
+      console.error('Error fetching product details:', error);
+      return {};
+    }
+  };
 
     const fetchOrders = async () => {
     if (!user?.email) {
@@ -175,6 +202,14 @@ export default function ClientPortalOrdersPage() {
         
         // Transform client orders to match the Order interface
         const activeOrders: Order[] = clientOrders.map((order: any) => {
+          // Parse payment info from comentario and orderDetails
+          const comentario = order.comentario || '';
+          const orderDetails = order.orderDetails || '';
+          const parsedPayment = parsePaymentInfo(comentario, orderDetails);
+          
+          // Use parsed payment method if available, otherwise fallback to direct field
+          const finalPaymentMethod = parsedPayment.paymentMethod || order.paymentMethod || 'No especificado';
+          
           return {
             orderId: order.orderId || order.orderNumber || `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             uniqueKey: `${order.orderId || order.orderNumber || 'unknown'}-${order.orderDate?.toDate?.() || order.orderDate || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -186,7 +221,7 @@ export default function ClientPortalOrdersPage() {
             totalPrice: order.totalAmount || order.totalPrice || 0,
             items: order.items || [],
             pdfUrl: order.fileUrl || order.pdfUrl || '',
-            comentario: order.comentario || '',
+            comentario: comentario,
             client: {
               name: order.client?.name || clientData.firstName || clientData.nombre || '',
               surname: order.client?.surname || clientData.lastName || clientData.apellido || '',
@@ -204,14 +239,16 @@ export default function ClientPortalOrdersPage() {
             // Include additional fields from enhanced order summary
             subtotal: order.subtotal || 0,
             shippingCost: order.shippingCost || 0,
-            paymentMethod: order.paymentMethod || 'No especificado',
-            orderDetails: order.orderDetails || '',
+            paymentMethod: finalPaymentMethod,
+            orderDetails: orderDetails,
             fileName: order.fileName || '',
             createdAt: order.createdAt || order.orderDate,
             lastUpdated: order.lastUpdated || order.orderDate,
             environment: order.environment || 'virtual',
             source: order.source || 'web',
             labels: order.labels || [],
+            // Add bank info for potential future use
+            bankInfo: parsedPayment.bankInfo,
 
           };
         });
@@ -222,6 +259,23 @@ export default function ClientPortalOrdersPage() {
           const dateB = b.orderDate instanceof Date ? b.orderDate : new Date(b.orderDate);
           return dateB.getTime() - dateA.getTime(); // Newest first
         });
+        
+        // Collect all unique product IDs from all orders
+        const allProductIds = new Set<string>();
+        sortedOrders.forEach(order => {
+          order.items.forEach((item: any) => {
+            const productId = item.productId || item.product?.id || item.id;
+            if (productId) {
+              allProductIds.add(productId);
+            }
+          });
+        });
+        
+        // Fetch product details for all products
+        if (allProductIds.size > 0) {
+          const newProductDetails = await fetchProductDetails(Array.from(allProductIds));
+          setProductDetails(prev => ({ ...prev, ...newProductDetails }));
+        }
         
         setOrders(sortedOrders);
       } else {
@@ -375,6 +429,104 @@ export default function ClientPortalOrdersPage() {
       default:
         return 'No especificado';
     }
+  };
+
+  // Enhanced payment parsing from comentario and orderDetails (like admin pages)
+  const parsePaymentInfo = (comentario: string, orderDetails: string) => {
+    let paymentMethod = '';
+    let bankInfo = '';
+    
+    // Check both comentario and orderDetails for payment method
+    const sources = [comentario, orderDetails].filter(Boolean);
+    
+    for (const source of sources) {
+      if (!paymentMethod) {
+        const paymentMethodMatch = source.match(/Método de pago: ([^|]+)/i);
+        if (paymentMethodMatch) {
+          const method = paymentMethodMatch[1].trim();
+          switch (method.toLowerCase()) {
+            case 'wompi':
+              paymentMethod = 'Wompi';
+              break;
+            case 'pse':
+              paymentMethod = 'PSE';
+              break;
+            case 'bank_transfer':
+              paymentMethod = 'Transferencia Bancaria';
+              break;
+            case 'bancolombia':
+              paymentMethod = 'Transferencia Bancaria - Bancolombia';
+              break;
+            case 'nequi':
+              paymentMethod = 'Transferencia Bancaria - Nequi';
+              break;
+            case 'a_la_mano':
+              paymentMethod = 'Transferencia Bancaria - A la Mano';
+              break;
+            case 'credit_card':
+              paymentMethod = 'Tarjeta de Crédito';
+              break;
+            case 'stripe':
+              paymentMethod = 'Tarjeta de Crédito';
+              break;
+            default:
+              paymentMethod = method;
+          }
+        }
+      }
+      
+      // Extract bank info
+      if (!bankInfo) {
+        const bankMatch = source.match(/Banco: ([^|]+)/i);
+        if (bankMatch) {
+          const bank = bankMatch[1].trim().toLowerCase();
+          switch (bank) {
+            case 'bancolombia':
+              bankInfo = 'Bancolombia';
+              break;
+            case 'nequi':
+              bankInfo = 'Nequi';
+              break;
+            case 'a_la_mano':
+            case 'alamano':
+              bankInfo = 'A La Mano';
+              break;
+            case 'daviplata':
+              bankInfo = 'DaviPlata';
+              break;
+            default:
+              bankInfo = bankMatch[1].trim();
+          }
+        }
+      }
+    }
+    
+    // If we found bank info and it's a bank transfer, prioritize showing just the bank name
+    if (bankInfo && (paymentMethod.toLowerCase().includes('transferencia') || !paymentMethod)) {
+      const bankLower = bankInfo.toLowerCase();
+      if (bankLower.includes('bancolombia')) {
+        paymentMethod = 'Bancolombia';
+      } else if (bankLower.includes('nequi')) {
+        paymentMethod = 'Nequi';
+      } else if (bankLower.includes('a la mano') || bankLower.includes('alamano')) {
+        paymentMethod = 'A la Mano';
+      } else if (bankLower.includes('daviplata')) {
+        paymentMethod = 'Daviplata';
+      } else if (bankLower.includes('banco de bogota') || bankLower.includes('bogota')) {
+        paymentMethod = 'Banco de Bogotá';
+      } else if (bankLower.includes('banco popular') || bankLower.includes('popular')) {
+        paymentMethod = 'Banco Popular';
+      } else if (bankLower.includes('bbva')) {
+        paymentMethod = 'BBVA';
+      } else if (bankLower.includes('davivienda')) {
+        paymentMethod = 'Davivienda';
+      } else {
+        // For other banks, show "Transferencia - [Bank]"
+        paymentMethod = `Transferencia - ${bankInfo}`;
+      }
+    }
+    
+    return { paymentMethod, bankInfo };
   };
 
   const getPaymentMethodText = (paymentMethod: string) => {
@@ -925,23 +1077,23 @@ export default function ClientPortalOrdersPage() {
             <div className="md:hidden">
               <div className="space-y-4">
                 {filteredOrders.map((order, index) => (
-                  <div key={`mobile-${order.uniqueKey || order.orderId}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div key={`mobile-${order.uniqueKey || order.orderId}-${index}`} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
                     {/* Header with Order Number, Date, and Price */}
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-base font-semibold text-gray-900">
+                        <div className="flex items-center space-x-2 mb-0.5">
+                          <h3 className="text-sm font-semibold text-gray-900">
                             Pedido #{order.orderNumber}
                           </h3>
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {(() => {
                             const dateInfo = formatDate(order.orderDate);
                             if (dateInfo === 'N/A') {
                               return 'N/A';
                             }
                             return (
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-1.5">
                                 <span>{dateInfo.date}</span>
                                 <span className="text-gray-400">•</span>
                                 <span className="text-gray-400">{dateInfo.time}</span>
@@ -951,134 +1103,113 @@ export default function ClientPortalOrdersPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-sm font-bold text-gray-900">
                           {formatCurrency(order.totalPrice)}
                         </p>
                       </div>
                     </div>
-                    
-                    {/* Key Information Grid */}
-                    <div className="space-y-3 mb-4">
-                      {/* Row 1: Status and Products */}
-                      <div className="flex space-x-3">
-                        <div className="flex-1 bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center space-x-1 mb-2">
-                            <p className="text-xs text-gray-500">Estado de Pago:</p>
-                          </div>
-                          <div className="space-y-2">
-                            {/* Payment Status */}
-                            <div>
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus || 'pending')}`}>
-                                {getPaymentStatusText(order.paymentStatus || 'pending')}
-                              </span>
-                            </div>
-                            {/* Shipping Status */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Envío:</p>
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getShippingStatusColor(order.status)}`}>
-                                {getShippingStatusText(order.status)}
-                              </span>
-                            </div>
-                            {/* Payment Method */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Método de Pago:</p>
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentMethodColor(order.paymentMethod || '')}`}>
-                                {getPaymentMethodText(order.paymentMethod || '')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 bg-gray-50 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 mb-1">Productos</p>
-                          {order.items && order.items.length > 0 ? (
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 mb-1 underline">
-                                {order.items.length} producto(s)
-                              </p>
-                              <div className="space-y-1">
-                                {order.items.slice(0, 2).map((item: any, index: number) => {
-                                  // Handle different possible item structures
-                                  const productName = item.productName || item.product?.name || item.name || 'Producto sin nombre';
-                                  const quantity = item.quantity || 1;
-                                  const brand = item.brand || item.product?.brand || '';
-                                  const color = item.color || item.selectedColor || '';
-                                  
-                                  let displayText = productName;
-                                  if (quantity > 1) displayText += ` (${quantity})`;
-                                  if (brand) displayText += ` - ${brand}`;
-                                  if (color) displayText += ` - ${color}`;
-                                  
-                                  return (
-                                    <p key={`mobile-item-${order.uniqueKey || order.orderId}-${index}`} className="text-xs text-gray-700 truncate">
-                                      • {displayText}
-                                    </p>
-                                  );
-                                })}
-                                {order.items.length > 2 && (
-                                  <p className="text-xs text-gray-500">
-                                    +{order.items.length - 2} más
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-500">N/A</p>
-                          )}
-                        </div>
+                    {/* Compact Badges and Summaries */}
+                    <div className="space-y-2 mb-2">
+                      {/* Bank/Method - Payment Status row */}
+                      <div className="text-[11px] text-gray-700">
+                        <span className="font-medium">
+                          {(() => {
+                            const parsed = parsePaymentInfo(order.comentario || '', order.orderDetails || '');
+                            const bankInfo = parsed.bankInfo;
+                            const methodText = getPaymentMethodText(order.paymentMethod || '');
+                            const bankOrMethod = bankInfo || methodText;
+                            return (
+                              <>
+                                {bankOrMethod} {"-"} {" "}
+                                <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus || 'pending')}`}>
+                                  {getPaymentStatusText(order.paymentStatus || 'pending')}
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </span>
                       </div>
-                      
-                      {/* Row 2: Financial Details and Shipping Address */}
-                      <div className="flex space-x-3">
-                        {/* Financial Details */}
-                        <div className="flex-1 bg-gray-50 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 mb-1">Detalles Financieros</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-xs text-gray-600">Subtotal:</span>
-                              <span className="text-xs font-medium text-gray-900">{formatCurrency(order.subtotal || 0)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-xs text-gray-600">Envío:</span>
-                              <span className="text-xs font-medium text-gray-900">{formatCurrency(order.shippingCost || 0)}</span>
-                            </div>
-                            <div className="flex justify-between border-t pt-1">
-                              <span className="text-xs font-medium text-gray-900">Total:</span>
-                              <span className="text-xs font-bold text-gray-900">{formatCurrency(order.totalPrice || 0)}</span>
-                            </div>
+
+                      {/* Payment Method capsule (avoid repeating bank) */}
+                      {(() => {
+                        const parsed = parsePaymentInfo(order.comentario || '', order.orderDetails || '');
+                        const bankInfo = (parsed.bankInfo || '').toLowerCase();
+                        const methodTextRaw = getPaymentMethodText(order.paymentMethod || '');
+                        const methodText = methodTextRaw || '';
+                        const methodLower = methodText.toLowerCase();
+                        const isDuplicate = bankInfo && (methodLower.includes(bankInfo) || bankInfo.includes(methodLower));
+                        const showCapsule = methodText && methodText !== 'No especificado' && !isDuplicate;
+                        return showCapsule ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full ${getPaymentMethodColor(order.paymentMethod || '')}`}>
+                              {methodText}
+                            </span>
                           </div>
-                        </div>
-                        
-                        {/* Shipping Address */}
-                        <div className="flex-1 bg-gray-50 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 mb-1">Dirección de Envío</p>
-                          {order.shippingAddress ? (
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 truncate">{order.shippingAddress}</p>
-                            </div>
-                          ) : order.client?.address && order.client?.city ? (
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 truncate">{order.client.address}</p>
-                              <p className="text-xs text-gray-600">{order.client.city}, {order.client.department}</p>
-                              {order.client.postalCode && (
-                                <p className="text-xs text-gray-500">{order.client.postalCode}</p>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-500">No especificada</p>
-                          )}
-                        </div>
+                        ) : null;
+                      })()}
+
+                      {/* Products summary - each product on its own line with price */}
+                      <div className="text-xs text-gray-700 space-y-0.5">
+                        {order.items && order.items.length > 0 ? (
+                          <>
+                            {order.items.map((item: any, i: number) => {
+                              const name = item.productName || item.product?.name || item.name || 'Producto';
+                              const qty = item.quantity || 1;
+                              
+                              // Get price from item, or from fetched product details
+                              const productId = item.productId || item.product?.id || item.id;
+                              const fetchedProduct = productId ? productDetails[productId] : null;
+                              const price = item.price || item.unitPrice || item.product?.price || fetchedProduct?.price || 0;
+                              const totalPrice = price * qty;
+                              
+                              return (
+                                <div key={i} className="block truncate">
+                                  {i + 1}. {name}{qty > 1 ? ` (x${qty})` : ''} ({formatCurrency(totalPrice)})
+                                </div>
+                              );
+                            })}
+                          </>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </div>
+
+                      {/* Financial quick line */}
+                      <div className="text-[11px] text-gray-600">
+                        Sub: <span className="font-medium text-gray-900">{formatCurrency(order.subtotal || 0)}</span>
+                        <span className="mx-1 text-gray-400">•</span>
+                        Env: <span className="font-medium text-gray-900">{formatCurrency(order.shippingCost || 0)}</span>
+                        <span className="mx-1 text-gray-400">•</span>
+                        Tot: <span className="font-bold text-gray-900">{formatCurrency(order.totalPrice || 0)}</span>
+                      </div>
+
+                      {/* Address line */}
+                      <div className="text-[11px] text-gray-600 truncate">
+                        {order.shippingAddress ? (
+                          <span>📍 {order.shippingAddress}</span>
+                        ) : order.client?.address && order.client?.city ? (
+                          <span>📍 {order.client.address}, {order.client.city}{order.client.department ? `, ${order.client.department}` : ''}</span>
+                        ) : (
+                          <span className="text-gray-400">Dirección no especificada</span>
+                        )}
                       </div>
                     </div>
                     
-                    {/* Tracking Info */}
+                    {/* Shipping Status */}
+                    <div className="mb-2">
+                      <div className="text-[11px] text-gray-600 mb-1">
+                        Estado de Envío: <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full ${getShippingStatusColor(order.status)}`}>
+                          {getShippingStatusText(order.status)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Tracking Info (compact) */}
                     {order.trackingNumber && (
-                      <div className="mb-4 p-3 bg-green-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Número de Seguimiento</p>
-                        <p className="text-sm font-medium text-green-700">{order.trackingNumber}</p>
-                        {order.courier && (
-                          <p className="text-xs text-gray-600">Empresa: {order.courier}</p>
-                        )}
+                      <div className="mb-2 px-2 py-1 rounded-md bg-green-100 border border-green-200">
+                        <p className="text-[11px] text-green-800">
+                          🚚 <span className="font-semibold">{order.trackingNumber}</span>{order.courier ? ` • ${order.courier}` : ''}
+                        </p>
                       </div>
                     )}
                     
@@ -1089,13 +1220,13 @@ export default function ClientPortalOrdersPage() {
                           href={order.pdfUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors w-full justify-center"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
                         >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                          Ver Pedido PDF
+                          Ver PDF
                         </a>
                       </div>
                     )}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AirtableService, SyncResult } from '../../../../lib/airtable';
 import { ProductDatabase } from '../../../../lib/database';
 import { ImageDownloader } from '../../../../lib/imageDownloader';
+import { VirtualPhotoDownloader } from '../../../../lib/virtualPhotoDownloader';
 
 // Create database instance based on context
 let productDB: ProductDatabase;
@@ -209,13 +210,31 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // For virtual environment, use original Airtable URLs (no local download)
-        if (context === 'virtual') {
-          console.log(`🖼️ Virtual environment: Using original Airtable URLs for ${product.id}`);
-          // Keep original imageURL as is - no local download needed
-          
-          // Ensure virtual environment products have placeholder images if no images are available
-          if (!product.imageURL || product.imageURL.length === 0) {
+                  // For virtual environment, download images locally with original filenames
+          if (context === 'virtual') {
+            console.log(`🖼️ Virtual environment: Downloading images locally for ${product.id}`);
+            
+            const imageAttachments = product.imageURL || product.ImageURL;
+            if (imageAttachments && Array.isArray(imageAttachments) && imageAttachments.length > 0) {
+                          try {
+              const localImageUrls = await VirtualPhotoDownloader.downloadProductImages(imageAttachments);
+            
+            if (localImageUrls.length > 0) {
+              product.imageURL = localImageUrls;
+              product.ImageURL = localImageUrls;
+              console.log(`✅ Virtual environment: Downloaded ${localImageUrls.length} images for ${product.id}`);
+            } else {
+              // If no images downloaded successfully, use placeholder
+              console.log(`🖼️ Virtual environment: No images downloaded, using placeholder for ${product.id}`);
+              product.imageURL = ['/placeholder-product.svg'];
+            }
+            } catch (error) {
+              console.warn(`⚠️ Virtual image download failed for ${product.id}:`, error);
+              // Use placeholder if download fails
+              product.imageURL = ['/placeholder-product.svg'];
+            }
+          } else {
+            // Ensure virtual environment products have placeholder images if no images are available
             console.log(`🖼️ Virtual environment: Adding placeholder image for product ${product.id}`);
             product.imageURL = ['/placeholder-product.svg'];
           }
@@ -368,6 +387,48 @@ export async function POST(request: NextRequest) {
 
     // Check final product count after sync
     const finalProducts = productDB.getAllProducts();
+    
+    // Clean up unused virtual images if this is virtual environment
+    if (context === 'virtual') {
+      try {
+        console.log('🧹 Cleaning up unused virtual images...');
+        
+        // Get all current product image filenames
+        const currentProductFilenames = new Set(
+          finalProducts.flatMap(product => 
+            (product.imageURL || [])
+              .filter(Boolean)
+              .map(url => {
+                // Extract filename from URL
+                const urlParts = url.split('/');
+                return urlParts[urlParts.length - 1];
+              })
+          )
+        );
+        
+        // Get current WebPhoto filenames
+        const { WebPhotosDatabase } = await import('@/lib/database');
+        const webPhotosDB = new WebPhotosDatabase('virtual');
+        const currentWebPhotos = webPhotosDB.getAllWebPhotos();
+        const currentWebPhotoFilenames = new Set<string>(
+          currentWebPhotos
+            .map((webPhoto: any) => webPhoto.imageUrl)
+            .filter((url: string) => url && url.length > 0)
+            .map((url: string) => {
+              // Extract filename from URL
+              const urlParts = url.split('/');
+              return urlParts[urlParts.length - 1];
+            })
+        );
+        
+        // Clean up unused images
+        await VirtualPhotoDownloader.cleanupUnusedImages(currentProductFilenames, 'products');
+        await VirtualPhotoDownloader.cleanupUnusedImages(currentWebPhotoFilenames, 'webphotos');
+        console.log('✅ Virtual image cleanup completed');
+      } catch (cleanupError) {
+        console.warn('⚠️ Virtual image cleanup failed:', cleanupError);
+      }
+    }
     
     // SUMMARY - Key numbers for debugging
     console.log(`\n📊 SYNC SUMMARY:`);

@@ -1,3 +1,32 @@
+const { loadEnvConfig } = require('@next/env')
+const path = require('path')
+
+// Load environment variables from .env.virtual.local
+try {
+  const fs = require('fs')
+  const envVirtualPath = path.join(__dirname, '.env.virtual.local')
+  
+  if (fs.existsSync(envVirtualPath)) {
+    const envContent = fs.readFileSync(envVirtualPath, 'utf8')
+    envContent.split('\n').forEach(line => {
+      const trimmedLine = line.trim()
+      if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine.includes('=')) {
+        const equalIndex = trimmedLine.indexOf('=')
+        const key = trimmedLine.substring(0, equalIndex).trim()
+        const value = trimmedLine.substring(equalIndex + 1).trim()
+        
+        // Only set if not already in process.env
+        if (!process.env[key]) {
+          process.env[key] = value
+        }
+      }
+    })
+    console.log('✅ Loaded virtual environment variables')
+  }
+} catch (error) {
+  console.warn('⚠️ Could not load .env.virtual.local:', error.message)
+}
+
 /** @type {import('next').Config} */
 const nextConfig = {
     // Image optimization with cache prevention
