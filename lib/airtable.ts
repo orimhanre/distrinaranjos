@@ -615,26 +615,42 @@ export class AirtableService {
     
     // Helper function to extract URL and filename from Airtable attachment object
     const extractUrlAndFilename = (value: any): { url: string; filename: string } => {
+      console.log('🔍 extractUrlAndFilename called with:', {
+        value,
+        type: typeof value,
+        isArray: Array.isArray(value),
+        hasUrl: typeof value === 'object' && value.url,
+        keys: typeof value === 'object' ? Object.keys(value) : 'N/A'
+      });
+      
       if (typeof value === 'string') {
+        console.log('🔍 String value detected, returning as URL');
         return { url: value, filename: '' };
       }
+      
       if (Array.isArray(value) && value.length > 0) {
+        console.log(`🔍 Array value detected with ${value.length} items`);
         // Handle array of attachments
         const firstAttachment = value[0];
+        console.log('🔍 First attachment:', firstAttachment);
         if (typeof firstAttachment === 'object' && firstAttachment.url) {
+          console.log('✅ Found attachment object with URL:', firstAttachment.url);
           return { 
             url: firstAttachment.url, 
             filename: firstAttachment.filename || '' 
           };
         }
       }
+      
       if (typeof value === 'object' && value.url) {
-        // Handle single attachment object
+        console.log('✅ Found single attachment object with URL:', value.url);
         return { 
           url: value.url, 
           filename: value.filename || '' 
         };
       }
+      
+      console.log('⚠️ No valid attachment found in value');
       return { url: '', filename: '' };
     };
     
