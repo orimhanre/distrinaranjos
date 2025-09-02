@@ -555,15 +555,22 @@ export class AirtableService {
       throw new Error(`Airtable API key or Base ID not configured for ${this.currentEnvironment} environment`);
     }
 
+    console.log(`🔍 Fetching WebPhotos from Airtable base: ${config.baseId}`);
+    console.log(`🔍 Using API key: ${config.apiKey ? 'Configured' : 'Missing'}`);
+
     const records: AirtableWebPhoto[] = [];
     
     return new Promise((resolve, reject) => {
       const currentBase = new Airtable({ apiKey: config.apiKey }).base(config.baseId);
       
+      console.log('🔍 Querying WebPhotos table...');
+      
       currentBase('WebPhotos').select({
         view: 'Grid view'
       }).eachPage((pageRecords, fetchNextPage) => {
+        console.log(`📄 Processing page with ${pageRecords.length} records`);
         pageRecords.forEach(record => {
+          console.log(`🔍 WebPhoto record ${record.id}:`, JSON.stringify(record.fields, null, 2));
           records.push({
             id: record.id,
             fields: record.fields
@@ -572,8 +579,10 @@ export class AirtableService {
         fetchNextPage();
       }, (err) => {
         if (err) {
+          console.error('❌ Error fetching WebPhotos:', err);
           reject(err);
         } else {
+          console.log(`✅ Successfully fetched ${records.length} WebPhoto records`);
           resolve(records);
         }
       });
@@ -618,11 +627,39 @@ export class AirtableService {
     let imageUrl = '';
     let originalFilename = '';
     try {
-      const result = extractUrlAndFilename(fields.image || fields.imageURL || fields.ImageURL || fields.URL || fields.Image || fields.Photo || '');
-      imageUrl = result.url;
-      originalFilename = result.filename;
-      console.log('🔍 Extracted imageUrl:', imageUrl);
-      console.log('🔍 Extracted originalFilename:', originalFilename);
+      // Check all possible field names for image URL
+      const possibleImageFields = [
+        fields.image, 
+        fields.imageURL, 
+        fields.ImageURL, 
+        fields.URL, 
+        fields.Image, 
+        fields.Photo,
+        fields.photo,
+        fields.PhotoURL,
+        fields.photoURL
+      ];
+      
+      console.log('🔍 Checking possible image fields:', possibleImageFields);
+      
+      for (const field of possibleImageFields) {
+        if (field) {
+          const result = extractUrlAndFilename(field);
+          if (result.url) {
+            imageUrl = result.url;
+            originalFilename = result.filename;
+            console.log('✅ Found image URL in field:', field);
+            console.log('🔍 Extracted imageUrl:', imageUrl);
+            console.log('🔍 Extracted originalFilename:', originalFilename);
+            break;
+          }
+        }
+      }
+      
+      if (!imageUrl) {
+        console.warn('⚠️ No valid image URL found in any field');
+        console.log('🔍 All fields checked:', fields);
+      }
     } catch (error) {
       console.error('❌ Error extracting imageUrl:', error);
       imageUrl = '';
