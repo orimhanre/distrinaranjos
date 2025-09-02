@@ -125,15 +125,23 @@ export class AirtableService {
       throw new Error(`Airtable API key or Base ID not configured for ${this.currentEnvironment} environment`);
     }
 
+    console.log(`🔍 Fetching products from Airtable base: ${config.baseId}`);
+    console.log(`🔍 Using table: ${AIRTABLE_TABLE_NAME}`);
+    console.log(`🔍 Using API key: ${config.apiKey ? 'Configured' : 'Missing'}`);
+
     const records: AirtableProduct[] = [];
     
     return new Promise((resolve, reject) => {
       const currentBase = new Airtable({ apiKey: config.apiKey }).base(config.baseId);
       
+      console.log('🔍 Querying products table...');
+      
       currentBase(AIRTABLE_TABLE_NAME).select({
         view: 'Grid view'
       }).eachPage((pageRecords, fetchNextPage) => {
+        console.log(`📄 Processing page with ${pageRecords.length} product records`);
         pageRecords.forEach(record => {
+          console.log(`🔍 Product record ${record.id}:`, JSON.stringify(record.fields, null, 2));
           records.push({
             id: record.id,
             fields: record.fields
@@ -142,8 +150,10 @@ export class AirtableService {
         fetchNextPage();
       }, (err) => {
         if (err) {
+          console.error('❌ Error fetching products:', err);
           reject(err);
         } else {
+          console.log(`✅ Successfully fetched ${records.length} product records`);
           resolve(records);
         }
       });
@@ -237,16 +247,21 @@ export class AirtableService {
           // Special handling for image attachments - convert to URL arrays
           if (fieldName) {
             const fieldNameLower = fieldName.toLowerCase();
-            if (fieldNameLower.includes('image') || 
+            const isImageField = fieldNameLower.includes('image') || 
                 fieldNameLower.includes('photo') || 
                 fieldNameLower.includes('attachment') ||
                 fieldNameLower.includes('url') ||
                 fieldNameLower === 'imageurl' ||
-                fieldNameLower === 'image_url'
-            ) {
+                fieldNameLower === 'image_url' ||
+                fieldNameLower === 'imageurls' ||
+                fieldNameLower === 'photos' ||
+                fieldNameLower === 'images';
+            
+            if (isImageField) {
               console.log(`🔍 Processing image field: ${fieldName} with value:`, value);
+              console.log(`🔍 Field type: ${typeof value}, isArray: ${Array.isArray(value)}`);
               const attachments = extractImageAttachments(value);
-              console.log(`🔍 Extracted attachments:`, attachments);
+              console.log(`🔍 Extracted ${attachments.length} attachments from ${fieldName}:`, attachments);
               return attachments.length > 0 ? attachments : null;
             }
           }
