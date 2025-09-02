@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
             if (typeof url === 'string' && url.startsWith('/')) {
               // For admin interface, keep relative paths
               if (forAdmin) {
+                console.log('🔍 convertToFullUrls: Admin request, keeping relative path:', url);
                 return url;
               }
               // Convert relative path to full URL for iOS app
@@ -48,7 +49,9 @@ export async function GET(request: NextRequest) {
                              (process.env.NODE_ENV === 'production' 
                                ? 'https://distrinaranjos.co' 
                                : `http://192.168.1.29:${process.env.PORT || 3001}`);
-              return `${baseUrl}${url}`;
+              const fullUrl = `${baseUrl}${url}`;
+              console.log('🔍 convertToFullUrls: Converting to full URL:', { original: url, baseUrl, fullUrl });
+              return fullUrl;
             }
             return url;
           }).filter(url => url && typeof url === 'string');
@@ -59,11 +62,28 @@ export async function GET(request: NextRequest) {
     const referer = request.headers.get('referer') || '';
     const isAdminRequest = referer.includes('/adminvirtual') || userAgent.includes('admin');
     
+    // Debug logging
+    console.log('🔍 API Debug - virtual-products:', {
+      userAgent: userAgent.substring(0, 100),
+      referer: referer.substring(0, 100),
+      isAdminRequest,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
     // Transform products for API response
     const transformedProducts = products.map(product => {
       const fullImageUrls = convertToFullUrls(product.imageURL, isAdminRequest);
       
-
+      // Debug logging for first few products
+      if (typeof product.id === 'number' && product.id <= 3) {
+        console.log('🔍 Product transformation debug:', {
+          id: product.id,
+          originalImageURL: product.imageURL,
+          transformedImageURL: fullImageUrls,
+          isAdminRequest
+        });
+      }
       
       return {
         id: product.id,
