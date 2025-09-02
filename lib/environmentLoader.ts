@@ -76,6 +76,16 @@ export class EnvironmentLoader {
     const envPath = path.resolve(process.cwd(), '.env.virtual.local');
     const envVars = this.loadEnvFile(envPath);
 
+    // Debug: Show all available process.env variables
+    console.log('🔍 Available process.env variables:', {
+      hasVIRTUAL_AIRTABLE_API_KEY: !!process.env.VIRTUAL_AIRTABLE_API_KEY,
+      hasVIRTUAL_AIRTABLE_BASE_ID: !!process.env.VIRTUAL_AIRTABLE_BASE_ID,
+      hasVIRTUAL_AIRTABLE_ACCOUNT_EMAIL: !!process.env.VIRTUAL_AIRTABLE_ACCOUNT_EMAIL,
+      // Check for any Airtable-related variables
+      hasAnyAirtableVars: Object.keys(process.env).filter(key => key.includes('AIRTABLE')).length > 0,
+      allAirtableVars: Object.keys(process.env).filter(key => key.includes('AIRTABLE'))
+    });
+
     // Fallback to process.env if file doesn't exist (production environment)
     const config = {
       apiKey: envVars.VIRTUAL_AIRTABLE_API_KEY || process.env.VIRTUAL_AIRTABLE_API_KEY || '',
