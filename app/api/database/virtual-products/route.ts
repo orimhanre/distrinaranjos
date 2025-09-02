@@ -38,19 +38,19 @@ export async function GET(request: NextRequest) {
           const urlArray = Array.isArray(urls) ? urls : [urls];
           return urlArray.map(url => {
             if (typeof url === 'string' && url.startsWith('/')) {
-              // For admin interface, keep relative paths
-              if (forAdmin) {
-                console.log('🔍 convertToFullUrls: Admin request, keeping relative path:', url);
-                return url;
-              }
-              // Convert relative path to full URL for iOS app
+              // Always convert to full URLs to avoid base path issues
               // Use the current domain for production, fallback for development
               const baseUrl = process.env.NEXTAUTH_URL || 
                              (process.env.NODE_ENV === 'production' 
                                ? 'https://distrinaranjos.co' 
                                : `http://192.168.1.29:${process.env.PORT || 3001}`);
               const fullUrl = `${baseUrl}${url}`;
-              console.log('🔍 convertToFullUrls: Converting to full URL:', { original: url, baseUrl, fullUrl });
+              console.log('🔍 convertToFullUrls: Converting to full URL:', { 
+                original: url, 
+                baseUrl, 
+                fullUrl, 
+                forAdmin 
+              });
               return fullUrl;
             }
             return url;

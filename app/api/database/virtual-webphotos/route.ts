@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
 
     const webPhotos: Record<string, string> = {};
     rows.forEach(row => {
-      // For admin interface, keep relative paths; for iOS app, convert to full URLs
-      const imageUrl = isAdminRequest ? row.imageUrl : convertToFullUrls(row.imageUrl);
+      // Always convert to full URLs to avoid base path issues
+      const imageUrl = convertToFullUrls(row.imageUrl);
       webPhotos[row.name] = imageUrl;
     });
     
