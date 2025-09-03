@@ -1,15 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { fetchProductsFromDatabase, fetchWebPhotos } from "@/lib/databaseService";
+import { fetchProductsFromDatabase, fetchWebPhotos } from "../lib/databaseService";
 import { FaChevronLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaUser } from "react-icons/fa";
 
 import { useRouter } from "next/navigation";
 import React from 'react';
-import ProductModal from '@/components/ProductModal';
-import ProductCard from '@/components/ProductCard';
-import VirtualPhotoCarousel from '@/components/VirtualPhotoCarousel';
-import { cacheBuster } from '@/lib/cacheBuster';
+import ProductModal from '../components/ProductModal';
+import ProductCard from '../components/ProductCard';
+import VirtualPhotoCarousel from '../components/VirtualPhotoCarousel';
+import { cacheBuster } from '../lib/cacheBuster';
 
 // Auto-rotating product card component for carousel sections
 function AutoRotatingProductCard({ product, className, ...props }: any) {

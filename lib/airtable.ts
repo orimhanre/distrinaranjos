@@ -166,65 +166,89 @@ export class AirtableService {
   static convertAirtableToProduct(airtableRecord: AirtableProduct) {
     const fields = airtableRecord.fields;
     
-    console.log(`🔍 Converting Airtable record ${airtableRecord.id} in ${this.currentEnvironment} environment`);
-    console.log(`🔍 Available fields:`, Object.keys(fields));
-    console.log(`🔍 Stock/Quantity fields check:`, {
-      hasStock: !!fields.Stock,
-      hasQuantity: !!fields.Quantity,
-      hasstock: !!fields.stock,
-      hasquantity: !!fields.quantity,
-      stockValue: fields.Stock || fields.stock,
-      quantityValue: fields.Quantity || fields.quantity
-    });
+    // Reduced logging - only log if debugging is enabled
+    if (process.env.DEBUG_AIRTABLE_CONVERSION === 'true') {
+      console.log(`🔍 Converting Airtable record ${airtableRecord.id} in ${this.currentEnvironment} environment`);
+      console.log(`🔍 Available fields:`, Object.keys(fields));
+      console.log(`🔍 Stock/Quantity fields check:`, {
+        hasStock: !!fields.Stock,
+        hasQuantity: !!fields.Quantity,
+        hasstock: !!fields.stock,
+        hasquantity: !!fields.quantity,
+        stockValue: fields.Stock || fields.stock,
+        quantityValue: fields.Quantity || fields.quantity
+      });
+    }
     
 
     
     // Helper function to extract attachment objects (preserving original filenames)
     const extractImageAttachments = (value: any): any[] => {
-      console.log(`🔍 extractImageAttachments called with:`, {
-        value,
-        type: typeof value,
-        isArray: Array.isArray(value),
-        length: Array.isArray(value) ? value.length : 'N/A'
-      });
+      // Reduced logging - only log if debugging is enabled
+      if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+        console.log(`🔍 extractImageAttachments called with:`, {
+          value,
+          type: typeof value,
+          isArray: Array.isArray(value),
+          length: Array.isArray(value) ? value.length : 'N/A'
+        });
+      }
       
       if (!value) {
-        console.log(`🔍 extractImageAttachments: No value, returning empty array`);
+        if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+          console.log(`🔍 extractImageAttachments: No value, returning empty array`);
+        }
         return [];
       }
       
       if (typeof value === 'string') {
-        console.log(`🔍 extractImageAttachments: String value, returning:`, [value]);
+        if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+          console.log(`🔍 extractImageAttachments: String value, returning:`, [value]);
+        }
         return [value];
       }
       
       if (Array.isArray(value)) {
-        console.log(`🔍 extractImageAttachments: Array value, processing ${value.length} items`);
+        if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+          console.log(`🔍 extractImageAttachments: Array value, processing ${value.length} items`);
+        }
         // Handle array of attachments - preserve original attachment objects
         const attachments = value
           .map(attachment => {
             if (typeof attachment === 'object' && attachment.url) {
-              console.log(`🔍 extractImageAttachments: Found attachment object with filename:`, attachment.filename);
+              if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+                console.log(`🔍 extractImageAttachments: Found attachment object with filename:`, attachment.filename);
+              }
               return attachment;
             }
             if (typeof attachment === 'string') {
-              console.log(`🔍 extractImageAttachments: Found string attachment:`, attachment);
+              if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+                console.log(`🔍 extractImageAttachments: Found string attachment:`, attachment);
+              }
               return attachment;
             }
-            console.log(`🔍 extractImageAttachments: Skipping invalid attachment:`, attachment);
+            if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+              console.log(`🔍 extractImageAttachments: Skipping invalid attachment:`, attachment);
+            }
             return null;
           })
           .filter(attachment => attachment !== null);
-        console.log(`🔍 extractImageAttachments: Extracted ${attachments.length} attachments from array`);
+        if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+          console.log(`🔍 extractImageAttachments: Extracted ${attachments.length} attachments from array`);
+        }
         return attachments;
       }
       
       if (typeof value === 'object' && value.url) {
-        console.log(`🔍 extractImageAttachments: Single attachment object with filename:`, value.filename);
+        if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+          console.log(`🔍 extractImageAttachments: Single attachment object with filename:`, value.filename);
+        }
         return [value];
       }
       
-      console.log(`🔍 extractImageAttachments: No valid attachments found, returning empty array`);
+      if (process.env.DEBUG_AIRTABLE_ATTACHMENTS === 'true') {
+        console.log(`🔍 extractImageAttachments: No valid attachments found, returning empty array`);
+      }
       return [];
     };
     
@@ -262,7 +286,8 @@ export class AirtableService {
               console.log(`🔍 Field type: ${typeof value}, isArray: ${Array.isArray(value)}`);
               const attachments = extractImageAttachments(value);
               console.log(`🔍 Extracted ${attachments.length} attachments from ${fieldName}:`, attachments);
-              return attachments.length > 0 ? attachments : null;
+              // Always return an array for image fields, even if empty
+              return attachments;
             }
           }
           
@@ -292,47 +317,71 @@ export class AirtableService {
     // Process ALL fields from Airtable with original case
     for (const [fieldName, fieldValue] of Object.entries(fields)) {
       // Preserve original case from Airtable
-      console.log(`🔍 Processing field: ${fieldName} (type: ${typeof fieldValue})`);
+      // Reduced logging - only log if debugging is enabled
+      if (process.env.DEBUG_AIRTABLE_FIELDS === 'true') {
+        console.log(`🔍 Processing field: ${fieldName} (type: ${typeof fieldValue})`);
+      }
       const processedValue = safeValue(fieldValue, fieldName);
       product[fieldName] = processedValue;
     }
     
     // For virtual environment, if no images are found, use placeholder images
     if (this.currentEnvironment === 'virtual' && (!product.imageURL || product.imageURL.length === 0)) {
-      console.log(`🖼️ Virtual environment: No images found for product ${product.id}, using placeholder`);
+      // Only log this once per product, not for every field
+      if (process.env.DEBUG_AIRTABLE_IMAGES === 'true') {
+        console.log(`🖼️ Virtual environment: No images found for product ${product.id}, using placeholder`);
+      }
       product.imageURL = ['/placeholder-product.svg'];
+    } else if (this.currentEnvironment === 'virtual' && product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+      // Log when images are found
+      if (process.env.DEBUG_AIRTABLE_IMAGES === 'true') {
+        console.log(`🖼️ Virtual environment: Found ${product.imageURL.length} images for product ${product.id}:`, product.imageURL);
+      }
     }
     
 
 
     // Handle price field mapping for database compatibility
-    console.log(`🔍 Processing product ${product.id}: price=${product.price}, price1=${product.price1}, price2=${product.price2}`);
-    console.log(`🔍 Current environment: ${this.currentEnvironment}`);
+    // Reduced logging - only log if debugging is enabled
+    if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+      console.log(`🔍 Processing product ${product.id}: price=${product.price}, price1=${product.price1}, price2=${product.price2}`);
+      console.log(`🔍 Current environment: ${this.currentEnvironment}`);
+    }
     
     // Only apply price mapping for REGULAR environment (not virtual)
     if (this.currentEnvironment === 'regular') {
-      console.log(`🔍 Regular environment detected - applying price1/price2 mapping`);
+      if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+        console.log(`🔍 Regular environment detected - applying price1/price2 mapping`);
+      }
       
       // For regular environment, use separate Price1 and Price2 fields from Airtable
       // If Price1 exists, use it for price1
       if (product.Price1 !== undefined && product.Price1 !== null) {
         product.price1 = product.Price1;
-        console.log(`💰 Using Price1 from Airtable: ${product.Price1} -> price1: ${product.price1}`);
+        if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+          console.log(`💰 Using Price1 from Airtable: ${product.Price1} -> price1: ${product.price1}`);
+        }
       }
       
       // If Price2 exists, use it for price2
       if (product.Price2 !== undefined && product.Price2 !== null) {
         product.price2 = product.Price2;
-        console.log(`💰 Using Price2 from Airtable: ${product.Price2} -> price2: ${product.price2}`);
+        if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+          console.log(`💰 Using Price2 from Airtable: ${product.Price2} -> price2: ${product.price2}`);
+        }
       }
       
       // If only one price field exists, use it for both
       if ((product.price1 === undefined || product.price1 === null) && (product.price2 !== undefined && product.price2 !== null)) {
         product.price1 = product.price2;
-        console.log(`💰 Only Price2 exists, using for both: ${product.price2} -> price1: ${product.price1}`);
+        if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+          console.log(`💰 Only Price2 exists, using for both: ${product.price2} -> price1: ${product.price1}`);
+        }
       } else if ((product.price2 === undefined || product.price2 === null) && (product.price1 !== undefined && product.price1 !== null)) {
         product.price2 = product.price1;
-        console.log(`💰 Only Price1 exists, using for both: ${product.price1} -> price2: ${product.price2}`);
+        if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+          console.log(`💰 Only Price1 exists, using for both: ${product.price1} -> price2: ${product.price2}`);
+        }
       }
       
       // Fallback to 'price' field if neither Price1 nor Price2 exists
@@ -340,12 +389,16 @@ export class AirtableService {
         if (product.price !== undefined && product.price !== null) {
           product.price1 = product.price;
           product.price2 = product.price;
-          console.log(`💰 Fallback to price field: ${product.price} -> price1: ${product.price1}, price2: ${product.price2}`);
+          if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+            console.log(`💰 Fallback to price field: ${product.price} -> price1: ${product.price1}, price2: ${product.price2}`);
+          }
         } else {
           // Set default values if no price fields are found
           product.price1 = 0;
           product.price2 = 0;
-          console.log(`⚠️ No price fields found, setting defaults: price1: 0, price2: 0`);
+          if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+            console.log(`⚠️ No price fields found, setting defaults: price1: 0, price2: 0`);
+          }
         }
       }
       
@@ -355,15 +408,21 @@ export class AirtableService {
       
     } else {
       // Virtual environment - keep original price field, don't modify price1/price2
-      console.log(`🔍 Virtual environment detected - keeping original price field`);
+      if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+        console.log(`🔍 Virtual environment detected - keeping original price field`);
+      }
       if (!product.price) {
         product.price = 0;
-        console.log(`⚠️ No price field found in virtual environment, setting default: price: 0`);
+        if (process.env.DEBUG_AIRTABLE_PRICES === 'true') {
+          console.log(`⚠️ No price field found in virtual environment, setting default: price: 0`);
+        }
       }
     }
 
     // Handle quantity/stock field mapping for different environments
-    console.log(`🔍 Processing quantity/stock: quantity=${product.quantity}, stock=${product.stock}`);
+    if (process.env.DEBUG_AIRTABLE_STOCK === 'true') {
+      console.log(`🔍 Processing quantity/stock: quantity=${product.quantity}, stock=${product.stock}`);
+    }
     
     if (this.currentEnvironment === 'regular') {
       // Regular environment - use 'quantity' field, fallback to 'stock' if needed
@@ -556,6 +615,151 @@ export class AirtableService {
       return schema;
     } catch (error) {
       console.error('Failed to get Airtable schema:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get Airtable table schema with field types - Enhanced version that gets field names AND types
+   */
+  static async getTableSchemaWithTypes(): Promise<Array<{ key: string; label: string; type: string }>> {
+    try {
+      const config = this.getCurrentConfig();
+      
+      if (!config.apiKey || !config.baseId) {
+        throw new Error(`Airtable API key or Base ID not configured for ${this.currentEnvironment} environment`);
+      }
+
+      // Try to get complete table schema using Airtable's metadata API
+      try {
+        console.log(`📋 Attempting to get complete table schema with types from Airtable metadata...`);
+        
+        const currentBase = new Airtable({ apiKey: config.apiKey }).base(config.baseId);
+        const table = currentBase(AIRTABLE_TABLE_NAME);
+        
+        // Use Airtable's metadata API to get all fields with types
+        const metadataResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${config.baseId}/tables`, {
+          headers: {
+            'Authorization': `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (metadataResponse.ok) {
+          const metadata = await metadataResponse.json();
+          console.log(`📋 Metadata response with types:`, metadata);
+          
+          // Find the Products table
+          const productsTable = metadata.tables?.find((table: any) => 
+            table.name === AIRTABLE_TABLE_NAME || 
+            table.name.toLowerCase().includes('product')
+          );
+          
+          if (productsTable && productsTable.fields) {
+            const fieldsWithTypes = productsTable.fields.map((field: any) => {
+              // Map Airtable field types to our internal types
+              let mappedType = 'text'; // default
+              
+              if (field.type === 'singleLineText') {
+                mappedType = 'text';
+              } else if (field.type === 'multilineText') {
+                mappedType = 'longText';
+              } else if (field.type === 'number') {
+                mappedType = 'number';
+              } else if (field.type === 'checkbox') {
+                mappedType = 'boolean';
+              } else if (field.type === 'singleSelect') {
+                mappedType = 'select';
+              } else if (field.type === 'multipleSelects') {
+                mappedType = 'multipleSelect';
+              } else if (field.type === 'multipleAttachments') {
+                mappedType = 'attachment';
+              } else if (field.type === 'email') {
+                mappedType = 'email';
+              } else if (field.type === 'phoneNumber') {
+                mappedType = 'phone';
+              } else if (field.type === 'date') {
+                mappedType = 'date';
+              } else if (field.type === 'createdTime') {
+                mappedType = 'createdTime';
+              } else if (field.type === 'lastModifiedTime') {
+                mappedType = 'lastModifiedTime';
+              }
+              
+              return {
+                key: field.name,
+                label: field.name,
+                type: mappedType
+              };
+            });
+            
+            console.log(`📋 Found ${fieldsWithTypes.length} fields with types from metadata:`, fieldsWithTypes);
+            return fieldsWithTypes;
+          }
+        }
+      } catch (metadataError) {
+        console.log(`📋 Could not get complete schema with types from metadata API:`, metadataError);
+      }
+
+      // Fallback: Get fields from actual records and infer types
+      console.log(`📋 Falling back to record-based field detection with type inference...`);
+      const records = await this.fetchAllRecords();
+      console.log(`📋 Fetched ${records.length} records from ${this.currentEnvironment} environment`);
+      
+      if (records.length === 0) {
+        return [];
+      }
+
+      // Get all unique field names and infer types from values
+      const fieldMap = new Map<string, { key: string; label: string; type: string }>();
+      
+      records.forEach((record, index) => {
+        Object.entries(record.fields).forEach(([fieldName, fieldValue]) => {
+          if (!fieldMap.has(fieldName)) {
+            // Infer type from the first non-null value
+            let inferredType = 'text';
+            
+            if (typeof fieldValue === 'number') {
+              inferredType = 'number';
+            } else if (typeof fieldValue === 'boolean') {
+              inferredType = 'boolean';
+            } else if (Array.isArray(fieldValue)) {
+              if (fieldValue.length > 0 && typeof fieldValue[0] === 'string' && fieldValue[0].startsWith('http')) {
+                inferredType = 'attachment';
+              } else {
+                inferredType = 'multipleSelect';
+              }
+            } else if (typeof fieldValue === 'string') {
+              // Check for specific field types based on name
+              if (fieldName.toLowerCase().includes('email')) {
+                inferredType = 'email';
+              } else if (fieldName.toLowerCase().includes('phone')) {
+                inferredType = 'phone';
+              } else if (fieldName.toLowerCase().includes('date')) {
+                inferredType = 'date';
+              } else if (fieldName.toLowerCase().includes('detail') || fieldName.toLowerCase().includes('description')) {
+                inferredType = 'longText';
+              } else if (fieldValue.length > 100) {
+                inferredType = 'longText';
+              } else {
+                inferredType = 'text';
+              }
+            }
+            
+            fieldMap.set(fieldName, {
+              key: fieldName,
+              label: fieldName,
+              type: inferredType
+            });
+          }
+        });
+      });
+      
+      const fieldsWithTypes = Array.from(fieldMap.values());
+      console.log(`📋 Inferred ${fieldsWithTypes.length} fields with types:`, fieldsWithTypes);
+      return fieldsWithTypes;
+    } catch (error) {
+      console.error('Error getting table schema with types:', error);
       return [];
     }
   }

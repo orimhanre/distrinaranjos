@@ -119,11 +119,7 @@ export const virtualDb = virtualApp ? getFirestore(virtualApp) : null;
 export const virtualAuth = virtualApp ? getAuth(virtualApp) : null;
 export const virtualGoogleProvider = virtualApp ? new GoogleAuthProvider() : null;
 
-console.log('🔍 Firebase exports check:', {
-  hasVirtualDb: !!virtualDb,
-  hasVirtualAuth: !!virtualAuth,
-  hasVirtualGoogleProvider: !!virtualGoogleProvider
-});
+// console.log('🔍 Firebase exports check:', { hasVirtualDb: !!virtualDb, hasVirtualAuth: !!virtualAuth, hasVirtualGoogleProvider: !!virtualGoogleProvider }); // Reduced logging
 
 // Configure virtual Google provider
 if (virtualGoogleProvider && virtualAuth) {

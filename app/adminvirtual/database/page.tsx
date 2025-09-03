@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Product } from '@/types';
-import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
+import { Product } from '../../../types';
+import { virtualAuth, virtualGoogleProvider } from '../../../lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { checkVirtualAdminPermission } from '@/lib/adminPermissions';
+import { checkVirtualAdminPermission } from '../../../lib/adminPermissions';
 import { usePathname } from 'next/navigation';
-import Spreadsheet from '@/components/Spreadsheet';
-import { Spreadsheet as SpreadsheetType, SpreadsheetColumn, SpreadsheetRow, SpreadsheetCell } from '@/types/spreadsheet';
+import Spreadsheet from '../../../components/Spreadsheet';
+import { Spreadsheet as SpreadsheetType, SpreadsheetColumn, SpreadsheetRow, SpreadsheetCell } from '../../../types/spreadsheet';
 
 
 

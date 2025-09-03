@@ -32,12 +32,12 @@ export class VirtualPhotoDownloader {
    */
   private static getPublicImageUrl(filename: string, type: 'products' | 'webphotos'): string {
     if (process.env.NODE_ENV === 'production') {
-      // For Railway, we need to serve images through an API endpoint
-      const baseUrl = process.env.RAILWAY_STATIC_URL || 'https://distrinaranjos-production.up.railway.app';
+      // For production, use the current domain
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://distrinaranjos.co';
       return `${baseUrl}/api/images/${type}/${filename}`;
     } else {
-      // For local development, use the public directory
-      return `/images/virtual-${type}/${filename}`;
+      // For local development, use absolute path from root
+      return `/api/images/${type}/${filename}`;
     }
   }
 

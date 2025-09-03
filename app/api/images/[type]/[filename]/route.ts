@@ -4,64 +4,52 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ type: string; filename: string }> }
+  { params }: { params: { type: string; filename: string } }
 ) {
-  const { type, filename } = await params;
   try {
+    const { type, filename } = params;
     
     // Validate type parameter
     if (type !== 'products' && type !== 'webphotos') {
       return NextResponse.json({ error: 'Invalid image type' }, { status: 400 });
     }
     
-    // Determine the file path based on environment
-    let filePath: string;
-    
+    // Determine the directory based on environment
+    let imageDir: string;
     if (process.env.NODE_ENV === 'production') {
-      // For Railway, use /tmp directory
-      filePath = path.join('/tmp', 'images', `virtual-${type}`, filename);
+      // For production (Railway), use /tmp
+      imageDir = path.join('/tmp', 'images', `virtual-${type}`);
     } else {
       // For local development, use public directory
-      filePath = path.join(process.cwd(), 'public', 'images', `virtual-${type}`, filename);
+      imageDir = path.join(process.cwd(), 'public', 'images', `virtual-${type}`);
     }
     
+    const imagePath = path.join(imageDir, filename);
+    
     // Check if file exists
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(imagePath)) {
+      console.log(`❌ Image not found: ${imagePath}`);
       return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     }
     
-    // Read the file
-    const imageBuffer = fs.readFileSync(filePath);
+    // Read the image file
+    const imageBuffer = fs.readFileSync(imagePath);
     
     // Determine content type based on file extension
     const ext = path.extname(filename).toLowerCase();
     let contentType = 'image/jpeg'; // default
     
-    switch (ext) {
-      case '.png':
-        contentType = 'image/png';
-        break;
-      case '.gif':
-        contentType = 'image/gif';
-        break;
-      case '.webp':
-        contentType = 'image/webp';
-        break;
-      case '.svg':
-        contentType = 'image/svg+xml';
-        break;
-      case '.pdf':
-        contentType = 'application/pdf';
-        break;
-    }
+    if (ext === '.png') contentType = 'image/png';
+    else if (ext === '.gif') contentType = 'image/gif';
+    else if (ext === '.webp') contentType = 'image/webp';
+    else if (ext === '.svg') contentType = 'image/svg+xml';
     
     // Return the image with appropriate headers
     return new NextResponse(imageBuffer, {
-      status: 200,
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
-        'Access-Control-Allow-Origin': '*',
+        'Content-Length': imageBuffer.length.toString(),
       },
     });
     

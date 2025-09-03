@@ -251,10 +251,7 @@ const nextConfig = {
     }
     return config;
   },
-  // Add experimental settings to help with hydration
-  experimental: {
-    optimizePackageImports: ['@tanstack/react-table'],
-  },
+
 };
 
 module.exports = nextConfig;

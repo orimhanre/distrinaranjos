@@ -1,11 +1,11 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useClientAuth } from '@/lib/useClientAuth';
-import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
+import { useClientAuth } from '../../../lib/useClientAuth';
+import { virtualAuth, virtualGoogleProvider } from '../../../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
-import FirebaseDebugger from '@/components/FirebaseDebugger';
-import PersistenceTest from '@/components/PersistenceTest';
+import FirebaseDebugger from '../../../components/FirebaseDebugger';
+import PersistenceTest from '../../../components/PersistenceTest';
 
 export default function ClientPortalLoginPage() {
   const { user, loading, error } = useClientAuth();

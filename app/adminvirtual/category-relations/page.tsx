@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import CategorySubcategoryManager from '@/components/CategorySubcategoryManager';
+import CategorySubcategoryManager from '../../../components/CategorySubcategoryManager';
 
 export default function CategoryRelationsPage() {
   return (

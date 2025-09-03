@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         const baseUrl = process.env.NEXTAUTH_URL || 
                        (process.env.NODE_ENV === 'production' 
                          ? 'https://distrinaranjos.co' 
-                         : `http://192.168.1.29:${process.env.PORT || 3001}`);
+                         : `http://${request.headers.get('host') || 'localhost:3001'}`);
         return `${baseUrl}${url}`;
       }
       return url;

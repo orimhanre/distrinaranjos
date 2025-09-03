@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
+import { virtualAuth, virtualGoogleProvider } from '../../../lib/firebase';
 import { onAuthStateChanged, User, signInWithPopup, signOut } from 'firebase/auth';
-import { checkVirtualAdminPermission } from '@/lib/adminPermissions';
+import { checkVirtualAdminPermission } from '../../../lib/adminPermissions';
 import { useRouter } from 'next/navigation';
-import CategorySubcategoryManager from '@/components/CategorySubcategoryManager';
+import CategorySubcategoryManager from '../../../components/CategorySubcategoryManager';
 
 interface EnvVariable {
   key: string;

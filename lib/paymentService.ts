@@ -6,7 +6,7 @@ let stripe: Stripe | null = null;
 if (process.env.VIRTUAL_STRIPE_SECRET_KEY) {
   try {
     stripe = new Stripe(process.env.VIRTUAL_STRIPE_SECRET_KEY, {
-      apiVersion: '2025-07-30.basil',
+      apiVersion: '2025-08-27.basil',
     });
   } catch (error) {
     console.warn('Failed to initialize Stripe:', error);

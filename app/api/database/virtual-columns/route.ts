@@ -12,9 +12,7 @@ export async function GET() {
     if (fs.existsSync(COLUMNS_PATH)) {
       try {
         const columnsData = JSON.parse(fs.readFileSync(COLUMNS_PATH, 'utf8'));
-        console.log(`📋 Loaded ${columnsData.length} columns from virtual-columns.json`);
-        console.log(`📋 Column file path: ${COLUMNS_PATH}`);
-        console.log(`📋 Columns:`, columnsData.map((c: any) => c.key));
+        // Columns loaded successfully
         return NextResponse.json({ success: true, columns: columnsData });
       } catch (e) {
         console.error('Error reading virtual-columns.json:', e);
@@ -22,11 +20,9 @@ export async function GET() {
     }
 
     // If JSON file doesn't exist, read dynamically from database schema
-    console.log(`📋 JSON file not found, reading columns from virtual database schema`);
     
     // Check if database exists and has data
     if (!fs.existsSync(VIRTUAL_DB_PATH)) {
-      console.log(`📋 Virtual database doesn't exist, returning empty columns`);
       return NextResponse.json({ success: true, columns: [] });
     }
 
@@ -39,32 +35,51 @@ export async function GET() {
     db.close();
 
     if (tableInfo.length === 0) {
-      console.log(`📋 No products table found in virtual database, returning empty columns`);
       return NextResponse.json({ success: true, columns: [] });
     }
 
     // If database is empty (no products), return empty columns
     if (productCount.count === 0) {
-      console.log(`📋 Virtual database is empty (0 products), returning empty columns`);
       return NextResponse.json({ success: true, columns: [] });
     }
 
-    // Convert database schema to column format
+    // Convert database schema to column format - but preserve actual field types if available
     const columns = tableInfo
       .filter((col: any) => !['createdAt', 'updatedAt', 'lastUpdated'].includes(col.name)) // Exclude internal columns
       .map((col: any) => {
-        // Determine column type based on field name or content
-        let columnType: 'text' | 'number' | 'boolean' | 'select' | 'multipleSelect' | 'attachment' = 'text';
+        // Try to preserve the actual field type from Airtable if available
+        // If not available, fall back to intelligent type inference
+        let columnType: string = 'text'; // Default to text
         
-        // Check for specific field types
-        if (col.name.toLowerCase().includes('price') || col.name.toLowerCase().includes('stock') || col.name.toLowerCase().includes('amount')) {
-          columnType = 'number';
-        } else if (col.name.toLowerCase().includes('image') || col.name.toLowerCase().includes('photo') || col.name.toLowerCase().includes('url')) {
-          columnType = 'attachment';
-        } else if (col.name.toLowerCase().includes('color') || col.name.toLowerCase().includes('type')) {
-          columnType = 'multipleSelect';
-        } else if (col.name.toLowerCase().includes('starred') || col.name.toLowerCase().includes('active')) {
-          columnType = 'boolean';
+        // Check if we have type information from the database or if we can infer it
+        if (col.type && col.type !== 'TEXT') {
+          // Database has specific type info
+          if (col.type.includes('INT') || col.type.includes('REAL')) {
+            columnType = 'number';
+          } else if (col.type.includes('BOOL')) {
+            columnType = 'boolean';
+          } else {
+            columnType = 'text';
+          }
+        } else {
+          // Fall back to intelligent inference based on field name and content
+          if (col.name.toLowerCase().includes('price') || col.name.toLowerCase().includes('stock') || col.name.toLowerCase().includes('amount') || col.name.toLowerCase().includes('quantity')) {
+            columnType = 'number';
+          } else if (col.name.toLowerCase().includes('image') || col.name.toLowerCase().includes('photo') || col.name.toLowerCase().includes('url') || col.name.toLowerCase().includes('attachment')) {
+            columnType = 'attachment';
+          } else if (col.name.toLowerCase().includes('color') || col.name.toLowerCase().includes('type') || col.name.toLowerCase().includes('category') || col.name.toLowerCase().includes('brand')) {
+            columnType = 'select';
+          } else if (col.name.toLowerCase().includes('starred') || col.name.toLowerCase().includes('active') || col.name.toLowerCase().includes('enabled')) {
+            columnType = 'boolean';
+          } else if (col.name.toLowerCase().includes('detail') || col.name.toLowerCase().includes('description') || col.name.toLowerCase().includes('notes')) {
+            columnType = 'longText';
+          } else if (col.name.toLowerCase().includes('email')) {
+            columnType = 'email';
+          } else if (col.name.toLowerCase().includes('phone') || col.name.toLowerCase().includes('telephone')) {
+            columnType = 'phone';
+          } else if (col.name.toLowerCase().includes('date') || col.name.toLowerCase().includes('created') || col.name.toLowerCase().includes('updated')) {
+            columnType = 'date';
+          }
         }
         
         return {
@@ -77,7 +92,8 @@ export async function GET() {
         };
       });
     
-    console.log(`📋 Read ${columns.length} columns from virtual database schema`);
+    console.log(`📋 Read ${columns.length} columns from virtual database schema with inferred types`);
+    console.log(`📋 Inferred column types:`, columns.map((c: any) => ({ key: c.key, type: c.type, label: c.label })));
     return NextResponse.json({ success: true, columns });
   } catch (e: any) {
     console.error('Error fetching virtual columns:', e);
@@ -89,6 +105,7 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     fs.writeFileSync(COLUMNS_PATH, JSON.stringify(body.columns, null, 2));
+    console.log(`📋 Updated virtual-columns.json with ${body.columns.length} columns`);
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });

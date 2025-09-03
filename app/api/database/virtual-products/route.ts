@@ -39,18 +39,21 @@ export async function GET(request: NextRequest) {
           return urlArray.map(url => {
             if (typeof url === 'string' && url.startsWith('/')) {
               // Always convert to full URLs to avoid base path issues
-              // Use the current domain for production, fallback for development
+              // Use the request's host for development, fallback for production
               const baseUrl = process.env.NEXTAUTH_URL || 
                              (process.env.NODE_ENV === 'production' 
                                ? 'https://distrinaranjos.co' 
-                               : `http://192.168.1.29:${process.env.PORT || 3001}`);
+                               : `http://${request.headers.get('host') || 'localhost:3001'}`);
               const fullUrl = `${baseUrl}${url}`;
-              console.log('🔍 convertToFullUrls: Converting to full URL:', { 
-                original: url, 
-                baseUrl, 
-                fullUrl, 
-                forAdmin 
-              });
+              // Reduced logging - only log in development if needed
+              if (process.env.NODE_ENV === 'development' && process.env.DEBUG_URLS === 'true') {
+                console.log('🔍 convertToFullUrls: Converting to full URL:', { 
+                  original: url, 
+                  baseUrl, 
+                  fullUrl, 
+                  forAdmin 
+                });
+              }
               return fullUrl;
             }
             return url;
@@ -62,21 +65,23 @@ export async function GET(request: NextRequest) {
     const referer = request.headers.get('referer') || '';
     const isAdminRequest = referer.includes('/adminvirtual') || userAgent.includes('admin');
     
-    // Debug logging
-    console.log('🔍 API Debug - virtual-products:', {
-      userAgent: userAgent.substring(0, 100),
-      referer: referer.substring(0, 100),
-      isAdminRequest,
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-      NODE_ENV: process.env.NODE_ENV
-    });
+    // Reduced debug logging - only log essential info
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_API === 'true') {
+      console.log('🔍 API Debug - virtual-products:', {
+        userAgent: userAgent.substring(0, 100),
+        referer: referer.substring(0, 100),
+        isAdminRequest,
+        NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+        NODE_ENV: process.env.NODE_ENV
+      });
+    }
     
     // Transform products for API response
     const transformedProducts = products.map(product => {
       const fullImageUrls = convertToFullUrls(product.imageURL, isAdminRequest);
       
-      // Debug logging for first few products
-      if (typeof product.id === 'number' && product.id <= 3) {
+      // Reduced debug logging - only log first product if debugging is enabled
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PRODUCTS === 'true' && product.id === products[0]?.id) {
         console.log('🔍 Product transformation debug:', {
           id: product.id,
           originalImageURL: product.imageURL,
@@ -143,11 +148,34 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/database/virtual-products - Create a new virtual product
+// POST /api/database/virtual-products - Create a new virtual product or update existing one
 export async function POST(request: NextRequest) {
   try {
     const productData = await request.json();
     
+    // Check if this is an update action
+    if (productData._action === 'update' && productData.id) {
+      // This is an update request
+      const { _action, id, ...updates } = productData;
+      
+      const productDB = new ProductDatabase('virtual');
+      const product = productDB.updateProduct(id, updates);
+      
+      if (product) {
+        return NextResponse.json({
+          success: true,
+          product,
+          message: 'Virtual product updated successfully'
+        });
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'Virtual product not found' },
+          { status: 404 }
+        );
+      }
+    }
+    
+    // This is a create request (original logic)
     // Set default values for required fields if they're empty
     const newProduct = {
       name: productData.name || 'Nuevo Producto Virtual',
@@ -173,9 +201,9 @@ export async function POST(request: NextRequest) {
       message: 'Virtual product created successfully'
     });
   } catch (error) {
-    console.error('Error creating virtual product:', error);
+    console.error('Error creating/updating virtual product:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create virtual product' },
+      { success: false, error: 'Failed to create/update virtual product' },
       { status: 500 }
     );
   }
@@ -194,13 +222,26 @@ export async function PUT(request: NextRequest) {
     }
     
     const productDB = new ProductDatabase('virtual');
-    const product = productDB.updateProduct(id, updates);
+    // Ensure boolean-like custom fields come through as 1/0 for SQLite if they are booleans
+    Object.keys(updates).forEach((k) => {
+      const v: any = (updates as any)[k];
+      if (typeof v === 'boolean') {
+        (updates as any)[k] = v ? 1 : 0;
+      }
+    });
+    let product = productDB.updateProduct(id, updates);
     
     if (!product) {
-      return NextResponse.json(
-        { success: false, error: 'Virtual product not found' },
-        { status: 404 }
-      );
+      // If missing, create it with the given id and updates (upsert behavior for virtual DB)
+      try {
+        const created = productDB.createProduct({ id, ...(updates as any) } as any);
+        return NextResponse.json({ success: true, product: created, message: 'Virtual product created via upsert' });
+      } catch (e) {
+        return NextResponse.json(
+          { success: false, error: 'Virtual product not found' },
+          { status: 404 }
+        );
+      }
     }
     
     return NextResponse.json({

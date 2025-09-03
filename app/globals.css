@@ -317,4 +317,141 @@ main, .main-content {
   white-space: normal !important;
 }
 
+/* Spreadsheet Grid Alignment Fixes */
+.spreadsheet-grid {
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+.spreadsheet-grid > * {
+  box-sizing: border-box !important;
+}
+
+/* Ensure consistent border rendering */
+.spreadsheet-grid .border-r {
+  border-right-width: 1px !important;
+  border-right-style: solid !important;
+  border-right-color: #d1d5db !important;
+}
+
+.spreadsheet-grid .border-b {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: #d1d5db !important;
+}
+
+.spreadsheet-grid .border-l {
+  border-left-width: 1px !important;
+  border-left-style: solid !important;
+  border-left-color: #d1d5db !important;
+}
+
+/* Fix grid line alignment issues */
+.spreadsheet-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
+}
+
+.spreadsheet-grid > * {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure sticky positioning works correctly */
+.spreadsheet-grid .sticky {
+  position: sticky !important;
+  z-index: 10 !important;
+}
+
+/* Fix border overlap issues */
+.spreadsheet-grid .border-r:not(:last-child) {
+  margin-right: -1px !important;
+}
+
+.spreadsheet-grid .border-b:not(:last-child) {
+  margin-bottom: -1px !important;
+}
+
+/* CSS Grid specific fixes for spreadsheet */
+[style*="display: grid"] {
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+[style*="display: grid"] > * {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure grid cells align properly */
+[style*="display: grid"] [style*="gridColumn"] {
+  border-collapse: collapse !important;
+  box-sizing: border-box !important;
+}
+
+/* Fix border rendering in grid */
+[style*="display: grid"] .border-r {
+  border-right-width: 1px !important;
+  border-right-style: solid !important;
+  border-right-color: #d1d5db !important;
+}
+
+[style*="display: grid"] .border-b {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: #d1d5db !important;
+}
+
+[style*="display: grid"] .border-l {
+  border-left-width: 1px !important;
+  border-left-style: solid !important;
+  border-left-color: #d1d5db !important;
+}
+
+/* Prevent border doubling in grid layout */
+[style*="display: grid"] > *:not(:last-child) {
+  border-right: 1px solid #d1d5db !important;
+}
+
+[style*="display: grid"] > *:nth-child(n) {
+  border-bottom: 1px solid #d1d5db !important;
+}
+
+/* Ensure first column has left border */
+[style*="display: grid"] > *:nth-child(1) {
+  border-left: 1px solid #d1d5db !important;
+}
+
+/* Fix grid cell sizing */
+[style*="display: grid"] [style*="gridColumn"] {
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure sticky positioning works properly in grid */
+[style*="display: grid"] [style*="position: sticky"] {
+  position: sticky !important;
+  z-index: auto !important;
+}
+
+/* Specific z-index for sticky columns to ensure proper layering */
+[style*="display: grid"] [style*="z-index: 1000"] {
+  z-index: 1000 !important;
+}
+
+[style*="display: grid"] [style*="z-index: 999"] {
+  z-index: 999 !important;
+}
+
+[style*="display: grid"] [style*="z-index: 998"] {
+  z-index: 998 !important;
+}
+
+/* Ensure sticky elements maintain their background */
+[style*="display: grid"] [style*="position: sticky"] {
+  background-clip: padding-box !important;
+}
+
 
