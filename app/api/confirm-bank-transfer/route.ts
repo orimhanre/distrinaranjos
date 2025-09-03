@@ -13,11 +13,15 @@ function loadVirtualEnv() {
       VIRTUAL_FIREBASE_PROJECT_ID: process.env.VIRTUAL_FIREBASE_PROJECT_ID || '',
       VIRTUAL_FIREBASE_PRIVATE_KEY: process.env.VIRTUAL_FIREBASE_PRIVATE_KEY || '',
       VIRTUAL_FIREBASE_CLIENT_EMAIL: process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL || '',
+      // Add Cloudinary variables for PDF generation
+      VIRTUAL_CLOUDINARY_CLOUD_NAME: process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME || '',
+      VIRTUAL_CLOUDINARY_API_KEY: process.env.VIRTUAL_CLOUDINARY_API_KEY || '',
+      VIRTUAL_CLOUDINARY_API_SECRET: process.env.VIRTUAL_CLOUDINARY_API_SECRET || '',
     };
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_RESEND_API_KEY) {
-      console.log('✅ Using environment variables from process.env (Railway deployment)');
+  
       return envVars;
     }
 
@@ -27,7 +31,7 @@ function loadVirtualEnv() {
     const envFilePath = path.join(process.cwd(), '.env.virtual.local');
     
     if (!fs.existsSync(envFilePath)) {
-      console.log('Virtual environment file not found:', envFilePath);
+
       return envVars;
     }
     
@@ -64,7 +68,7 @@ export async function POST(request: NextRequest) {
       !process.env.NEXT_PUBLIC_VIRTUAL_FIREBASE_PROJECT_ID ||
       !process.env.VIRTUAL_FIREBASE_PRIVATE_KEY ||
       !process.env.VIRTUAL_FIREBASE_CLIENT_EMAIL) {
-    console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
+
     return NextResponse.json({ 
       success: false, 
       error: 'Virtual Firebase not configured' 
@@ -78,13 +82,7 @@ export async function POST(request: NextRequest) {
   try {
     const { orderId, invoiceNumber, bankProvider, totalAmount, confirmedAt } = await request.json();
 
-    console.log('🔍 Confirm bank transfer - Input data:', {
-      orderId,
-      invoiceNumber,
-      bankProvider,
-      totalAmount,
-      confirmedAt
-    });
+    
 
     // Load virtual environment variables
     const virtualEnv = loadVirtualEnv();
@@ -98,13 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     // First, immediately update the order status to 'confirmed' for fast response
-    console.log('🔍 Searching for order with invoice number:', invoiceNumber);
-    console.log('🔍 Virtual database available:', !!virtualDb);
+
     
     const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
     const allClientsSnapshot = await getDocs(virtualOrdersRef);
     
-    console.log('🔍 Total client documents found:', allClientsSnapshot.size);
+    
     
     let orderFound = false;
     let orderData: any = null;
@@ -115,7 +112,7 @@ export async function POST(request: NextRequest) {
       const clientData = clientDoc.data();
       const orders = clientData.orders || [];
       
-      console.log(`🔍 Checking client ${clientDoc.id}, has ${orders.length} orders`);
+      
       
       // Search through orders array for matching invoice number
       const matchingOrder = orders.find((order: any) => 
@@ -131,13 +128,7 @@ export async function POST(request: NextRequest) {
         };
         clientEmail = clientData.email || clientData.clientEmail || '';
         orderFound = true;
-        console.log('✅ Found order in client document:', {
-          clientId: clientDoc.id,
-          orderId: matchingOrder.orderId,
-          invoiceNumber: matchingOrder.invoiceNumber,
-          name: clientData.name,
-          email: clientData.email
-        });
+
         
         // Immediately update the order status for fast response
         const orderIndex = orders.findIndex((order: any) => 
@@ -162,11 +153,7 @@ export async function POST(request: NextRequest) {
             lastUpdated: new Date()
           });
           
-          console.log('✅ Updated order with payment confirmation immediately:', {
-            orderId: updatedOrder.orderId,
-            invoiceNumber: updatedOrder.invoiceNumber,
-            paymentStatus: updatedOrder.paymentStatus
-          });
+
           break;
         }
       }
@@ -181,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success immediately after updating the order status
-    console.log('⚡ Returning success immediately - background processing will continue');
+
     
     // Start background processing without blocking the response
     processBackgroundTasks(orderId, invoiceNumber, bankProvider, totalAmount, orderData, virtualEnv).catch(error => {
@@ -221,28 +208,20 @@ async function processBackgroundTasks(
   // Import Firebase for background tasks
   const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
   const { virtualDb } = await import('../../../lib/firebase');
-  console.log('🔄 Starting background processing for order:', orderId);
-  
   let pdfUrl = '';
   let pdfFilename = 'pedido.pdf';
   
   try {
     // Step 1: Generate PDF in background
-    console.log('📄 Generating PDF in background...');
     const foundOrder = orderData;
     
-    // Debug: Log the complete order structure to see where cédula is stored
-    console.log('🔍 Complete order data structure:', JSON.stringify(foundOrder, null, 2));
-    console.log('🔍 Order client data:', foundOrder.client);
-    console.log('🔍 Direct cédula fields:', {
-      foundOrderCedula: foundOrder.cedula,
-      clientCedula: foundOrder.client?.cedula,
-      clientIdentification: foundOrder.client?.identification,
-      finalCedula: foundOrder.cedula || foundOrder.client?.cedula || foundOrder.client?.identification || ''
-    });
+
     
     if (foundOrder) {
-      const pdfGenerationUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos-production.up.railway.app';
+      // Use localhost for local testing, custom domain for production
+      const pdfGenerationUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3001' 
+        : (process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos.co');
       
       // Transform order items for PDF generation
       const cartItems = foundOrder.items?.map((item: any) => ({
@@ -286,13 +265,9 @@ async function processBackgroundTasks(
         useVirtualDb: true
       };
       
-      console.log('🔍 PDF request body:', JSON.stringify(pdfRequestBody, null, 2));
-      
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      console.log('🔍 Making PDF generation request to:', `${pdfGenerationUrl}/api/generate-pdf`);
       
       const pdfResponse = await fetch(`${pdfGenerationUrl}/api/generate-pdf`, {
         method: 'POST',
@@ -303,61 +278,29 @@ async function processBackgroundTasks(
       
       clearTimeout(timeoutId);
 
-      console.log('📄 PDF generation response status:', pdfResponse.status);
-      console.log('📄 PDF generation response headers:', Object.fromEntries(pdfResponse.headers.entries()));
-
       if (pdfResponse.ok) {
         const cloudinaryURL = pdfResponse.headers.get('X-Cloudinary-URL');
         const contentDisposition = pdfResponse.headers.get('Content-Disposition');
-
-        console.log('📄 Cloudinary URL from header:', cloudinaryURL);
-        console.log('📄 Content-Disposition from header:', contentDisposition);
 
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
           if (filenameMatch) {
             pdfFilename = filenameMatch[1];
-            console.log('📄 Filename extracted from Content-Disposition:', pdfFilename);
           }
         }
 
         if (cloudinaryURL) {
           pdfUrl = cloudinaryURL;
-          console.log('✅ PDF URL retrieved from header:', pdfUrl);
         } else {
           // Try to get URL from response body if not in headers
           try {
             const responseBody = await pdfResponse.json();
-            console.log('📄 Response body:', responseBody);
             if (responseBody.cloudinaryUrl) {
               pdfUrl = responseBody.cloudinaryUrl;
-              console.log('✅ PDF URL retrieved from response body:', pdfUrl);
             }
           } catch (err) {
-            console.log('⚠️ Could not parse PDF response body as JSON:', err);
-            // Try to get the response as text for debugging
-            try {
-              const responseText = await pdfResponse.text();
-              console.log('📄 Response as text (first 500 chars):', responseText.substring(0, 500));
-            } catch (textErr) {
-              console.log('⚠️ Could not get response as text either:', textErr);
-            }
+            // Continue without PDF if parsing fails
           }
-        }
-        
-        if (!pdfUrl) {
-          console.log('❌ No PDF URL found in response');
-          console.log('❌ PDF generation failed - no URL available');
-        } else {
-          console.log('✅ PDF generation successful - URL:', pdfUrl);
-        }
-      } else {
-        console.log('❌ PDF generation request failed with status:', pdfResponse.status);
-        try {
-          const errorText = await pdfResponse.text();
-          console.log('❌ Error response:', errorText);
-        } catch (err) {
-          console.log('❌ Could not read error response');
         }
       }
     }
@@ -377,7 +320,7 @@ async function processBackgroundTasks(
   try {
     // Step 2: Update order with PDF URL in background
     if (pdfUrl && virtualDb) {
-      console.log('📝 Updating order with PDF URL in background...');
+      
       
       const virtualOrdersRef = collection(virtualDb, 'virtualOrders');
       const allClientsSnapshot = await getDocs(virtualOrdersRef);
@@ -407,12 +350,7 @@ async function processBackgroundTasks(
             lastUpdated: new Date()
           });
           
-          console.log('✅ Updated order with PDF URL in background:', {
-            orderId: updatedOrder.orderId,
-            invoiceNumber: updatedOrder.invoiceNumber,
-            fileUrl: updatedOrder.fileUrl,
-            fileName: updatedOrder.fileName
-          });
+
           break;
         }
       }
@@ -423,7 +361,7 @@ async function processBackgroundTasks(
 
   try {
     // Step 3: Send email in background
-    console.log('📧 Sending email in background...');
+
     
     // Initialize Resend with virtual environment variables
     const resend = new Resend(virtualEnv.VIRTUAL_RESEND_API_KEY || process.env.VIRTUAL_RESEND_API_KEY);
@@ -1117,8 +1055,7 @@ async function processBackgroundTasks(
     `;
 
     // Use the newly generated PDF URL
-    console.log('📎 PDF URL for attachment:', pdfUrl);
-    console.log('📎 PDF Filename for attachment:', pdfFilename || `pedido_${invoiceNumber || orderId}.pdf`);
+    
     
     // Prepare attachment if PDF URL is available
     let attachments = undefined;
@@ -1143,7 +1080,7 @@ async function processBackgroundTasks(
       attachments: attachments
     });
 
-    console.log('✅ Background email sent successfully:', emailResponse);
+    
 
   } catch (emailError: any) {
     console.error('❌ Background email sending error:', emailError);
@@ -1151,7 +1088,7 @@ async function processBackgroundTasks(
 
   try {
     // Step 4: Send push notification in background (non-blocking)
-    console.log('📱 Sending push notification in background...');
+
     
     const pushNotificationData = {
       clientName: orderData.name || '',
@@ -1176,18 +1113,18 @@ async function processBackgroundTasks(
         const errorText = await response.text();
         console.error('❌ Background push notification failed:', errorText);
       } else {
-        console.log('✅ Background push notification sent successfully');
+
       }
     }).catch((error) => {
       console.error('❌ Error sending background push notification:', error);
     });
     
-    console.log('📱 Push notification request sent (non-blocking)');
+    
   } catch (pushError) {
     console.error('❌ Error preparing push notification:', pushError);
   }
 
-  console.log('✅ Background processing completed for order:', orderId);
+  
 }
 
 

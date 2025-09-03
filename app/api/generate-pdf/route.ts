@@ -23,7 +23,7 @@ function loadVirtualEnv() {
 
     // If we have environment variables from process.env, use them
     if (envVars.VIRTUAL_CLOUDINARY_CLOUD_NAME && envVars.VIRTUAL_CLOUDINARY_API_KEY && envVars.VIRTUAL_CLOUDINARY_API_SECRET) {
-      console.log('✅ Using environment variables from process.env (Railway deployment)');
+
       return envVars;
     }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       if (!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID || 
           !virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL ||
           !virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY) {
-        console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
+
         return NextResponse.json({ 
           success: false, 
           error: 'Virtual Firebase not configured' 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
           !process.env.FIREBASE_PRIVATE_KEY ||
           !process.env.FIREBASE_CLIENT_EMAIL) {
-        console.log('⚠️ Regular Firebase environment variables not available, skipping operation');
+
         return NextResponse.json({ 
           success: false, 
           error: 'Regular Firebase not configured' 
@@ -108,22 +108,7 @@ export async function POST(request: NextRequest) {
     // Provide fallback for invoiceNumber if not provided
     const finalInvoiceNumber = invoiceNumber || `PED-${Date.now()}`;
     
-    // Debug: Log client data for virtual orders
-    if (useVirtualDb) {
-      console.log('🔍 Virtual PDF Generation - Client data received:', {
-        name: client?.name,
-        surname: client?.surname,
-        email: client?.email,
-        phone: client?.phone,
-        address: client?.address,
-        city: client?.city,
-        department: client?.department,
-        postalCode: client?.postalCode,
-        companyName: client?.companyName,
-        identification: client?.identification,
-        cedula: client?.cedula
-      });
-    }
+
     
 
     // Configure Cloudinary based on whether this is virtual or regular
@@ -135,13 +120,6 @@ export async function POST(request: NextRequest) {
     let virtualEnv: { [key: string]: string } = {};
     if (isVirtual) {
       virtualEnv = loadVirtualEnv();
-      console.log('🔍 Loaded virtual environment variables for Cloudinary');
-      console.log('🔍 Virtual environment keys:', Object.keys(virtualEnv));
-      console.log('🔍 Virtual Cloudinary config:', {
-        cloudName: virtualEnv.VIRTUAL_CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing',
-        apiKey: virtualEnv.VIRTUAL_CLOUDINARY_API_KEY ? 'Set' : 'Missing',
-        apiSecret: virtualEnv.VIRTUAL_CLOUDINARY_API_SECRET ? 'Set' : 'Missing'
-      });
     }
     
     cloudinary.config({
@@ -231,7 +209,7 @@ export async function POST(request: NextRequest) {
       const logoBuffer = fs.readFileSync(logoPath);
       logoBase64 = logoBuffer.toString('base64');
     } catch (error) {
-      console.log('⚠️ Logo not found, continuing without logo');
+      // Continue without logo
     }
 
     // Professional header design
@@ -257,7 +235,7 @@ export async function POST(request: NextRequest) {
           logoWidth = 80;
           doc.addImage(`data:image/png;base64,${logoBase64}`, 'PNG', margin, yPosition, logoWidth, logoHeight);
         } catch (error) {
-          console.log('⚠️ Error adding logo to PDF:', error);
+          // Continue without logo
         }
       }
       
@@ -337,10 +315,7 @@ export async function POST(request: NextRequest) {
     // Start first page
     drawHeader();
     
-    // Debug: Log positioning for virtual orders
-    if (isVirtual) {
-      console.log('🔍 Virtual PDF - After header, yPosition:', yPosition);
-    }
+
 
     // Professional client information section
     if (client) {
@@ -834,12 +809,7 @@ export async function POST(request: NextRequest) {
       const apiKey = isVirtual ? virtualEnv.VIRTUAL_CLOUDINARY_API_KEY || process.env.VIRTUAL_CLOUDINARY_API_KEY : process.env.CLOUDINARY_API_KEY;
       const apiSecret = isVirtual ? virtualEnv.VIRTUAL_CLOUDINARY_API_SECRET || process.env.VIRTUAL_CLOUDINARY_API_SECRET : process.env.CLOUDINARY_API_SECRET;
       
-      console.log('🔧 Cloudinary config check:', {
-        isVirtual,
-        cloudName: cloudName ? '✅ Set' : '❌ Missing',
-        apiKey: apiKey ? '✅ Set' : '❌ Missing',
-        apiSecret: apiSecret ? '✅ Set' : '❌ Missing'
-      });
+
       
       if (!cloudName || !apiKey || !apiSecret) {
         throw new Error('Missing Cloudinary credentials');
@@ -855,18 +825,7 @@ export async function POST(request: NextRequest) {
       const base64PDF = pdfBuffer.toString('base64');
       const dataURI = `data:application/pdf;base64,${base64PDF}`;
       
-      console.log('📤 Uploading PDF to Cloudinary...');
-      console.log('📤 Cloudinary config:', {
-        cloud_name: cloudName,
-        api_key: apiKey ? 'Set' : 'Missing',
-        api_secret: apiSecret ? 'Set' : 'Missing'
-      });
-      console.log('📤 Upload params:', {
-        resource_type: 'raw',
-        public_id: `pedidos/${filename}`,
-        format: 'pdf',
-        dataURI_length: dataURI.length
-      });
+
       
       cloudinaryResponse = await cloudinary.uploader.upload(dataURI, {
         resource_type: 'raw',
@@ -874,12 +833,7 @@ export async function POST(request: NextRequest) {
         format: 'pdf'
       });
       
-      console.log('✅ Cloudinary upload successful:', {
-        url: cloudinaryResponse.secure_url,
-        public_id: cloudinaryResponse.public_id,
-        format: cloudinaryResponse.format,
-        resource_type: cloudinaryResponse.resource_type
-      });
+
     } catch (cloudinaryError) {
       console.error('❌ Cloudinary upload failed:', cloudinaryError);
       console.error('📋 Error details:', {
