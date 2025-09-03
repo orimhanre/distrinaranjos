@@ -1517,8 +1517,8 @@ function VirtualDatabasePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-1 sm:p-4">
-      <div className="mx-auto space-y-2 sm:space-y-6">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="mx-auto max-w-7xl space-y-3 sm:space-y-6">
         {/* User Info and Navigation */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-4 mb-6">
           <div className="flex justify-between items-center">
@@ -1548,9 +1548,9 @@ function VirtualDatabasePageContent() {
         </div>
         
         {/* Header */}
-        <div className="bg-white p-2 sm:p-6 rounded-lg shadow border">
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Base de Datos Virtual</h1>
-          <p className="text-gray-600 text-xs sm:text-base">Gestiona los productos de la tienda virtual</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow border">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">Base de Datos Virtual</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Gestiona los productos de la tienda virtual</p>
           
           {/* External Sync Notification */}
           {externalSyncNotification && (
@@ -1564,33 +1564,33 @@ function VirtualDatabasePageContent() {
         </div>
 
         {/* Airtable Sync Section (Collapsible) */}
-        <div className="bg-white p-2 sm:p-6 rounded-lg shadow border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow border">
           <button
-            className="w-full flex items-center justify-between mb-2 sm:mb-4"
+            className="w-full flex items-center justify-between mb-3 sm:mb-4"
             onClick={() => setShowAirtableSync((v) => !v)}
             aria-expanded={showAirtableSync}
           >
             <div className="mb-2 sm:mb-0 text-left">
-              <h3 className="text-sm sm:text-lg font-semibold text-gray-900">🔄 Sincronización con Airtable Virtual</h3>
-              <p className="text-xs sm:text-sm text-gray-600">Sincroniza datos desde tu base de Airtable virtual</p>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">🔄 Sincronización con Airtable Virtual</h3>
+              <p className="text-sm text-gray-600">Sincroniza datos desde tu base de Airtable virtual</p>
             </div>
-            <span className="ml-3 text-gray-500">{showAirtableSync ? '▾' : '▸'}</span>
+            <span className="ml-3 text-gray-500 text-lg">{showAirtableSync ? '▾' : '▸'}</span>
           </button>
 
           {showAirtableSync && (
             <>
               {/* Sync Buttons and Clear Database Button */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 sm:justify-between">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              <button
-                onClick={syncFromAirtable}
-                disabled={syncing}
-                className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
-                  syncing
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
-              >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                  <button
+                    onClick={syncFromAirtable}
+                    disabled={syncing}
+                    className={`flex-1 sm:flex-none px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium text-sm ${
+                      syncing
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
                 {syncing ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1616,15 +1616,15 @@ function VirtualDatabasePageContent() {
                 </div>
               )}
               
-              <button
-                onClick={syncWebPhotosFromAirtable}
-                disabled={syncingWebPhotos}
-                className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
-                  syncingWebPhotos
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
+                  <button
+                    onClick={syncWebPhotosFromAirtable}
+                    disabled={syncingWebPhotos}
+                    className={`flex-1 sm:flex-none px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium text-sm ${
+                      syncingWebPhotos
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
                 {syncingWebPhotos ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1641,14 +1641,14 @@ function VirtualDatabasePageContent() {
               </button>
             </div>
 
-            {/* Clear Database Button */}
-            <button
-              onClick={clearDatabase}
-              disabled={clearing}
-              className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
-                clearing ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-            >
+                {/* Clear Database Button */}
+                <button
+                  onClick={clearDatabase}
+                  disabled={clearing}
+                  className={`flex-1 sm:flex-none px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium text-sm ${
+                    clearing ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
               {clearing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1666,8 +1666,8 @@ function VirtualDatabasePageContent() {
 
           </div>
 
-          {/* Sync Results */}
-          <div className="space-y-3 sm:space-y-4 mt-4">
+                {/* Sync Results */}
+                <div className="space-y-3 sm:space-y-4 mt-4">
             {/* Products Sync Result */}
             {syncResult && (
               <div className={`p-3 sm:p-4 rounded-lg ${
@@ -1742,8 +1742,8 @@ function VirtualDatabasePageContent() {
               </div>
             )}
 
-            {/* Last Sync Times */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Last Sync Times */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Products Last Sync */}
               <div className={`bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-300 ${
                 showProductUpdate ? 'bg-green-50 border-green-300 shadow-md' : ''
@@ -1834,23 +1834,23 @@ function VirtualDatabasePageContent() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-5 gap-1 sm:gap-4">
-          <div className="bg-white p-2 sm:p-4 rounded-lg shadow border text-center">
-            <div className="text-lg sm:text-2xl font-bold text-purple-600">{products.length}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow border text-center">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">{products.length}</div>
             <div className="text-xs sm:text-sm text-gray-600">Productos</div>
           </div>
-          <div className="bg-white p-2 sm:p-4 rounded-lg shadow border text-center">
-            <div className="text-lg sm:text-2xl font-bold text-green-600">{columns.length}</div>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow border text-center">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{columns.length}</div>
             <div className="text-xs sm:text-sm text-gray-600">Columnas</div>
           </div>
-          <div className="bg-white p-2 sm:p-4 rounded-lg shadow border text-center">
-            <div className="text-lg sm:text-2xl font-bold text-purple-600">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow border text-center">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">
               {new Set(products.map(p => (p as any).brand)).size}
             </div>
             <div className="text-xs sm:text-sm text-gray-600">Marcas</div>
           </div>
-          <div className="bg-white p-2 sm:p-4 rounded-lg shadow border text-center">
-            <div className="text-lg sm:text-2xl font-bold text-orange-600">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow border text-center">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">
               {new Set(products.map(p => {
                 const type = (p as any).type;
                 if (Array.isArray(type)) {
@@ -1861,8 +1861,8 @@ function VirtualDatabasePageContent() {
             </div>
             <div className="text-xs sm:text-sm text-gray-600">Tipos</div>
           </div>
-          <div className="bg-white p-2 sm:p-4 rounded-lg shadow border text-center">
-            <div className="text-lg sm:text-2xl font-bold text-pink-600">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow border text-center col-span-2 sm:col-span-1">
+            <div className="text-xl sm:text-2xl font-bold text-pink-600">
               {Object.keys(webPhotos).length}
             </div>
             <div className="text-xs text-gray-600 leading-tight">WebPhotos</div>
@@ -1874,27 +1874,29 @@ function VirtualDatabasePageContent() {
         {/* Products Table Section */}
         <div className="bg-white rounded-lg shadow border overflow-hidden">
           <div className="p-3 sm:p-4 border-b bg-gray-50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">📊 Tabla de Productos</h3>
-                <div className="text-xs text-gray-600 mt-1">
-                  {products.length} productos almacenados localmente
-                  <span className="text-green-600 ml-1">✅ Cargados</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">📊 Tabla de Productos</h3>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {products.length} productos almacenados localmente
+                    <span className="text-green-600 ml-1">✅ Cargados</span>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  Mostrando {displayedProducts.length} de {products.length} productos con {allDisplayColumns.length} columnas
-                  {allDisplayColumns.some(col => col.isUrlColumn) && (
-                    <span className="text-blue-600 ml-1">(incluye columnas de URLs)</span>
-                  )}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => setShowProductsTable(!showProductsTable)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full sm:w-auto transition-colors"
+                  >
+                    {showProductsTable ? 'Ocultar Tabla' : 'Mostrar Tabla'}
+                  </button>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => setShowProductsTable(!showProductsTable)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm self-start sm:self-auto w-full sm:w-auto"
-                >
-                  {showProductsTable ? 'Ocultar Tabla' : 'Mostrar Tabla'}
-                </button>
+              <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+                Mostrando {displayedProducts.length} de {products.length} productos con {allDisplayColumns.length} columnas
+                {allDisplayColumns.some(col => col.isUrlColumn) && (
+                  <span className="text-blue-600 ml-1">(incluye columnas de URLs)</span>
+                )}
               </div>
             </div>
 
@@ -1902,9 +1904,17 @@ function VirtualDatabasePageContent() {
               <>
                 {/* Products Spreadsheet */}
                 {spreadsheetData ? (
-                  <div className="border border-gray-300 rounded-lg">
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    {/* Mobile notice */}
+                    <div className="block sm:hidden bg-blue-50 border-b border-blue-200 p-3">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="text-sm">📱</span>
+                        <span className="text-xs">Desliza horizontalmente para ver todas las columnas</span>
+                      </div>
+                    </div>
+                    
                     {/* Spreadsheet */}
-                    <div className="min-h-[600px]">
+                    <div className="min-h-[400px] sm:min-h-[600px]">
                       <Spreadsheet
                         data={{
                           ...spreadsheetData,
@@ -1944,27 +1954,60 @@ function VirtualDatabasePageContent() {
         {/* WebPhotos Table Section */}
         <div className="bg-white rounded-lg shadow border overflow-hidden">
           <div className="p-3 sm:p-4 border-b bg-gray-50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700">📸 Tabla de WebPhotos</h4>
-                <div className="text-xs text-gray-600 mt-1">
-                  {Object.keys(webPhotos).length} WebPhotos almacenados localmente
-                  <span className="text-green-600 ml-1">✅ Cargados</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h4 className="text-base sm:text-lg font-semibold text-gray-700">📸 Tabla de WebPhotos</h4>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {Object.keys(webPhotos).length} WebPhotos almacenados localmente
+                    <span className="text-green-600 ml-1">✅ Cargados</span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => setShowWebPhotosTable(!showWebPhotosTable)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm self-start sm:self-auto w-full sm:w-auto"
-                >
-                  {showWebPhotosTable ? 'Ocultar Tabla' : 'Mostrar Tabla'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => setShowWebPhotosTable(!showWebPhotosTable)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full sm:w-auto transition-colors"
+                  >
+                    {showWebPhotosTable ? 'Ocultar Tabla' : 'Mostrar Tabla'}
+                  </button>
+                </div>
               </div>
             </div>
 
             {showWebPhotosTable && (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                {/* Mobile-friendly table with responsive design */}
+                <div className="block sm:hidden">
+                  {/* Mobile card layout */}
+                  <div className="space-y-3 p-3">
+                    {Object.entries(webPhotos).map(([name, url], index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={url} 
+                            alt={name}
+                            className="w-16 h-16 object-cover rounded cursor-pointer flex-shrink-0"
+                            onClick={() => {
+                              setSelectedImage(url);
+                              setShowImageModal(true);
+                            }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 mb-1">{name}</div>
+                            <div className="text-xs text-gray-500 break-all">{url}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Desktop table layout */}
+                <table className="hidden sm:table min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
