@@ -237,46 +237,20 @@ export class ProductDatabase {
   createProduct(product: Omit<Product, 'id'> & { id?: string }): Product {
     const id = product.id || `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Limit fields to prevent SQLite parameter limit issues - environment-aware
-    let essentialFields: string[];
-    
-    if (this.environment === 'virtual') {
-      // Virtual environment: Use only the absolute minimum fields to avoid SQLite parameter limit
-      essentialFields = [
-        'name', 'brand', 'price', 'stock', 'imageURL', 'category', 'subCategory', 'type', 'colors', 'SKU'
-      ];
-    } else {
-      // Regular environment: Use price1 and price2 fields
-      essentialFields = [
-        'name', 'brand', 'type', 'colors', 'price1', 'price2', 'quantity', 'imageURL',
-         'isProductStarredAirtable', 'lastUpdated'
-      ];
-    }
-    
-    // Include essential fields even if empty, and other fields that have values
-    const allFields = Object.keys(product).filter(key => key !== 'id' && product[key as keyof typeof product] !== undefined && product[key as keyof typeof product] !== null);
-    const essentialFieldsSet = new Set(essentialFields);
-    
-    // Sort fields: essential fields first (including empty ones), then others with values
-    let fields = [
-      ...essentialFields.filter(field => allFields.includes(field) || product[field as keyof typeof product] !== undefined),
-      ...allFields.filter(field => !essentialFieldsSet.has(field) && product[field as keyof typeof product] !== '')
-    ].slice(0, 9); // Limit to 9 fields to leave room for price
-    
-    // ALWAYS include price field for virtual environment
-    if (this.environment === 'virtual' && !fields.includes('price')) {
-      fields.push('price');
-    }
-    
-
+    // Get ALL fields from the product - no more arbitrary limits!
+    const allFields = Object.keys(product).filter(key => 
+      key !== 'id' && 
+      product[key as keyof typeof product] !== undefined && 
+      product[key as keyof typeof product] !== null
+    );
     
     // Ensure all columns exist before inserting
-    fields.forEach(key => {
+    allFields.forEach(key => {
       this.ensureColumnExists(key);
     });
     
-    const placeholders = fields.map(() => '?').join(', ');
-    const values = fields.map(field => {
+    const placeholders = allFields.map(() => '?').join(', ');
+    const values = allFields.map(field => {
       const fieldValue = product[field as keyof typeof product];
       
       // Handle special cases for SQLite compatibility
@@ -306,7 +280,7 @@ export class ProductDatabase {
     });
     
     const insertQuery = `
-      INSERT INTO products (id, ${fields.join(', ')}) 
+      INSERT INTO products (id, ${allFields.join(', ')}) 
       VALUES (?, ${placeholders})
     `;
     
@@ -316,8 +290,8 @@ export class ProductDatabase {
     } catch (error) {
       console.error('Error creating product:', error);
       console.error('Product ID:', id);
-      console.error('Fields count:', fields.length);
-      console.error('Fields:', fields);
+      console.error('Fields count:', allFields.length);
+      console.error('Fields:', allFields);
       console.error('All fields from product:', Object.keys(product));
       throw error;
     }
@@ -366,8 +340,8 @@ export class ProductDatabase {
   // Get all products
   getAllProducts(): Product[] {
     try {
-      // Use a simple, fast query instead of dynamic column building
-      const rows = this.db.prepare("SELECT * FROM products ORDER BY name").all();
+      // Sort by brand then name for consistent ordering
+      const rows = this.db.prepare("SELECT * FROM products ORDER BY brand, name").all();
       const products = rows.map((row: any) => {
         try {
           return this.rowToProduct(row);
@@ -388,39 +362,20 @@ export class ProductDatabase {
     const existing = this.getProduct(id);
     if (!existing) return null;
     
-    // Limit fields to prevent SQLite parameter limit issues - environment-aware
-    let essentialFields: string[];
-    
-    if (this.environment === 'virtual') {
-      // Virtual environment: Use only the most critical fields
-      essentialFields = [
-        'name', 'SKU', 'brand', 'type', 'category', 'materials', 'dimensions', 'capacity','subCategory', 'colors', 'price',
-        'stock', 'imageURL'
-      ];
-    } else {
-      // Regular environment: Use price1 and price2 fields
-      essentialFields = [
-        'name', 'brand', 'type', 'colors', 'price1', 'price2', 'quantity', 'imageURL',
-         'isProductStarredAirtable', 'lastUpdated'
-      ];
-    }
-    
     // Build dynamic UPDATE statement
     const updateFields: string[] = [];
     const updateValues: any[] = [];
     
-    // Include all fields from updates, prioritizing essential fields
+    // Include ALL fields from updates - no more limits!
     const allFields = Object.keys(updates).filter(key => key !== 'id');
-    const essentialFieldsSet = new Set(essentialFields);
     
-    // Sort fields: essential fields first, then others
-    const fieldsToUpdate = [
-      ...allFields.filter(field => essentialFieldsSet.has(field)),
-      ...allFields.filter(field => !essentialFieldsSet.has(field))
-    ].slice(0, 10); // Limit to 10 fields max to avoid SQLite parameter limit
-    
-    for (const fieldName of fieldsToUpdate) {
+    for (const fieldName of allFields) {
       const fieldValue = updates[fieldName as keyof typeof updates];
+      
+      // Skip null/undefined values to avoid database corruption
+      if (fieldValue === null || fieldValue === undefined) {
+        continue;
+      }
       
       // Ensure column exists for this field (preserve original case)
       this.ensureColumnExists(fieldName);
@@ -440,9 +395,22 @@ export class ProductDatabase {
       } else if (fieldName === 'stock') {
         // Handle stock field for virtual products
         processedValue = typeof fieldValue === 'number' ? fieldValue : parseInt(String(fieldValue)) || 0;
+      } else if (typeof fieldValue === 'boolean') {
+        // Persist generic boolean custom fields as 1/0
+        processedValue = fieldValue ? 1 : 0;
       } else if (fieldName === 'imageURL') {
         // Handle image URL fields
-        processedValue = Array.isArray(fieldValue) ? JSON.stringify(fieldValue) : fieldValue;
+        if (Array.isArray(fieldValue)) {
+          // Filter out any invalid entries and ensure we have valid URLs
+          const validImages = fieldValue.filter((img: any) => {
+            if (typeof img === 'string') return img && img.trim().length > 0;
+            if (typeof img === 'object' && img !== null) return (img as any).url && (img as any).url.trim().length > 0;
+            return false;
+          });
+          processedValue = validImages.length > 0 ? JSON.stringify(validImages) : '[]';
+        } else {
+          processedValue = '[]'; // Default to empty array if not an array
+        }
       } else {
         // For all other fields, truncate if too long and use as is
         const stringValue = String(fieldValue || '');
@@ -467,7 +435,16 @@ export class ProductDatabase {
     updateValues.push(id);
     
     try {
-      this.db.prepare(updateQuery).run(...updateValues);
+      // Use a transaction to ensure data consistency
+      const transaction = this.db.transaction(() => {
+        this.db.prepare(updateQuery).run(...updateValues);
+      });
+      
+      transaction();
+      
+      // Force database sync to ensure changes are written to disk
+      this.sync();
+      
       return this.getProduct(id);
     } catch (error) {
       console.error('Error updating product:', error);
@@ -502,6 +479,16 @@ export class ProductDatabase {
     return updatedProducts;
   }
   
+  // Force database sync to ensure all changes are written to disk
+  public sync(): void {
+    try {
+      this.db.exec('PRAGMA wal_checkpoint(FULL)');
+      this.db.exec('VACUUM');
+    } catch (error) {
+      console.warn('Warning: Could not sync database:', error);
+    }
+  }
+
   // Ensure a column exists in the products table
   public ensureColumnExists(columnName: string): void {
     try {
@@ -513,7 +500,10 @@ export class ProductDatabase {
         // Add column dynamically
         const alterQuery = `ALTER TABLE products ADD COLUMN "${columnName}" TEXT`;
         this.db.prepare(alterQuery).run();
-        console.log(`✅ Added dynamic column: ${columnName}`);
+        // Reduced logging - only log if debugging is enabled
+        if (process.env.DEBUG_DATABASE_COLUMNS === 'true') {
+          console.log(`✅ Added dynamic column: ${columnName}`);
+        }
       }
     } catch (error) {
       console.error(`Error ensuring column exists: ${columnName}`, error);
@@ -533,7 +523,10 @@ export class ProductDatabase {
       );
       
       if (columnsToAdd.length > 0) {
-        console.log(`📋 Adding ${columnsToAdd.length} new columns:`, columnsToAdd);
+        // Reduced logging - only log if debugging is enabled
+        if (process.env.DEBUG_DATABASE_COLUMNS === 'true') {
+          console.log(`📋 Adding ${columnsToAdd.length} new columns:`, columnsToAdd);
+        }
         
         // Add all missing columns in a single transaction
         const transaction = this.db.transaction(() => {
@@ -544,9 +537,15 @@ export class ProductDatabase {
         });
         
         transaction();
-        console.log(`✅ Added ${columnsToAdd.length} dynamic columns in batch`);
+        // Reduced logging - only log if debugging is enabled
+        if (process.env.DEBUG_DATABASE_COLUMNS === 'true') {
+          console.log(`✅ Added ${columnsToAdd.length} dynamic columns in batch`);
+        }
       } else {
-        console.log(`✅ All ${columnNames.length} columns already exist`);
+        // Reduced logging - only log if debugging is enabled
+        if (process.env.DEBUG_DATABASE_COLUMNS === 'true') {
+          console.log(`✅ All ${columnNames.length} columns already exist`);
+        }
       }
     } catch (error) {
       console.error(`Error ensuring columns exist:`, error);
@@ -565,7 +564,10 @@ export class ProductDatabase {
     try {
       const stmt = this.db.prepare('DELETE FROM products');
       const result = stmt.run();
-      console.log(`🗑️ Cleared ${result.changes} products from database`);
+      // Reduced logging - only log if debugging is enabled
+      if (process.env.DEBUG_DATABASE_OPERATIONS === 'true') {
+        console.log(`🗑️ Cleared ${result.changes} products from database`);
+      }
       return true;
     } catch (error) {
       console.error('Error clearing products:', error);
@@ -973,6 +975,7 @@ export class ProductDatabase {
     // Helper function to safely parse JSON
     const parseJson = (value: any): any => {
       if (!value || typeof value !== 'string') return value;
+      if (value.trim() === '') return value; // Handle empty strings
       try {
         return JSON.parse(value);
       } catch {
@@ -1014,7 +1017,12 @@ export class ProductDatabase {
       materials: row.materials || '',
       dimensions: row.dimensions || '',
       capacity: row.capacity || '',
-      imageURL: parseJson(row.imageURL) || [],
+      imageURL: (() => {
+        const parsed = parseJson(row.imageURL);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (parsed && typeof parsed === 'string' && parsed.trim().length > 0) return [parsed];
+        return [];
+      })(),
       SKN: row.SKN || '',
       
       lastUpdated: row.lastUpdated || '',

@@ -6,12 +6,15 @@ import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { checkVirtualAdminPermission } from '@/lib/adminPermissions';
 import { usePathname } from 'next/navigation';
+import Spreadsheet from '@/components/Spreadsheet';
+import { Spreadsheet as SpreadsheetType, SpreadsheetColumn, SpreadsheetRow, SpreadsheetCell } from '@/types/spreadsheet';
+
 
 
 interface Column {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'boolean' | 'select' | 'multipleSelect' | 'attachment';
+  type: 'text' | 'longText' | 'number' | 'boolean' | 'select' | 'multipleSelect' | 'attachment' | 'email' | 'date' | 'phone' | 'createdTime' | 'lastModifiedTime';
   editable: boolean;
 }
 
@@ -20,6 +23,8 @@ interface Column {
     switch (type) {
       case 'text':
         return 'Single line text';
+      case 'longText':
+        return 'Long text';
       case 'number':
         return 'Number';
       case 'boolean':
@@ -30,6 +35,16 @@ interface Column {
         return 'Multiple select';
       case 'attachment':
         return 'Attachment';
+      case 'email':
+        return 'Email';
+      case 'date':
+        return 'Date';
+      case 'phone':
+        return 'Phone number';
+      case 'createdTime':
+        return 'Created time';
+      case 'lastModifiedTime':
+        return 'Last modified time';
       default:
         return type;
     }
@@ -50,11 +65,12 @@ function VirtualDatabasePageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [displayCount, setDisplayCount] = useState(25);
+
   const [syncingWebPhotos, setSyncingWebPhotos] = useState(false);
   const [webPhotosSyncResult, setWebPhotosSyncResult] = useState<any>(null);
   const [webPhotos, setWebPhotos] = useState<Record<string, string>>({});
   const [showWebPhotosTable, setShowWebPhotosTable] = useState(false);
+  const [showAirtableSync, setShowAirtableSync] = useState(false);
   const [showProductsTable, setShowProductsTable] = useState(false);
   const [lastProductSync, setLastProductSync] = useState<string | null>(null);
   const [lastWebPhotosSync, setLastWebPhotosSync] = useState<string | null>(null);
@@ -66,9 +82,382 @@ function VirtualDatabasePageContent() {
   const [clearing, setClearing] = useState(false);
   const [clearResult, setClearResult] = useState<any>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetType | null>(null);
   const pathname = usePathname();
+
+  // Simple debounced save function
+  let saveTimeout: NodeJS.Timeout | null = null;
+  const debouncedSaveChanges = (updatedData: SpreadsheetType) => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    saveTimeout = setTimeout(async () => {
+      try {
+        console.log('💾 Saving spreadsheet changes to database...', updatedData);
+        
+        // Check if API is accessible
+        try {
+          const healthCheck = await fetch('/api/database/virtual-products', { 
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          
+          if (!healthCheck.ok) {
+            console.error('❌ API health check failed:', healthCheck.status);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ API health check error:', error);
+          return;
+        }
+        
+        // Extract individual product updates from spreadsheet data
+        const productUpdates = updatedData.rows.map(row => {
+          const updates: any = {};
+          Object.keys(row.cells).forEach(key => {
+            if (key !== 'id') {
+              updates[key] = row.cells[key]?.value;
+            }
+          });
+          return { id: row.id, updates };
+        });
+        
+        console.log('📝 Product updates to save:', productUpdates);
+        
+        // Save each product update individually using POST method (since PUT doesn't exist)
+        const savePromises = productUpdates.map(async (update) => {
+          try {
+            // Use POST method but send the update data
+            const response = await fetch('/api/database/virtual-products', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...update.updates,
+                id: update.id, // Include the ID so the API knows which product to update
+                _action: 'update' // Add a flag to indicate this is an update, not a create
+              })
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success) {
+                // Success: product updated (log removed)
+              } else {
+                console.error(`❌ Product ${update.id} update failed:`, result.message);
+              }
+            } else {
+              console.error(`❌ Product ${update.id} update request failed:`, response.status);
+            }
+          } catch (error) {
+            console.error(`❌ Error updating product ${update.id}:`, error);
+          }
+        });
+        
+        // Wait for all updates to complete
+        await Promise.all(savePromises);
+        // All product updates completed (log removed)
+        
+      } catch (error) {
+        console.error('❌ Save error:', error);
+      }
+    }, 1000);
+  };
+
+  // Create spreadsheet when both products and columns are loaded
+  useEffect(() => {
+    if (products.length > 0 && columns.length > 0 && !spreadsheetData) {
+      console.log('🔄 Creating spreadsheet with:', { productsCount: products.length, columnsCount: columns.length });
+      const newSpreadsheetData = convertToSpreadsheet(products, columns, spreadsheetData || undefined);
+      console.log('📊 Spreadsheet created:', newSpreadsheetData);
+      setSpreadsheetData(newSpreadsheetData);
+    }
+  }, [products, columns, spreadsheetData]); // Only create if spreadsheetData doesn't exist
+
+  // Test API connection on page load (silent)
+  useEffect(() => {
+    const testAPIConnection = async () => {
+      try {
+        const response = await fetch('/api/database/virtual-products', { 
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          console.error('❌ API connection test failed on page load:', response.status, response.statusText);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('❌ API connection test error on page load:', errorMessage);
+      }
+    };
+
+    // Test after a short delay to ensure server is ready
+    const timer = setTimeout(testAPIConnection, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Preserve spreadsheet order when data changes (but not on initial creation)
+  useEffect(() => {
+    if (spreadsheetData && products.length > 0 && columns.length > 0) {
+      // Only update if we have existing data and the order has changed
+      const currentOrder = spreadsheetData.columns.map(col => col.key).join(',');
+      const newOrder = columns.map(col => col.key).join(',');
+      
+      if (currentOrder !== newOrder) {
+        const updatedSpreadsheetData = convertToSpreadsheet(products, columns, spreadsheetData);
+        setSpreadsheetData(updatedSpreadsheetData);
+      }
+    }
+  }, [columns]); // Only depend on columns changing
+
+  // Handle spreadsheet data changes
+  const handleSpreadsheetChange = (updatedData: SpreadsheetType) => {
+    console.log('🔄 Spreadsheet data changed:', updatedData);
+    
+    // Filter out any ID column that might have been added
+    const filteredData = {
+      ...updatedData,
+      columns: updatedData.columns.filter(col => col.key !== 'id')
+    };
+    
+    setSpreadsheetData(filteredData);
+
+    // If columns changed (added/removed/renamed or metadata like label/type/width), update parent columns immediately
+    try {
+      const currentByKey: Record<string, any> = {};
+      columns.forEach(c => { currentByKey[c.key] = c; });
+      let metaChanged = false;
+      for (let i = 0; i < updatedData.columns.length; i++) {
+        const u = updatedData.columns[i];
+        const cur = currentByKey[u.key];
+        if (!cur) { metaChanged = true; break; }
+        // Don't convert types back - keep the types as they are in the spreadsheet
+        if (cur.label !== u.label || cur.type !== u.type || (cur.width ?? undefined) !== (u.width ?? undefined) || (cur.order ?? i) !== i) {
+          metaChanged = true; break;
+        }
+      }
+      if (metaChanged || columns.length !== updatedData.columns.length) {
+        const updatedColumns = updatedData.columns.map((col, index) => ({
+          key: col.key,
+          label: col.label,
+          type: col.type, // Keep the type as is (image stays image, etc.)
+          editable: true,
+          ...(col.width != null ? { width: col.width } : {}),
+          order: index
+        })) as any[];
+        setColumns(updatedColumns as any);
+        // Ensure column visibility includes any new keys
+        const incomingSet = new Set(updatedData.columns.map(c => c.key));
+        const nextSelected = Array.from(new Set([...selectedColumns.filter(k => incomingSet.has(k)), ...updatedData.columns.map(c => c.key)]));
+        setSelectedColumns(nextSelected);
+        saveSelectedColumns(nextSelected);
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to reconcile columns after spreadsheet change:', e);
+    }
+
+    // Don't update products state here - let the save process handle it
+    // The spreadsheet data is the source of truth for the UI
+
+    // Use debounced save to prevent excessive API calls
+    debouncedSaveChanges(updatedData);
+  };
+
+  // Handle column deletion from spreadsheet
+  const handleColumnDelete = (columnKey: string) => {
+    console.log('🗑️ Deleting column:', columnKey);
+    
+    // Update columns state to remove the deleted column
+    const updatedColumns = columns.filter(col => col.key !== columnKey);
+    setColumns(updatedColumns);
+    
+    // Update spreadsheet data to remove the deleted column
+    if (spreadsheetData) {
+      const updatedSpreadsheetData = { ...spreadsheetData };
+      
+      // Remove the column from spreadsheet columns
+      updatedSpreadsheetData.columns = updatedSpreadsheetData.columns.filter(col => col.key !== columnKey);
+      
+      // Remove cells for this column from all rows
+      updatedSpreadsheetData.rows.forEach(row => {
+        delete row.cells[columnKey];
+      });
+      
+      // Reorder remaining columns
+      updatedSpreadsheetData.columns.forEach((col, index) => {
+        col.order = index;
+      });
+      
+      updatedSpreadsheetData.metadata.updatedAt = new Date();
+      updatedSpreadsheetData.metadata.version++;
+      
+      setSpreadsheetData(updatedSpreadsheetData);
+      
+      // Save the updated data immediately
+      console.log('🔄 Saving column deletion to database...');
+      debouncedSaveChanges(updatedSpreadsheetData);
+    }
+  };
   
 
+
+  // Convert existing products to spreadsheet format
+  const convertToSpreadsheet = (products: Product[], columns: Column[], existingSpreadsheet?: SpreadsheetType): SpreadsheetType => {
+    // Filter out any ID columns to prevent them from being displayed
+    const filteredColumns = columns.filter(col => col.key !== 'id');
+    
+    // If we have existing spreadsheet data, preserve the order
+    if (existingSpreadsheet) {
+      console.log('🔄 Preserving existing spreadsheet order');
+      
+      // Sort columns by their existing order
+      const orderedColumns = [...filteredColumns].sort((a, b) => {
+        const aOrder = existingSpreadsheet.columns.find(col => col.key === a.key)?.order ?? 0;
+        const bOrder = existingSpreadsheet.columns.find(col => col.key === b.key)?.order ?? 0;
+        return aOrder - bOrder;
+      });
+      
+      // Sort rows by their existing order
+      const orderedProducts = [...products].sort((a, b) => {
+        const aOrder = existingSpreadsheet.rows.find(row => row.id === a.id)?.order ?? 0;
+        const bOrder = existingSpreadsheet.rows.find(row => row.id === b.id)?.order ?? 0;
+        return aOrder - bOrder;
+      });
+      
+      columns = orderedColumns;
+      products = orderedProducts;
+    } else {
+      // Use filtered columns if no existing spreadsheet
+      columns = filteredColumns;
+    }
+    
+    const spreadsheetColumns: SpreadsheetColumn[] = columns.map((col, index) => {
+      // Calculate appropriate width based on column type and content
+      // If backend provided a width, prefer it; otherwise compute
+      let width = (col as any).width ?? 150; // Default width
+      
+      // Respect backend/edited types as-is
+      let finalType = col.type;
+      
+      // Special handling for imageURL columns - treat them as image type
+      if (col.key === 'imageURL' && col.type !== 'attachment') {
+        finalType = 'attachment';
+      }
+      
+      if ((col as any).width == null) {
+        if (col.type === 'attachment' || col.key === 'imageURL') {
+          width = 200; // Images need more space
+        } else if (finalType === 'text') {
+          // Estimate width based on label length
+          width = Math.max(120, Math.min(300, col.label.length * 10 + 50));
+        } else if (col.type === 'number') {
+          width = 120; // Numbers are usually shorter
+        } else if (col.type === 'boolean') {
+          width = 100; // Checkboxes are compact
+        } else if (col.type === 'select') {
+          width = 160; // Select dropdowns need medium space
+        } else if (col.type === 'multipleSelect') {
+          width = 180; // Multiple select needs more space
+        }
+      }
+      
+      const column = {
+        id: `col_${index}`,
+        key: col.key,
+        label: col.label,
+        type: finalType === 'attachment' ? 'image' : finalType as any, // Preserve exact Airtable types
+        width: width,
+        sortable: true,
+        editable: true, // Force all columns to be editable
+        required: false,
+        // If backend provided an order, prefer it; otherwise use the current index
+        order: (col as any).order ?? index
+      };
+      
+      return column;
+    });
+
+    // console.log('📋 Spreadsheet columns:', spreadsheetColumns); // Reduced logging
+
+    const spreadsheetRows: SpreadsheetRow[] = products.map((product, index) => {
+      const cells: Record<string, SpreadsheetCell> = {};
+      
+      columns.forEach(col => {
+        let value: any = (product as any)[col.key];
+        
+        // Respect type as provided
+        let finalType = col.type;
+        
+        // Special handling for imageURL columns - treat them as image type
+        if (col.key === 'imageURL' && col.type !== 'attachment') {
+          finalType = 'attachment';
+        }
+        
+        // Handle image URLs
+        if ((col.type === 'attachment' || col.key === 'imageURL') && value) {
+          value = Array.isArray(value) ? value : [value];
+        }
+        
+        // Special handling for price fields - pass raw values for EditableCell to format
+        if (col.key === 'price' && value) {
+          // Don't format here - let EditableCell handle the formatting
+          // Just ensure it's a number
+          const numValue = typeof value === 'string' ? parseFloat(value) : Number(value);
+          if (!isNaN(numValue)) {
+            value = numValue; // Keep as raw number
+          }
+        }
+        
+        const cell = {
+          id: `cell_${index}_${col.key}`,
+          value: value || '',
+          type: (finalType === 'attachment' || col.key === 'imageURL') ? 'image' : finalType as any,
+          editable: true // Force all cells to be editable
+        };
+        
+        cells[col.key] = cell;
+      });
+
+      return {
+        id: product.id || `row_${index}`,
+        cells,
+        order: index,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    });
+
+    return {
+      id: 'virtual-products',
+      name: 'Virtual Products Database',
+      description: 'Product catalog managed in virtual environment',
+      columns: spreadsheetColumns,
+      rows: spreadsheetRows,
+      settings: {
+        allowRowReordering: true,
+        allowColumnReordering: true,
+        allowBulkOperations: true,
+        autoSave: true,
+        maxRows: 10000,
+        maxColumns: 100
+      },
+      metadata: {
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: 'system',
+        version: 1
+      }
+    };
+  };
 
   // Handle manual image cleanup
   const handleImageCleanup = async () => {
@@ -148,9 +537,14 @@ function VirtualDatabasePageContent() {
         // Add a small delay to ensure file system operations are complete
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        await loadProducts();
+        // Load columns first, then products (since products depend on columns)
+        const freshColumns = await fetchColumns();
+        if (freshColumns && freshColumns.length > 0) {
+          await loadProducts(freshColumns);
+        } else {
+          await loadProducts();
+        }
         await loadWebPhotos();
-        await fetchColumns();
       } else {
         console.log('🗑️ Clear failed:', result.message);
       }
@@ -261,10 +655,14 @@ function VirtualDatabasePageContent() {
                             setExternalSyncNotification('📱 iOS App triggered Product Sync');
                             setTimeout(() => setExternalSyncNotification(null), 3000);
                             
-                            // Reload data when sync is detected with error handling
+                            // Reload data when sync is detected with error handling - columns first, then products
                             try {
-                                await loadProducts();
-                                await fetchColumns();
+                                const freshColumns = await fetchColumns();
+                                if (freshColumns && freshColumns.length > 0) {
+                                    await loadProducts(freshColumns);
+                                } else {
+                                    await loadProducts();
+                                }
                             } catch (error) {
                                 console.error('❌ Error reloading data after product sync:', error);
                                 // Don't crash the component, just log the error
@@ -315,7 +713,12 @@ function VirtualDatabasePageContent() {
   // Function to refresh timestamps immediately and reload data
   const refreshTimestampsAndData = async () => {
     await refreshTimestamps();
-    await loadProducts();
+    const freshColumns = await fetchColumns();
+    if (freshColumns && freshColumns.length > 0) {
+      await loadProducts(freshColumns);
+    } else {
+      await loadProducts();
+    }
     await loadWebPhotos();
   };
 
@@ -393,7 +796,7 @@ function VirtualDatabasePageContent() {
 
   // Reset display count when search query changes
   useEffect(() => {
-    setDisplayCount(25);
+    
   }, [searchQuery]);
 
 
@@ -417,69 +820,92 @@ function VirtualDatabasePageContent() {
       const data = await res.json();
       
       
-      if (data.success && Array.isArray(data.columns)) {
+              if (data.success && Array.isArray(data.columns)) {
 
-        setColumns(data.columns);
+        // Filter out any ID columns from the backend data
+        const filteredColumns = data.columns.filter((col: any) => col.key !== 'id');
+        
+        setColumns(filteredColumns);
+        
+        // Convert existing products to spreadsheet format - always update if we have columns
+        if (filteredColumns.length > 0) {
+          const spreadsheetData = convertToSpreadsheet(products, filteredColumns);
+          setSpreadsheetData(spreadsheetData);
+        }
         
         // If no columns (database cleared), set empty selection
-        if (data.columns.length === 0) {
+        if (filteredColumns.length === 0) {
           setSelectedColumns([]);
-          return;
+          return filteredColumns;
         }
         
         // Load saved column selection from localStorage
         const savedColumns = localStorage.getItem('virtual-admin-selected-columns');
+        
         if (savedColumns) {
           try {
             const parsedColumns = JSON.parse(savedColumns);
-            // Only use saved columns that still exist in the current schema
+            // Only use saved columns that still exist in the current schema AND remove any 'id' column
             const validColumns = parsedColumns.filter((col: string) => 
-              data.columns.some((c: any) => c.key === col)
+              data.columns.some((c: any) => c.key === col) && col !== 'id'
             );
             if (validColumns.length > 0) {
               setSelectedColumns(validColumns);
+              saveSelectedColumns(validColumns); // Update localStorage without ID
             } else {
-              // Default columns for virtual admin
-              setSelectedColumns(['name', 'brand', 'type', 'category', 'price']);
+              // Default columns for virtual admin - include all important fields
+              const defaultColumns = ['name', 'SKU', 'brand', 'type', 'category', 'subCategory', 'materials', 'dimensions', 'capacity', 'detail', 'colors', 'price', 'distriPrice', 'stock', 'imageURL'];
+              setSelectedColumns(defaultColumns);
+              saveSelectedColumns(defaultColumns);
             }
           } catch (e) {
             console.error('Error parsing saved columns:', e);
-            setSelectedColumns(['name', 'brand', 'type', 'category', 'price']);
+            // Default columns for virtual admin - include all important fields
+            const defaultColumns = ['name', 'SKU', 'brand', 'type', 'category', 'subCategory', 'materials', 'dimensions', 'capacity', 'detail', 'colors', 'price', 'distriPrice', 'stock', 'imageURL'];
+            setSelectedColumns(defaultColumns);
+            saveSelectedColumns(defaultColumns);
           }
         } else {
-          // Default columns for virtual admin
-          setSelectedColumns(['name', 'brand', 'type', 'category', 'price']);
+          // Default columns for virtual admin - include all important fields
+          const defaultColumns = ['name', 'SKU', 'brand', 'type', 'category', 'subCategory', 'materials', 'dimensions', 'capacity', 'detail', 'colors', 'price', 'distriPrice', 'stock', 'imageURL'];
+          setSelectedColumns(defaultColumns);
+          saveSelectedColumns(defaultColumns);
         }
+        
+        return filteredColumns;
       } else {
         console.error('Invalid virtual columns data:', data);
         setColumns([]);
         setSelectedColumns([]);
+        return [];
       }
     } catch (error) {
       console.error('Error fetching virtual columns:', error);
       setColumns([]);
       setSelectedColumns([]);
+      return [];
     }
   };
 
-  const loadProducts = async () => {
+  const loadProducts = async (columnsToUse?: any[]) => {
     try {
-      console.log('🔍 Frontend: Starting to load virtual products...');
       // Add cache buster to ensure fresh data
       const cacheBuster = Date.now();
       const response = await fetch(`/api/database/virtual-products?cb=${cacheBuster}`);
-      console.log('🔍 Frontend: API response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Frontend: API response data:', {
-          success: data.success,
-          count: data.count,
-          productsLength: data.products?.length || 0
-        });
-
-        setProducts(data.products || []);
-        console.log('🔍 Frontend: Products state updated with', data.products?.length || 0, 'products');
+        const productsData = data.products || [];
+        setProducts(productsData);
+        
+        // Use provided columns or fall back to state columns
+        const columnsForSpreadsheet = columnsToUse || columns;
+        
+        // Convert to spreadsheet format - always update, even with empty data
+        if (columnsForSpreadsheet.length > 0) {
+          const newSpreadsheetData = convertToSpreadsheet(productsData, columnsForSpreadsheet, spreadsheetData || undefined);
+          setSpreadsheetData(newSpreadsheetData);
+        }
       } else {
         console.error('🔍 Frontend: API response not ok:', response.status, response.statusText);
       }
@@ -500,6 +926,17 @@ function VirtualDatabasePageContent() {
     } catch (error) {
       console.error('Error loading virtual webPhotos:', error);
     }
+  };
+
+  // Force refresh column selection to show all columns
+  const forceRefreshColumns = () => {
+    // Clear saved column selection from localStorage
+    localStorage.removeItem('virtual-admin-selected-columns');
+    
+    // Set all available columns as selected (excluding ID column)
+    const allColumns = columns.map(col => col.key);
+    setSelectedColumns(allColumns);
+    saveSelectedColumns(allColumns);
   };
 
   const formatValue = (value: any, columnType: string) => {
@@ -537,12 +974,13 @@ function VirtualDatabasePageContent() {
     
     // Try to parse JSON string if it's a string that looks like JSON
     let processedFileUrl = fileUrl;
-    if (typeof fileUrl === 'string' && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
+    if (typeof fileUrl === 'string' && fileUrl.trim() && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
       try {
         processedFileUrl = JSON.parse(fileUrl);
         console.log('🔍 renderFilePreview: Parsed JSON string:', processedFileUrl);
       } catch (error) {
-        console.log('🔍 renderFilePreview: Failed to parse JSON, using as string');
+        console.log('🔍 renderFilePreview: Failed to parse JSON, using as string. Error:', error);
+        console.log('🔍 renderFilePreview: Problematic value:', fileUrl);
       }
     }
     
@@ -699,7 +1137,7 @@ function VirtualDatabasePageContent() {
   const renderUrlsList = (fileUrl: any, fileName: string) => {
     // Try to parse JSON string if it's a string that looks like JSON
     let processedFileUrl = fileUrl;
-    if (typeof fileUrl === 'string' && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
+    if (typeof fileUrl === 'string' && fileUrl.trim() && (fileUrl.startsWith('[') || fileUrl.startsWith('{'))) {
       try {
         processedFileUrl = JSON.parse(fileUrl);
       } catch (error) {
@@ -772,11 +1210,26 @@ function VirtualDatabasePageContent() {
 
   // Sync from Airtable (Virtual Environment)
   const syncFromAirtable = async () => {
+    // Prevent multiple simultaneous syncs
+    if (syncing) {
+      console.log('⚠️ Sync already in progress, ignoring request');
+      return;
+    }
+
     try {
       setSyncing(true);
       setSyncResult(null);
       
-      console.log('🔄 Starting optimized virtual sync from Airtable...');
+      // Add timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        setSyncing(false);
+        setSyncResult({ 
+          success: false, 
+          message: '⏰ Sincronización cancelada por timeout (más de 45 segundos)' 
+        });
+      }, 45000); // 45 second timeout for products sync
+      
+      console.log('🔄 Starting simple virtual sync from Airtable...');
       
       const response = await fetch('/api/database/sync-airtable', {
         method: 'POST',
@@ -786,10 +1239,15 @@ function VirtualDatabasePageContent() {
         body: JSON.stringify({ context: 'virtual' })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       console.log('🔄 Sync API response status:', response.status);
       const result = await response.json();
       console.log('🔄 Sync API response result:', result);
       
+      clearTimeout(timeoutId);
       setSyncResult(result);
       
       if (result.success) {
@@ -802,21 +1260,26 @@ function VirtualDatabasePageContent() {
         
         console.log('✅ Virtual sync completed successfully, reloading data...');
         
-        // Reload products and columns
-        await loadProducts();
-        await fetchColumns();
+        // Reload products and columns - columns first, then products
+        const freshColumns = await fetchColumns();
+        if (freshColumns && freshColumns.length > 0) {
+          await loadProducts(freshColumns);
+        } else {
+          await loadProducts();
+        }
+        
+        setSyncResult({
+          ...result,
+          message: `${result.message} • Todos los productos están ahora visibles en la tabla`
+        });
         
         // For virtual environment, we don't download images locally but we can trigger a cache refresh
         console.log('🖼️ Virtual environment: Using original Airtable URLs - no local download needed');
         
-        // Trigger cache refresh after successful sync
-        try {
-          console.log('🔄 Triggering cache refresh...');
-          await fetch('/api/cache-refresh', { method: 'POST' });
-          console.log('🔄 Cache refresh triggered after product sync');
-        } catch (cacheError) {
-          console.warn('⚠️ Cache refresh failed:', cacheError);
-        }
+        // Trigger cache refresh in background (non-blocking)
+        fetch('/api/cache-refresh', { method: 'POST' })
+          .then(() => console.log('🔄 Cache refresh completed in background'))
+          .catch(error => console.warn('⚠️ Cache refresh failed:', error));
         
         // Force refresh images on the page
         setTimeout(() => {
@@ -850,6 +1313,16 @@ function VirtualDatabasePageContent() {
   // Sync WebPhotos from Airtable (Virtual Environment)
   const syncWebPhotosFromAirtable = async () => {
     setSyncingWebPhotos(true);
+    
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      setSyncingWebPhotos(false);
+      setWebPhotosSyncResult({ 
+        success: false, 
+        message: '⏰ Sincronización cancelada por timeout (más de 30 segundos)' 
+      });
+    }, 30000); // 30 second timeout
+    
     try {
       const response = await fetch('/api/database/sync-webphotos', {
         method: 'POST',
@@ -858,7 +1331,14 @@ function VirtualDatabasePageContent() {
         },
         body: JSON.stringify({ context: 'virtual' }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const result = await response.json();
+      clearTimeout(timeoutId);
+      
       setWebPhotosSyncResult(result);
       if (result.success) {
         const timestamp = new Date().toLocaleString('es-CO');
@@ -866,36 +1346,40 @@ function VirtualDatabasePageContent() {
         if (saved) {
           setLastWebPhotosSync(timestamp);
         }
-        await loadWebPhotos();
         
-        // Trigger cache refresh after successful WebPhotos sync
-        try {
-          await fetch('/api/cache-refresh', { method: 'POST' });
-          console.log('🔄 Cache refresh triggered after WebPhotos sync');
-          
-          // Force refresh all WebPhotos images on the page
-          setTimeout(() => {
-            const images = document.querySelectorAll('img[src*="webphotos"]');
-            images.forEach((img) => {
-              const src = img.getAttribute('src');
-              if (src) {
-                const newSrc = src.includes('?') ? `${src}&cb=${Date.now()}` : `${src}?cb=${Date.now()}`;
-                (img as HTMLImageElement).src = newSrc;
-              }
-            });
-            console.log(`🔄 Forced refresh of ${images.length} WebPhotos images`);
-          }, 1000);
-          
-          // Dispatch WebPhotos sync completion event for components to refresh
-          window.dispatchEvent(new CustomEvent('webphotos-sync-complete'));
-          console.log('🔄 WebPhotos sync completion event dispatched');
-        } catch (cacheError) {
-          console.warn('⚠️ Cache refresh failed:', cacheError);
-        }
+        // Load WebPhotos without waiting for cache refresh
+        loadWebPhotos().catch(console.error);
+        
+        // Trigger cache refresh in background (non-blocking)
+        fetch('/api/cache-refresh', { method: 'POST' })
+          .then(() => console.log('🔄 Cache refresh completed in background'))
+          .catch(error => console.warn('⚠️ Cache refresh failed:', error));
+        
+        // Force refresh images after a short delay
+        setTimeout(() => {
+          const images = document.querySelectorAll('img[src*="webphotos"]');
+          images.forEach((img) => {
+            const src = img.getAttribute('src');
+            if (src) {
+              const newSrc = src.includes('?') ? `${src}&cb=${Date.now()}` : `${src}?cb=${Date.now()}`;
+              (img as HTMLImageElement).src = newSrc;
+            }
+          });
+          console.log(`🔄 Refreshed ${images.length} WebPhotos images`);
+        }, 2000);
+        
+        // Dispatch event for components to refresh
+        window.dispatchEvent(new CustomEvent('webphotos-sync-complete'));
       }
     } catch (error) {
-      setWebPhotosSyncResult({ success: false, message: 'Error al sincronizar WebPhotos virtuales' });
+      clearTimeout(timeoutId);
+      console.error('❌ WebPhotos sync error:', error);
+      setWebPhotosSyncResult({ 
+        success: false, 
+        message: `Error al sincronizar WebPhotos: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      });
     } finally {
+      clearTimeout(timeoutId);
       setSyncingWebPhotos(false);
     }
   };
@@ -922,11 +1406,21 @@ function VirtualDatabasePageContent() {
     
     const initializeData = async () => {
       try {
-        await Promise.all([
-          loadProducts(),
-          fetchColumns(),
-          loadWebPhotos()
-        ]);
+        // Load columns first, then products (since products depend on columns)
+        const freshColumns = await fetchColumns();
+        if (freshColumns && freshColumns.length > 0) {
+          await loadProducts(freshColumns);
+        } else {
+          await loadProducts();
+        }
+        await loadWebPhotos();
+        
+        // Force show all columns on first load if not all are visible
+        setTimeout(() => {
+          if (freshColumns && freshColumns.length > 0 && selectedColumns.length < freshColumns.length) {
+            forceRefreshColumns();
+          }
+        }, 1000);
       } catch (error) {
         console.error('Error initializing virtual data:', error);
       } finally {
@@ -938,11 +1432,6 @@ function VirtualDatabasePageContent() {
   }, [pathname]);
 
   // Filter and sort products
-  console.log('🔍 Frontend: Processing products for display:', {
-    totalProducts: products.length,
-    searchQuery: searchQuery || 'none'
-  });
-  
   const filteredAndSortedProducts = products
     .filter(product => {
       if (!searchQuery) return true;
@@ -963,15 +1452,12 @@ function VirtualDatabasePageContent() {
       const nameB = ((b as any).name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
-    
-  console.log('🔍 Frontend: Filtered and sorted products:', filteredAndSortedProducts.length);
 
-  const displayedProducts = filteredAndSortedProducts.slice(0, displayCount);
+  const displayedProducts = filteredAndSortedProducts;
   const displayColumns = Array.isArray(columns) ? columns.filter(col => selectedColumns.includes(col.key)) : [];
   
   // Create columns with URL columns for attachment fields
   const baseColumns = [
-    ...(selectedColumns.includes('id') ? [{ key: 'id', label: 'ID', type: 'text' }] : []),
     ...displayColumns
   ];
   
@@ -1077,107 +1563,106 @@ function VirtualDatabasePageContent() {
           )}
         </div>
 
-        {/* Airtable Sync Section */}
+        {/* Airtable Sync Section (Collapsible) */}
         <div className="bg-white p-2 sm:p-6 rounded-lg shadow border">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
-            <div className="mb-2 sm:mb-0">
+          <button
+            className="w-full flex items-center justify-between mb-2 sm:mb-4"
+            onClick={() => setShowAirtableSync((v) => !v)}
+            aria-expanded={showAirtableSync}
+          >
+            <div className="mb-2 sm:mb-0 text-left">
               <h3 className="text-sm sm:text-lg font-semibold text-gray-900">🔄 Sincronización con Airtable Virtual</h3>
               <p className="text-xs sm:text-sm text-gray-600">Sincroniza datos desde tu base de Airtable virtual</p>
             </div>
-            
-            {/* Clear Database Button - Aligned to the right */}
-            <div className="mb-2 sm:mb-0">
+            <span className="ml-3 text-gray-500">{showAirtableSync ? '▾' : '▸'}</span>
+          </button>
+
+          {showAirtableSync && (
+            <>
+              {/* Sync Buttons and Clear Database Button */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 sm:justify-between">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               <button
-                onClick={clearDatabase}
-                disabled={clearing}
-                className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-sm ${
-                  clearing
-                    ? 'bg-gray-400 cursor-not-allowed text-white'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
+                onClick={syncFromAirtable}
+                disabled={syncing}
+                className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
+                  syncing
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
                 }`}
               >
-                {clearing ? (
+                {syncing ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white inline mr-1"></div>
-                    <span className="hidden sm:inline">Limpiando...</span>
-                    <span className="sm:hidden">Limpiando</span>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span className="hidden sm:inline">Sincronizando...</span>
+                    <span className="sm:hidden">Sincronizando</span>
                   </>
                 ) : (
                   <>
-                    <span>🗑️</span>
-                    <span className="hidden sm:inline">Limpiar Base de Datos</span>
-                    <span className="sm:hidden">Limpiar DB</span>
+                    <span>📥</span>
+                    <span className="hidden sm:inline">Sincronizar Productos Virtuales</span>
+                    <span className="sm:hidden">Sincronizar Productos</span>
+                  </>
+                )}
+              </button>
+              
+              {/* Simple Progress Indicator */}
+              {syncing && (
+                <div className="w-full bg-gray-100 rounded-lg p-3 mt-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                    <span>Sincronizando productos desde Airtable...</span>
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={syncWebPhotosFromAirtable}
+                disabled={syncingWebPhotos}
+                className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
+                  syncingWebPhotos
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {syncingWebPhotos ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span className="hidden sm:inline">Sincronizando...</span>
+                    <span className="sm:hidden">Sincronizando</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📸</span>
+                    <span className="hidden sm:inline">Sincronizar WebPhotos Virtuales</span>
+                    <span className="sm:hidden">Sincronizar WebPhotos</span>
                   </>
                 )}
               </button>
             </div>
-          </div>
 
-          {/* Sync Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+            {/* Clear Database Button */}
             <button
-              onClick={syncFromAirtable}
-              disabled={syncing}
+              onClick={clearDatabase}
+              disabled={clearing}
               className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
-                syncing
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 text-white'
+                clearing ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-red-600 hover:bg-red-700 text-white'
               }`}
             >
-              {syncing ? (
+              {clearing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span className="hidden sm:inline">Sincronizando...</span>
-                  <span className="sm:hidden">Sincronizando</span>
+                  <span className="hidden sm:inline">Limpiando...</span>
+                  <span className="sm:hidden">Limpiando</span>
                 </>
               ) : (
                 <>
-                  <span>📥</span>
-                  <span className="hidden sm:inline">Sincronizar Productos Virtuales</span>
-                  <span className="sm:hidden">Sincronizar Productos</span>
+                  <span>🗑️</span>
+                  <span className="hidden sm:inline">Limpiar Base de Datos</span>
+                  <span className="sm:hidden">Limpiar DB</span>
                 </>
               )}
             </button>
-
-            <button
-              onClick={syncWebPhotosFromAirtable}
-              disabled={syncingWebPhotos}
-              className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
-                syncingWebPhotos
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              {syncingWebPhotos ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span className="hidden sm:inline">Sincronizando...</span>
-                  <span className="sm:hidden">Sincronizando</span>
-                </>
-              ) : (
-                <>
-                  <span>📸</span>
-                  <span className="hidden sm:inline">Sincronizar WebPhotos Virtuales</span>
-                  <span className="sm:hidden">Sincronizar WebPhotos</span>
-                </>
-              )}
-            </button>
-
-            {/* Manual Image Cleanup Button */}
-            <button
-              onClick={handleImageCleanup}
-              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-red-600 hover:bg-red-700 text-white transition-colors duration-200"
-            >
-              <span>🗑️</span>
-              <span className="hidden sm:inline">
-                Limpiar Imágenes No Utilizadas
-              </span>
-              <span className="sm:hidden">
-                Limpiar Imágenes
-              </span>
-            </button>
-
-
 
           </div>
 
@@ -1344,6 +1829,8 @@ function VirtualDatabasePageContent() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -1382,72 +1869,7 @@ function VirtualDatabasePageContent() {
           </div>
         </div>
 
-        {/* Column Management - Standalone */}
-        <div className="bg-white rounded-lg shadow border overflow-hidden">
-          <div className="p-3 sm:p-4 border-b bg-gray-50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-              <h4 className="text-sm font-semibold text-gray-700">📋 Seleccionar Columnas de Productos</h4>
-              <button
-                onClick={() => setShowColumnSelector(!showColumnSelector)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm self-start sm:self-auto w-full sm:w-auto"
-              >
-                {showColumnSelector ? 'Ocultar Selector' : 'Mostrar Columnas'}
-              </button>
-            </div>
 
-            {showColumnSelector && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 mb-3">
-                {/* ID Column */}
-                <label className="flex items-center space-x-2 p-2 bg-gray-50 rounded border cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={selectedColumns.includes('id')}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        const newColumns = [...selectedColumns, 'id'];
-                        setSelectedColumns(newColumns);
-                        saveSelectedColumns(newColumns);
-                      } else {
-                        const newColumns = selectedColumns.filter(col => col !== 'id');
-                        setSelectedColumns(newColumns);
-                        saveSelectedColumns(newColumns);
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-xs font-medium text-black">ID</span>
-                </label>
-
-                {/* Other columns */}
-                {columns.map((column) => (
-                  <label key={column.key} className="flex items-center space-x-2 p-2 bg-gray-50 rounded border cursor-pointer hover:bg-gray-100">
-                    <input
-                      type="checkbox"
-                      checked={selectedColumns.includes(column.key)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          const newColumns = [...selectedColumns, column.key];
-                          setSelectedColumns(newColumns);
-                          saveSelectedColumns(newColumns);
-                        } else {
-                          const newColumns = selectedColumns.filter(col => col !== column.key);
-                          setSelectedColumns(newColumns);
-                          saveSelectedColumns(newColumns);
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span className="text-xs font-medium text-black">{column.label}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            <div className="text-xs text-gray-600">
-              Mostrando {selectedColumns.length} de {columns.length} columnas
-            </div>
-          </div>
-        </div>
 
         {/* Products Table Section */}
         <div className="bg-white rounded-lg shadow border overflow-hidden">
@@ -1478,95 +1900,41 @@ function VirtualDatabasePageContent() {
 
             {showProductsTable && (
               <>
-                {/* Search and Controls */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Buscar productos..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                {/* Products Spreadsheet */}
+                {spreadsheetData ? (
+                  <div className="border border-gray-300 rounded-lg">
+                    {/* Spreadsheet */}
+                    <div className="min-h-[600px]">
+                      <Spreadsheet
+                        data={{
+                          ...spreadsheetData,
+                          columns: spreadsheetData.columns.filter(col => col.key !== 'id')
+                        }}
+                        onDataChange={handleSpreadsheetChange}
+                        onColumnDelete={handleColumnDelete}
+                        readOnly={false}
+                        showAddRowAtEnd={true}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Mostrar:</span>
-                    <select
-                      value={displayCount}
-                      onChange={(e) => setDisplayCount(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                      <option value={100}>100</option>
-                      <option value={500}>500</option>
-                    </select>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p>Cargando tabla de productos...</p>
                   </div>
-                </div>
+                )}
 
-                {/* Products Table */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-300">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        {allDisplayColumns.map((column) => (
-                          <th
-                            key={column.key}
-                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 border border-gray-300"
-                          >
-                            <div className="flex flex-col">
-                              <span className="truncate">{column.label}</span>
-                              <span className="text-xs text-gray-400 font-normal">({getAirtableFieldType(column.type)})</span>
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {displayedProducts.map((product, index) => (
-                        <tr key={product.id || index} className="hover:bg-gray-50">
-                          {allDisplayColumns.map((column) => (
-                            <td key={column.key} className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 border border-gray-300">
-                              {column.isUrlColumn ? (
-                                // Render URLs for attachment fields
-                                renderUrlsList((product as any)[column.originalField], `${column.key}_${index}`)
-                              ) : column.type === 'attachment' ? (
-                                renderFilePreview((product as any)[column.key], `${column.key}_${index}`)
-                              ) : (
-                                formatValue((product as any)[column.key], column.type)
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Load More Button and Results Summary */}
+                {/* Spreadsheet Info (buttons removed) */}
                 <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-xs text-gray-600">
-                    Mostrando {displayedProducts.length} de {products.length} productos con {allDisplayColumns.length} columnas
-                    {allDisplayColumns.some(col => col.isUrlColumn) && (
-                      <span className="text-blue-600 ml-1">(incluye columnas de URLs)</span>
+                    {spreadsheetData ? (
+                      <>
+                        {spreadsheetData.rows.length} productos • {spreadsheetData.columns.length} columnas
+                      </>
+                    ) : (
+                      'Cargando datos...'
                     )}
                   </div>
-                  {displayedProducts.length < filteredAndSortedProducts.length && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setDisplayCount(displayCount + 25)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                      >
-                        Cargar más ({displayedProducts.length} de {filteredAndSortedProducts.length})
-                      </button>
-                      <button
-                        onClick={() => setDisplayCount(filteredAndSortedProducts.length)}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                      >
-                        Mostrar todos
-                      </button>
-                    </div>
-                  )}
                 </div>
               </>
             )}
