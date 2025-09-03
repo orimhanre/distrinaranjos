@@ -6,7 +6,7 @@ import { virtualAuth, virtualGoogleProvider } from '@/lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { checkVirtualAdminPermission } from '@/lib/adminPermissions';
 import { usePathname } from 'next/navigation';
-import Spreadsheet from '@/components/Spreadsheet';
+import Spreadsheet from '../../../components/Spreadsheet';
 import { Spreadsheet as SpreadsheetType, SpreadsheetColumn, SpreadsheetRow, SpreadsheetCell } from '@/types/spreadsheet';
 
 
