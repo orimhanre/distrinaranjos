@@ -7,6 +7,18 @@ healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 
+# Force HTTPS and SSL
+[deploy.https]
+enabled = true
+redirect = true
+
+# Additional SSL configuration
+[deploy.ssl]
+enabled = true
+auto = true
+
 [env]
 NODE_ENV = "production"
+FORCE_HTTPS = "true"
+RAILWAY_FORCE_HTTPS = "true"
 # Railway deployment configuration for distrinaranjos
