@@ -1229,7 +1229,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
                           </svg>
                         </button>
                         {openColumnMenu === c.key && (
-                          <div className="col-menu absolute right-0 top-7 z-[1200] w-44 rounded-md border border-gray-200 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
+                          <div className="col-menu absolute right-0 top-7 z-[2000] w-44 rounded-md border border-gray-200 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
                             <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); setSortConfig({ key: c.key, direction: 'asc' }); setOpenColumnMenu(null); }}>Sort A → Z</button>
                             <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); setSortConfig({ key: c.key, direction: 'desc' }); setOpenColumnMenu(null); }}>Sort Z → A</button>
                             <div className="my-1 h-px bg-gray-100"></div>
