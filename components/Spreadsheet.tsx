@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { Spreadsheet, SpreadsheetRow, SpreadsheetColumn, SpreadsheetCell } from '@/types/spreadsheet';
 import EditableCell from './EditableCell';
 import SpreadsheetHeader from './SpreadsheetHeader';
@@ -23,6 +24,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
   const [filteredRows, setFilteredRows] = useState<SpreadsheetRow[]>(data.rows);
   const [openColumnMenu, setOpenColumnMenu] = useState<string | null>(null);
   const [openColumnEditor, setOpenColumnEditor] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ left: number; top: number } | null>(null);
   const [showAddColumnEditor, setShowAddColumnEditor] = useState<boolean>(false);
   const editorOpenedAtRef = useRef<number>(0);
   const [showHiddenFieldsMenu, setShowHiddenFieldsMenu] = useState<boolean>(false);
@@ -63,6 +65,42 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
   const gridRef = useRef<HTMLDivElement>(null);
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const dragPreviewRef = useRef<{ el: HTMLElement | null; offsetX: number } | null>(null);
+
+  // Calculate dropdown position for portal
+  const calculateDropdownPosition = (columnKey: string) => {
+    const columnElement = columnRefs.current[columnKey];
+    if (columnElement) {
+      const rect = columnElement.getBoundingClientRect();
+      const dropdownWidth = 176; // w-44 = 11rem = 176px
+      const dropdownHeight = 200; // Approximate height
+      
+      // Calculate position relative to viewport
+      let left = rect.right - dropdownWidth; // Align to right edge of column
+      let top = rect.bottom + 4; // Below the column header
+      
+      // Ensure dropdown doesn't go off the right edge
+      if (left + dropdownWidth > window.innerWidth) {
+        left = Math.max(8, window.innerWidth - dropdownWidth - 8);
+      }
+      
+      // Ensure dropdown doesn't go off the bottom edge
+      if (top + dropdownHeight > window.innerHeight) {
+        top = rect.top - dropdownHeight - 4;
+      }
+      
+      // Ensure dropdown doesn't go off the left edge
+      if (left < 0) {
+        left = 8;
+      }
+      
+      // Ensure dropdown doesn't go off the top edge
+      if (top < 0) {
+        top = 8;
+      }
+      
+      setDropdownPosition({ left, top });
+    }
+  };
   const customDragCleanupRef = useRef<(() => void) | null>(null);
   const [copiedData, setCopiedData] = useState<string>('');
 
@@ -169,6 +207,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       if (!target) return;
       if (target.closest && target.closest('.col-menu')) return;
       setOpenColumnMenu(null);
+      setDropdownPosition(null);
     };
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -1221,23 +1260,22 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
                         <button
                           type="button"
                           className="p-1 text-gray-500 hover:text-gray-700"
-                          onClick={(e) => { e.stopPropagation(); setOpenColumnMenu((prev) => prev === c.key ? null : c.key); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (openColumnMenu === c.key) {
+                              setOpenColumnMenu(null);
+                              setDropdownPosition(null);
+                            } else {
+                              setOpenColumnMenu(c.key);
+                              setTimeout(() => calculateDropdownPosition(c.key), 0);
+                            }
+                          }}
                           title="Column options"
                         >
                           <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M5.23 7.21a.75.75 0 0 1 1.06 0L10 10.92l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.23 8.27a.75.75 0 0 1 0-1.06z" />
                           </svg>
                         </button>
-                        {openColumnMenu === c.key && (
-                          <div className="col-menu absolute right-0 top-7 z-[2000] w-44 rounded-md border border-gray-200 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
-                            <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); setSortConfig({ key: c.key, direction: 'asc' }); setOpenColumnMenu(null); }}>Sort A → Z</button>
-                            <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); setSortConfig({ key: c.key, direction: 'desc' }); setOpenColumnMenu(null); }}>Sort Z → A</button>
-                            <div className="my-1 h-px bg-gray-100"></div>
-                            <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenColumnMenu(null); setTimeout(() => { editorOpenedAtRef.current = Date.now(); setOpenColumnEditor(c.key); }, 0); }}>Edit Field</button>
-                            <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); handleColumnHide(c.key); setOpenColumnMenu(null); }}>Hide column</button>
-                            <button className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); handleColumnDelete(c.key); setOpenColumnMenu(null); }}>Delete column</button>
-                          </div>
-                        )}
                       </div>
                     )}
                     {openColumnEditor === c.key && c.kind === 'data' && (
@@ -1535,6 +1573,80 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
           Last updated {new Date(spreadsheet.metadata.updatedAt).toLocaleString()}
         </div>
       </div>
+
+      {/* Portal-based Column Dropdown Menu */}
+      {openColumnMenu && dropdownPosition && typeof window !== 'undefined' && createPortal(
+        <div 
+          className="col-menu fixed z-[2000] w-44 rounded-md border border-gray-200 bg-white shadow-lg" 
+          style={{
+            left: `${dropdownPosition.left}px`,
+            top: `${dropdownPosition.top}px`
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setSortConfig({ key: openColumnMenu, direction: 'asc' }); 
+              setOpenColumnMenu(null); 
+              setDropdownPosition(null); 
+            }}
+          >
+            Sort A → Z
+          </button>
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setSortConfig({ key: openColumnMenu, direction: 'desc' }); 
+              setOpenColumnMenu(null); 
+              setDropdownPosition(null); 
+            }}
+          >
+            Sort Z → A
+          </button>
+          <div className="my-1 h-px bg-gray-100"></div>
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
+            onClick={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              setOpenColumnMenu(null); 
+              setDropdownPosition(null); 
+              setTimeout(() => { 
+                editorOpenedAtRef.current = Date.now(); 
+                setOpenColumnEditor(openColumnMenu); 
+              }, 0); 
+            }}
+          >
+            Edit Field
+          </button>
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              handleColumnHide(openColumnMenu); 
+              setOpenColumnMenu(null); 
+              setDropdownPosition(null); 
+            }}
+          >
+            Hide column
+          </button>
+          <button 
+            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              handleColumnDelete(openColumnMenu); 
+              setOpenColumnMenu(null); 
+              setDropdownPosition(null); 
+            }}
+          >
+            Delete column
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
