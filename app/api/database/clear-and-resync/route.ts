@@ -6,6 +6,17 @@ import { RegularPhotoDownloader } from '../../../../lib/regularPhotoDownloader';
 
 export async function POST(request: NextRequest) {
   try {
+    // PROTECTION: Prevent clear and resync in production unless explicitly enabled
+    if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DB_CLEAR !== 'true') {
+      console.log('🚫 [Railway] Clear and resync blocked in production (ENABLE_DB_CLEAR not set)');
+      return NextResponse.json({
+        success: false,
+        message: 'Clear and resync is disabled in production for safety',
+        blocked: true,
+        reason: 'ENABLE_DB_CLEAR environment variable not set to true'
+      }, { status: 403 });
+    }
+    
     const { context = 'virtual' } = await request.json();
     
     console.log(`🔄 Starting clear and resync for ${context} environment...`);
