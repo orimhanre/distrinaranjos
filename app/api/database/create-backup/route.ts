@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { autoBackup } from '../../../scripts/backup-restore';
+import { autoBackup } from '../../../../scripts/backup-restore';
 
 export async function POST() {
   try {
