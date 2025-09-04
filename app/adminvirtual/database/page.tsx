@@ -16,6 +16,9 @@ interface Column {
   label: string;
   type: 'text' | 'longText' | 'number' | 'boolean' | 'select' | 'multipleSelect' | 'attachment' | 'email' | 'date' | 'phone' | 'createdTime' | 'lastModifiedTime';
   editable: boolean;
+  hidden?: boolean;
+  width?: number;
+  order?: number;
 }
 
   // Function to convert internal field types to Airtable field types
@@ -128,6 +131,32 @@ function VirtualDatabasePageContent() {
         
         console.log('📝 Product updates to save:', productUpdates);
         
+        // Save column metadata if columns have changed (including visibility)
+        const columnSavePromise = fetch('/api/database/virtual-columns', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            columns: updatedData.columns.map(col => ({
+              key: col.key,
+              label: col.label,
+              type: col.type,
+              width: col.width,
+              hidden: (col as any).hidden || false,
+              order: (col as any).order || 0
+            }))
+          })
+        }).then(response => {
+          if (!response.ok) {
+            console.error('❌ Failed to save column metadata:', response.status);
+          } else {
+            console.log('✅ Column metadata saved successfully');
+          }
+        }).catch(error => {
+          console.error('❌ Error saving column metadata:', error);
+        });
+        
         // Save each product update individually using POST method (since PUT doesn't exist)
         const savePromises = productUpdates.map(async (update) => {
           try {
@@ -159,8 +188,8 @@ function VirtualDatabasePageContent() {
           }
         });
         
-        // Wait for all updates to complete
-        await Promise.all(savePromises);
+        // Wait for all updates to complete (including column metadata)
+        await Promise.all([...savePromises, columnSavePromise]);
         // All product updates completed (log removed)
         
       } catch (error) {
@@ -380,7 +409,9 @@ function VirtualDatabasePageContent() {
         editable: true, // Force all columns to be editable
         required: false,
         // If backend provided an order, prefer it; otherwise use the current index
-        order: (col as any).order ?? index
+        order: (col as any).order ?? index,
+        // Preserve hidden state from column metadata
+        hidden: col.hidden || false
       };
       
       return column;
@@ -822,8 +853,18 @@ function VirtualDatabasePageContent() {
       
               if (data.success && Array.isArray(data.columns)) {
 
-        // Filter out any ID columns from the backend data
-        const filteredColumns = data.columns.filter((col: any) => col.key !== 'id');
+        // Filter out any ID columns from the backend data and preserve metadata
+        const filteredColumns = data.columns
+          .filter((col: any) => col.key !== 'id')
+          .map((col: any) => ({
+            key: col.key,
+            label: col.label,
+            type: col.type,
+            editable: true,
+            hidden: col.hidden || false,
+            width: col.width,
+            order: col.order
+          }));
         
         setColumns(filteredColumns);
         
