@@ -201,11 +201,27 @@ export default function DatabasePage() {
             <div className="flex gap-1">
               {images.map((img: any, index: number) => {
                 const imgSrc = typeof img === 'string' ? img : img.url || img;
+                // Extract filename from URL for tooltip
+                const getFilenameFromUrl = (url: string) => {
+                  try {
+                    const urlObj = new URL(url);
+                    const pathname = urlObj.pathname;
+                    const filename = pathname.split('/').pop() || 'image';
+                    return filename;
+                  } catch {
+                    // If URL parsing fails, try to extract from path
+                    const parts = url.split('/');
+                    return parts[parts.length - 1] || 'image';
+                  }
+                };
+                const filename = getFilenameFromUrl(imgSrc);
+                
                 return (
                   <img 
                     key={index}
                     src={`${imgSrc}?t=${Date.now()}`} 
                     alt={`Imagen ${index + 1}`}
+                    title={filename}
                     className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => {
                       setSelectedImage(imgSrc);
@@ -947,10 +963,26 @@ export default function DatabasePage() {
                 const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.gif') || url.includes('.webp') || url.includes('.svg');
                 
                 if (isImage) {
+                  // Extract filename from URL for tooltip
+                  const getFilenameFromUrl = (url: string) => {
+                    try {
+                      const urlObj = new URL(url);
+                      const pathname = urlObj.pathname;
+                      const filename = pathname.split('/').pop() || 'image';
+                      return filename;
+                    } catch {
+                      // If URL parsing fails, try to extract from path
+                      const parts = url.split('/');
+                      return parts[parts.length - 1] || 'image';
+                    }
+                  };
+                  const filename = getFilenameFromUrl(selectedImage);
+                  
                   return (
                     <img
                       src={`${selectedImage}?t=${Date.now()}`}
                       alt="Vista previa"
+                      title={filename}
                       className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                       onClick={(e) => e.stopPropagation()}
                       onError={(e) => {
