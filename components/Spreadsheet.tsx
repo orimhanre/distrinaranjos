@@ -416,7 +416,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
           else if (cell.value == null || cell.value === '') cell.value = [];
           else cell.value = [String(cell.value)];
         } else if (newType === 'email') {
-          cell.value = String(cell.value || '').trim();
+          cell.value = cell.value !== null && cell.value !== undefined ? String(cell.value).trim() : '';
         } else if (newType === 'text' || newType === 'longText' || newType === 'select' || newType === 'date' || newType === 'phone') {
           cell.value = cell.value == null ? '' : String(cell.value);
         }

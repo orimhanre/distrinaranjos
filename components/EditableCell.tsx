@@ -281,7 +281,7 @@ export default function EditableCell({
       case 'date':
         return (
           <div className="px-2 py-1 text-sm text-black break-words leading-relaxed w-full">
-            {cell.value && (typeof cell.value === 'string' || typeof cell.value === 'number') ? 
+            {cell.value !== null && cell.value !== undefined && (typeof cell.value === 'string' || typeof cell.value === 'number') ? 
               new Date(cell.value).toLocaleDateString() : ''}
           </div>
         );
@@ -302,7 +302,7 @@ export default function EditableCell({
       
       case 'number':
         // Special formatting for price fields
-        if (column.key === 'price' && cell.value) {
+        if (column.key === 'price' && cell.value !== null && cell.value !== undefined) {
           const formattedPrice = formatPrice(cell.value);
           return (
             <div className="px-2 py-1 text-sm truncate text-black flex items-center justify-center">
@@ -322,7 +322,7 @@ export default function EditableCell({
       case 'lastModifiedTime':
         return (
           <div className="px-2 py-1 text-sm text-gray-500 break-words leading-relaxed w-full">
-            {cell.value && (typeof cell.value === 'string' || typeof cell.value === 'number') ? 
+            {cell.value !== null && cell.value !== undefined && (typeof cell.value === 'string' || typeof cell.value === 'number') ? 
               new Date(cell.value).toLocaleString() : ''}
           </div>
         );
