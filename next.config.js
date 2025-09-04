@@ -91,7 +91,7 @@ const nextConfig = {
   
   // Optimize chunk loading for mobile
   experimental: {
-    optimizePackageImports: ['react', 'react-dom'],
+    // Remove optimizePackageImports as it might cause issues on Railway
   },
   
 
@@ -247,29 +247,22 @@ const nextConfig = {
       ];
     }
     
+    // Simplified webpack config for Railway compatibility
     if (!dev && !isServer) {
-      // Optimize chunk splitting for mobile
+      // Use default chunk splitting to avoid Railway issues
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
-          default: false,
-          vendors: false,
-          // Create smaller chunks for better mobile loading
-          vendor: {
-            name: 'vendor',
-            chunks: 'all',
-            test: /node_modules/,
-            priority: 20,
-            maxSize: 244000, // Smaller chunks for mobile
-          },
-          common: {
-            name: 'common',
+          default: {
             minChunks: 2,
-            chunks: 'all',
-            priority: 10,
+            priority: -20,
             reuseExistingChunk: true,
-            enforce: true,
-            maxSize: 244000, // Smaller chunks for mobile
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
           },
         },
       };
