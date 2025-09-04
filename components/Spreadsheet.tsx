@@ -105,15 +105,8 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
 
   // Calculate editor position for portal
   const calculateEditorPosition = (columnKey: string) => {
-    console.log('🔧 calculateEditorPosition called for:', columnKey);
     const columnElement = columnRefs.current[columnKey];
     const tableContainer = gridRef.current;
-    
-    console.log('🔧 Position calculation elements:', {
-      columnElement: !!columnElement,
-      tableContainer: !!tableContainer,
-      columnKey
-    });
     
     if (columnElement && tableContainer) {
       const columnRect = columnElement.getBoundingClientRect();
@@ -1647,20 +1640,14 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
             onClick={(e) => { 
               e.preventDefault(); 
               e.stopPropagation(); 
-              // Capture the column key before clearing the menu state
-              const columnKey = openColumnMenu;
-              console.log('🔧 Edit Field clicked for column:', columnKey);
+              const columnKey = openColumnMenu; // Capture before clearing
               setOpenColumnMenu(null); 
               setDropdownPosition(null); 
               setTimeout(() => { 
-                console.log('🔧 Setting openColumnEditor to:', columnKey);
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(columnKey); 
                 // Use a longer timeout to ensure DOM is updated
-                setTimeout(() => {
-                  console.log('🔧 Calculating editor position for:', columnKey);
-                  calculateEditorPosition(columnKey); 
-                }, 100); 
+                setTimeout(() => calculateEditorPosition(columnKey), 100); 
               }, 0); 
             }}
           >
@@ -1693,15 +1680,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       )}
 
       {/* Portal-based Column Editor */}
-      {(() => {
-        console.log('🔧 Portal render check:', { 
-          openColumnEditor, 
-          editorPosition, 
-          hasGridRef: !!gridRef.current,
-          isClient: typeof window !== 'undefined'
-        });
-        return openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current;
-      })() && createPortal(
+      {openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current && createPortal(
         <div 
           className="col-editor absolute z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
           style={{
