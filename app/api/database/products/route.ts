@@ -43,7 +43,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const productData = await request.json();
-    const productDB = new ProductDatabase();
+    
+    let productDB;
+    try {
+      productDB = new ProductDatabase();
+    } catch (dbError) {
+      console.error('❌ Failed to initialize regular database:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Set default values for required fields if they're empty
     const newProduct = {
@@ -83,7 +93,17 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { id, ...updates } = await request.json();
-    const productDB = new ProductDatabase();
+    
+    let productDB;
+    try {
+      productDB = new ProductDatabase();
+    } catch (dbError) {
+      console.error('❌ Failed to initialize regular database:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     if (!id) {
       return NextResponse.json(
@@ -119,7 +139,17 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { id, ids } = await request.json();
-    const productDB = new ProductDatabase();
+    
+    let productDB;
+    try {
+      productDB = new ProductDatabase();
+    } catch (dbError) {
+      console.error('❌ Failed to initialize regular database:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Handle bulk deletion
     if (ids && Array.isArray(ids)) {

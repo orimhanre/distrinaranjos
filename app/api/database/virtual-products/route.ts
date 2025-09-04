@@ -158,7 +158,16 @@ export async function POST(request: NextRequest) {
       // This is an update request
       const { _action, id, ...updates } = productData;
       
-      const productDB = new ProductDatabase('virtual');
+      let productDB;
+      try {
+        productDB = new ProductDatabase('virtual');
+      } catch (dbError) {
+        console.error('❌ Failed to initialize virtual database:', dbError);
+        return NextResponse.json(
+          { success: false, error: 'Database not available' },
+          { status: 503 }
+        );
+      }
       const product = productDB.updateProduct(id, updates);
       
       if (product) {
@@ -192,7 +201,16 @@ export async function POST(request: NextRequest) {
       imageURL: productData.imageURL || []
     };
     
-    const productDB = new ProductDatabase('virtual');
+    let productDB;
+    try {
+      productDB = new ProductDatabase('virtual');
+    } catch (dbError) {
+      console.error('❌ Failed to initialize virtual database:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     const product = productDB.createProduct(newProduct);
     
     return NextResponse.json({
@@ -221,7 +239,16 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const productDB = new ProductDatabase('virtual');
+    let productDB;
+    try {
+      productDB = new ProductDatabase('virtual');
+    } catch (dbError) {
+      console.error('❌ Failed to initialize virtual database:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     // Ensure boolean-like custom fields come through as 1/0 for SQLite if they are booleans
     Object.keys(updates).forEach((k) => {
       const v: any = (updates as any)[k];
