@@ -25,6 +25,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
   const [openColumnMenu, setOpenColumnMenu] = useState<string | null>(null);
   const [openColumnEditor, setOpenColumnEditor] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ left: number; top: number } | null>(null);
+  const [editorPosition, setEditorPosition] = useState<{ left: number; top: number } | null>(null);
   const [showAddColumnEditor, setShowAddColumnEditor] = useState<boolean>(false);
   const editorOpenedAtRef = useRef<number>(0);
   const [showHiddenFieldsMenu, setShowHiddenFieldsMenu] = useState<boolean>(false);
@@ -99,6 +100,42 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       }
       
       setDropdownPosition({ left, top });
+    }
+  };
+
+  // Calculate editor position for portal
+  const calculateEditorPosition = (columnKey: string) => {
+    const columnElement = columnRefs.current[columnKey];
+    if (columnElement) {
+      const rect = columnElement.getBoundingClientRect();
+      const editorWidth = 320; // w-80 = 20rem = 320px
+      const editorHeight = 300; // Approximate height
+      
+      // Calculate position relative to viewport
+      let left = rect.left + 8; // Slightly offset from left edge of column
+      let top = rect.bottom + 8; // Below the column header
+      
+      // Ensure editor doesn't go off the right edge
+      if (left + editorWidth > window.innerWidth) {
+        left = Math.max(8, window.innerWidth - editorWidth - 8);
+      }
+      
+      // Ensure editor doesn't go off the bottom edge
+      if (top + editorHeight > window.innerHeight) {
+        top = rect.top - editorHeight - 8;
+      }
+      
+      // Ensure editor doesn't go off the left edge
+      if (left < 0) {
+        left = 8;
+      }
+      
+      // Ensure editor doesn't go off the top edge
+      if (top < 0) {
+        top = 8;
+      }
+      
+      setEditorPosition({ left, top });
     }
   };
   const customDragCleanupRef = useRef<(() => void) | null>(null);
@@ -224,9 +261,13 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       // Ignore the click that just opened the editor to prevent immediate close
       if (Date.now() - editorOpenedAtRef.current < 200) return;
       setOpenColumnEditor(null);
+      setEditorPosition(null);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenColumnEditor(null);
+      if (e.key === 'Escape') {
+        setOpenColumnEditor(null);
+        setEditorPosition(null);
+      }
     };
     document.addEventListener('click', onDocClick);
     window.addEventListener('keydown', onKey);
@@ -1278,37 +1319,6 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
                         </button>
                       </div>
                     )}
-                    {openColumnEditor === c.key && c.kind === 'data' && (
-                      <div className="col-editor absolute left-2 top-12 z-[1300] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="mb-2">
-                          <label className="block text-xs text-gray-500 mb-1">Field name</label>
-                          <input
-                            defaultValue={c.column?.label}
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-black"
-                            onKeyDown={(e) => { if (e.key === 'Enter') { const name = (e.target as HTMLInputElement).value; const type = (document.getElementById(`col-type-${c.key}`) as HTMLSelectElement)?.value; applyColumnEdit(c.key, name, type || 'Single Line Text'); setOpenColumnEditor(null); } }}
-                            id={`col-name-${c.key}`}
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <label className="block text-xs text-gray-500 mb-1">Field type</label>
-                          <select id={`col-type-${c.key}`} defaultValue={toUiTypeName(c.column?.type as any)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-black bg-white">
-                            <option>Single Line Text</option>
-                            <option>Long Text</option>
-                            <option>Attachment</option>
-                            <option>Checkbox</option>
-                            <option>Multiple select</option>
-                            <option>Email</option>
-                            <option>Number</option>
-                            <option>Created Time</option>
-                            <option>Last Modified Time</option>
-                          </select>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <button className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800" onClick={() => setOpenColumnEditor(null)}>Cancel</button>
-                          <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded" onClick={() => { const name = (document.getElementById(`col-name-${c.key}`) as HTMLInputElement)?.value || c.column?.label || ''; const type = (document.getElementById(`col-type-${c.key}`) as HTMLSelectElement)?.value || 'Single Line Text'; applyColumnEdit(c.key, name, type); setOpenColumnEditor(null); }}>Save</button>
-                        </div>
-                      </div>
-                    )}
                     {/* Add-column editor moved to modal */}
                     {c.kind === 'data' && (
                       <div
@@ -1617,6 +1627,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
               setTimeout(() => { 
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(openColumnMenu); 
+                calculateEditorPosition(openColumnMenu); 
               }, 0); 
             }}
           >
@@ -1644,6 +1655,79 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
           >
             Delete column
           </button>
+        </div>,
+        document.body
+      )}
+
+      {/* Portal-based Column Editor */}
+      {openColumnEditor && editorPosition && typeof window !== 'undefined' && createPortal(
+        <div 
+          className="col-editor fixed z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
+          style={{
+            left: `${editorPosition.left}px`,
+            top: `${editorPosition.top}px`
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">Field name</label>
+            <input
+              defaultValue={spreadsheet.columns.find(col => col.key === openColumnEditor)?.label}
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-black"
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter') { 
+                  const name = (e.target as HTMLInputElement).value; 
+                  const type = (document.getElementById(`col-type-${openColumnEditor}`) as HTMLSelectElement)?.value; 
+                  applyColumnEdit(openColumnEditor, name, type || 'Single Line Text'); 
+                  setOpenColumnEditor(null); 
+                  setEditorPosition(null); 
+                } 
+              }}
+              id={`col-name-${openColumnEditor}`}
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs text-gray-500 mb-1">Field type</label>
+            <select 
+              id={`col-type-${openColumnEditor}`} 
+              defaultValue={toUiTypeName(spreadsheet.columns.find(col => col.key === openColumnEditor)?.type as any)} 
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-black bg-white"
+            >
+              <option>Single Line Text</option>
+              <option>Long Text</option>
+              <option>Attachment</option>
+              <option>Checkbox</option>
+              <option>Multiple select</option>
+              <option>Email</option>
+              <option>Number</option>
+              <option>Created Time</option>
+              <option>Last Modified Time</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button 
+              className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800" 
+              onClick={() => { 
+                setOpenColumnEditor(null); 
+                setEditorPosition(null); 
+              }}
+            >
+              Cancel
+            </button>
+            <button 
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded" 
+              onClick={() => { 
+                const name = (document.getElementById(`col-name-${openColumnEditor}`) as HTMLInputElement)?.value || 
+                           spreadsheet.columns.find(col => col.key === openColumnEditor)?.label || ''; 
+                const type = (document.getElementById(`col-type-${openColumnEditor}`) as HTMLSelectElement)?.value || 'Single Line Text'; 
+                applyColumnEdit(openColumnEditor, name, type); 
+                setOpenColumnEditor(null); 
+                setEditorPosition(null); 
+              }}
+            >
+              Save
+            </button>
+          </div>
         </div>,
         document.body
       )}
