@@ -114,7 +114,9 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       console.log('🔍 Column element rect:', rect);
       
       const editorWidth = 320; // w-80 = 20rem = 320px
-      const editorHeight = 300; // Approximate height
+      const editorHeight = 200; // Reduced height estimate
+      
+      console.log('🔍 Viewport dimensions:', { width: window.innerWidth, height: window.innerHeight });
       
       // Calculate position relative to viewport
       let left = rect.left + 8; // Slightly offset from left edge of column
@@ -129,7 +131,14 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       
       // Ensure editor doesn't go off the bottom edge
       if (top + editorHeight > window.innerHeight) {
+        console.log('🔍 Editor would go off bottom, repositioning above column');
+        // If editor would go off bottom, position it above the column instead
         top = rect.top - editorHeight - 8;
+        // But don't let it go above the viewport
+        if (top < 8) {
+          top = 8;
+        }
+        console.log('🔍 Repositioned above column:', { top });
       }
       
       // Ensure editor doesn't go off the left edge
