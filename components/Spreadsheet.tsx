@@ -105,15 +105,22 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
 
   // Calculate editor position for portal
   const calculateEditorPosition = (columnKey: string) => {
+    console.log('🔍 Calculating editor position for column:', columnKey);
+    console.log('🔍 Available column refs:', Object.keys(columnRefs.current));
+    
     const columnElement = columnRefs.current[columnKey];
     if (columnElement) {
       const rect = columnElement.getBoundingClientRect();
+      console.log('🔍 Column element rect:', rect);
+      
       const editorWidth = 320; // w-80 = 20rem = 320px
       const editorHeight = 300; // Approximate height
       
       // Calculate position relative to viewport
       let left = rect.left + 8; // Slightly offset from left edge of column
       let top = rect.bottom + 8; // Below the column header
+      
+      console.log('🔍 Initial position:', { left, top });
       
       // Ensure editor doesn't go off the right edge
       if (left + editorWidth > window.innerWidth) {
@@ -135,7 +142,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
         top = 8;
       }
       
+      console.log('🔍 Final position:', { left, top });
       setEditorPosition({ left, top });
+    } else {
+      console.error('❌ Column element not found for key:', columnKey);
+      // Fallback position - center of screen
+      setEditorPosition({ 
+        left: Math.max(8, (window.innerWidth - 320) / 2), 
+        top: Math.max(8, (window.innerHeight - 300) / 2) 
+      });
     }
   };
   const customDragCleanupRef = useRef<(() => void) | null>(null);
@@ -1627,7 +1642,8 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
               setTimeout(() => { 
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(openColumnMenu); 
-                calculateEditorPosition(openColumnMenu); 
+                // Use a longer timeout to ensure DOM is updated
+                setTimeout(() => calculateEditorPosition(openColumnMenu), 100); 
               }, 0); 
             }}
           >
