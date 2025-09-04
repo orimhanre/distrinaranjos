@@ -70,26 +70,23 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
   // Calculate dropdown position for portal
   const calculateDropdownPosition = (columnKey: string) => {
     const columnElement = columnRefs.current[columnKey];
-    const tableContainer = gridRef.current;
-    
-    if (columnElement && tableContainer) {
-      const columnRect = columnElement.getBoundingClientRect();
-      const containerRect = tableContainer.getBoundingClientRect();
+    if (columnElement) {
+      const rect = columnElement.getBoundingClientRect();
       const dropdownWidth = 176; // w-44 = 11rem = 176px
       const dropdownHeight = 200; // Approximate height
       
-      // Calculate position relative to the table container (absolute positioning)
-      let left = columnRect.right - containerRect.left - dropdownWidth; // Align to right edge of column
-      let top = columnRect.bottom - containerRect.top + 4; // Below the column header
+      // Calculate position relative to viewport
+      let left = rect.right - dropdownWidth; // Align to right edge of column
+      let top = rect.bottom + 4; // Below the column header
       
-      // Ensure dropdown doesn't go off the right edge of container
-      if (left + dropdownWidth > containerRect.width) {
-        left = Math.max(8, containerRect.width - dropdownWidth - 8);
+      // Ensure dropdown doesn't go off the right edge
+      if (left + dropdownWidth > window.innerWidth) {
+        left = Math.max(8, window.innerWidth - dropdownWidth - 8);
       }
       
-      // Ensure dropdown doesn't go off the bottom edge of container
-      if (top + dropdownHeight > containerRect.height) {
-        top = columnRect.top - containerRect.top - dropdownHeight - 4; // Above the column header
+      // Ensure dropdown doesn't go off the bottom edge
+      if (top + dropdownHeight > window.innerHeight) {
+        top = rect.top - dropdownHeight - 4;
       }
       
       // Ensure dropdown doesn't go off the left edge
@@ -118,20 +115,20 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       const editorWidth = 320; // w-80 = 20rem = 320px
       const editorHeight = 200; // Realistic height estimate
       
-      // Calculate position relative to the table container (absolute positioning)
-      let left = columnRect.left - containerRect.left + 8; // Offset from column left edge
-      let top = columnRect.bottom - containerRect.top + 8; // Below the column header
+      // Calculate position relative to the viewport (fixed positioning)
+      let left = columnRect.left + 8; // Offset from column left edge
+      let top = columnRect.bottom + 8; // Below the column header
       
-      // Ensure editor doesn't go off the right edge of container
-      if (left + editorWidth > containerRect.width) {
-        left = Math.max(8, containerRect.width - editorWidth - 8);
+      // Ensure editor doesn't go off the right edge of viewport
+      if (left + editorWidth > window.innerWidth) {
+        left = Math.max(8, window.innerWidth - editorWidth - 8);
       }
       
-      // Ensure editor doesn't go off the bottom edge of container
-      if (top + editorHeight > containerRect.height) {
+      // Ensure editor doesn't go off the bottom edge of viewport
+      if (top + editorHeight > window.innerHeight) {
         // If editor would go off bottom, position it above the column instead
-        top = columnRect.top - containerRect.top - editorHeight - 8;
-        // But don't let it go above the container
+        top = columnRect.top - editorHeight - 8;
+        // But don't let it go above the viewport
         if (top < 8) {
           top = 8;
         }
@@ -149,14 +146,11 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       
       setEditorPosition({ left, top });
     } else {
-      // Fallback position - center of container
-      if (tableContainer) {
-        const containerRect = tableContainer.getBoundingClientRect();
-        setEditorPosition({ 
-          left: Math.max(8, (containerRect.width - 320) / 2), 
-          top: Math.max(8, (containerRect.height - 200) / 2) 
-        });
-      }
+      // Fallback position - center of viewport
+      setEditorPosition({ 
+        left: Math.max(8, (window.innerWidth - 320) / 2), 
+        top: Math.max(8, (window.innerHeight - 200) / 2) 
+      });
     }
   };
   const customDragCleanupRef = useRef<(() => void) | null>(null);
@@ -1606,9 +1600,9 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       </div>
 
       {/* Portal-based Column Dropdown Menu */}
-      {openColumnMenu && dropdownPosition && typeof window !== 'undefined' && gridRef.current && createPortal(
+      {openColumnMenu && dropdownPosition && typeof window !== 'undefined' && createPortal(
         <div 
-          className="col-menu absolute z-[2000] w-44 rounded-md border border-gray-200 bg-white shadow-lg" 
+          className="col-menu fixed z-[2000] w-44 rounded-md border border-gray-200 bg-white shadow-lg" 
           style={{
             left: `${dropdownPosition.left}px`,
             top: `${dropdownPosition.top}px`
@@ -1681,13 +1675,13 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
             Delete column
           </button>
         </div>,
-        gridRef.current
+        document.body
       )}
 
       {/* Portal-based Column Editor */}
       {openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current && createPortal(
         <div 
-          className="col-editor absolute z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
+          className="col-editor fixed z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
           style={{
             left: `${editorPosition.left}px`,
             top: `${editorPosition.top}px`
