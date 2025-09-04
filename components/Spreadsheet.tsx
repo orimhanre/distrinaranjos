@@ -151,6 +151,10 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
         top = 8;
       }
       
+      console.log('🔧 Final editor position:', { left, top });
+      console.log('🔧 Container dimensions:', { width: containerRect.width, height: containerRect.height });
+      console.log('🔧 Editor dimensions:', { width: editorWidth, height: editorHeight });
+      
       setEditorPosition({ left, top });
     } else {
       // Fallback position - center of container
@@ -1710,6 +1714,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
             top: `${editorPosition.top}px`
           }}
           onClick={(e) => e.stopPropagation()}
+          ref={(el) => {
+            if (el) {
+              console.log('🔧 Column editor element rendered at:', {
+                left: editorPosition.left,
+                top: editorPosition.top,
+                rect: el.getBoundingClientRect()
+              });
+            }
+          }}
         >
           <div className="mb-2">
             <label className="block text-xs text-gray-500 mb-1">Field name</label>
