@@ -70,23 +70,26 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
   // Calculate dropdown position for portal
   const calculateDropdownPosition = (columnKey: string) => {
     const columnElement = columnRefs.current[columnKey];
-    if (columnElement) {
-      const rect = columnElement.getBoundingClientRect();
+    const tableContainer = gridRef.current;
+    
+    if (columnElement && tableContainer) {
+      const columnRect = columnElement.getBoundingClientRect();
+      const containerRect = tableContainer.getBoundingClientRect();
       const dropdownWidth = 176; // w-44 = 11rem = 176px
       const dropdownHeight = 200; // Approximate height
       
-      // Calculate position relative to viewport
-      let left = rect.right - dropdownWidth; // Align to right edge of column
-      let top = rect.bottom + 4; // Below the column header
+      // Calculate position relative to the table container (absolute positioning)
+      let left = columnRect.right - containerRect.left - dropdownWidth; // Align to right edge of column
+      let top = columnRect.bottom - containerRect.top + 4; // Below the column header
       
-      // Ensure dropdown doesn't go off the right edge
-      if (left + dropdownWidth > window.innerWidth) {
-        left = Math.max(8, window.innerWidth - dropdownWidth - 8);
+      // Ensure dropdown doesn't go off the right edge of container
+      if (left + dropdownWidth > containerRect.width) {
+        left = Math.max(8, containerRect.width - dropdownWidth - 8);
       }
       
-      // Ensure dropdown doesn't go off the bottom edge
-      if (top + dropdownHeight > window.innerHeight) {
-        top = rect.top - dropdownHeight - 4;
+      // Ensure dropdown doesn't go off the bottom edge of container
+      if (top + dropdownHeight > containerRect.height) {
+        top = columnRect.top - containerRect.top - dropdownHeight - 4; // Above the column header
       }
       
       // Ensure dropdown doesn't go off the left edge
