@@ -260,7 +260,12 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target.closest && target.closest('.col-menu')) return;
+      console.log('🔧 Document click detected on:', target.className, target.tagName);
+      if (target.closest && target.closest('.col-menu')) {
+        console.log('🔧 Click inside col-menu, ignoring');
+        return;
+      }
+      console.log('🔧 Click outside col-menu, closing dropdown');
       setOpenColumnMenu(null);
       setDropdownPosition(null);
     };
@@ -1638,6 +1643,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
           <button 
             className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
             onClick={(e) => { 
+              console.log('🔧 Edit Field button clicked!');
               e.preventDefault(); 
               e.stopPropagation(); 
               setTimeout(() => { 
