@@ -45,6 +45,12 @@ try {
   console.log('🔄 Continuing without database...');
 }
 
+// Auto-restore from backup if databases are empty (async, non-blocking)
+setTimeout(() => {
+  const { autoRestore } = require('./scripts/backup-restore');
+  autoRestore();
+}, 5000); // Wait 5 seconds for server to be ready
+
 // Start the server
 console.log('🌐 Starting web server...');
 require('./server.js');
