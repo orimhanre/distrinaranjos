@@ -45,10 +45,19 @@ try {
   console.log('🔄 Continuing without database...');
 }
 
-// Auto-restore from backup if databases are empty (async, non-blocking)
+// Auto-restore from backup if explicitly enabled (async, non-blocking)
 setTimeout(() => {
-  const { autoRestore } = require('./scripts/backup-restore');
-  autoRestore();
+  try {
+    if (process.env.ENABLE_AUTO_RESTORE === 'true') {
+      const { autoRestore } = require('./scripts/backup-restore');
+      console.log('🔄 ENABLE_AUTO_RESTORE=true → running autoRestore');
+      autoRestore();
+    } else {
+      console.log('⏭️ Skipping autoRestore (ENABLE_AUTO_RESTORE not true)');
+    }
+  } catch (e) {
+    console.warn('⚠️ autoRestore startup guard error:', e?.message || e);
+  }
 }, 5000); // Wait 5 seconds for server to be ready
 
 // Start the server

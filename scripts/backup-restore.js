@@ -47,6 +47,14 @@ function restoreDatabase(environment = 'regular') {
     }
     
     const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+
+    // Safety: if backup has zero products and zero web photos, skip destructive restore
+    const backupProductsCount = Array.isArray(backup.products) ? backup.products.length : 0;
+    const backupWebPhotosCount = Array.isArray(backup.webPhotos) ? backup.webPhotos.length : 0;
+    if (backupProductsCount === 0 && backupWebPhotosCount === 0) {
+      console.log(`⚠️ Backup for ${environment} is empty (0 products, 0 web photos). Skipping restore to avoid wiping existing data.`);
+      return false;
+    }
     const db = initDatabase(environment);
     
     if (!db) {
@@ -54,7 +62,7 @@ function restoreDatabase(environment = 'regular') {
       return false;
     }
     
-    // Clear existing data
+    // Clear existing data (only after confirming backup is non-empty)
     db.prepare('DELETE FROM products').run();
     db.prepare('DELETE FROM webphotos').run();
     db.prepare('DELETE FROM category_subcategory_relations').run();
@@ -102,7 +110,7 @@ function restoreDatabase(environment = 'regular') {
       });
     }
     
-    console.log(`✅ ${environment} database restored: ${backup.products?.length || 0} products, ${backup.webPhotos?.length || 0} web photos`);
+    console.log(`✅ ${environment} database restored: ${backupProductsCount} products, ${backupWebPhotosCount} web photos`);
     return true;
   } catch (error) {
     console.error(`❌ Restore failed for ${environment}:`, error.message);
