@@ -5,9 +5,9 @@ export async function POST() {
     console.log('🔄 Force sync all databases requested...');
     
     const results = {
-      regularProducts: { success: false, error: null },
-      virtualProducts: { success: false, error: null },
-      webPhotos: { success: false, error: null }
+      regularProducts: { success: false, error: null as string | null },
+      virtualProducts: { success: false, error: null as string | null },
+      webPhotos: { success: false, error: null as string | null }
     };
     
     // Sync regular products
