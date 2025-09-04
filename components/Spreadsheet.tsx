@@ -1321,7 +1321,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
                         {/* Column menu button */}
                         <button
                           type="button"
-                          className="p-1 text-gray-500 hover:text-gray-700 relative z-10"
+                          className="p-1 text-gray-500 hover:text-gray-700"
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             if (openColumnMenu === c.key) {
