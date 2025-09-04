@@ -27,14 +27,8 @@ export class RegularPhotoDownloader {
    * Get the public URL for an image (works for both local and Railway)
    */
   private static getPublicImageUrl(filename: string): string {
-    if (process.env.NODE_ENV === 'production') {
-      // For production, use the current domain
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://distrinaranjos.co';
-      return `${baseUrl}/api/images/regular/${filename}`;
-    } else {
-      // For local development, use localhost
-      return `http://localhost:3000/api/images/regular/${filename}`;
-    }
+    // Always return relative paths for consistency
+    return `/api/images/regular/${filename}`;
   }
 
   /**

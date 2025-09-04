@@ -57,6 +57,7 @@ export default function DatabasePage() {
   const [lastProductSync, setLastProductSync] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [cacheRefreshResult, setCacheRefreshResult] = useState<any>(null);
+  const [showAirtableSync, setShowAirtableSync] = useState(false);
   const pathname = usePathname();
 
   // Load sync timestamps from localStorage on component mount
@@ -593,41 +594,68 @@ export default function DatabasePage() {
           <p className="text-gray-600 text-xs sm:text-base">Gestiona tus productos con tu propia base de datos</p>
         </div>
 
-        {/* Airtable Sync Section */}
+        {/* Airtable Sync Section (Collapsible) */}
         <div className="bg-white p-2 sm:p-6 rounded-lg shadow border">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
-            <div className="mb-2 sm:mb-0">
+          <button
+            className="w-full flex items-center justify-between mb-2 sm:mb-4"
+            onClick={() => setShowAirtableSync((v) => !v)}
+            aria-expanded={showAirtableSync}
+          >
+            <div className="mb-2 sm:mb-0 text-left">
               <h3 className="text-sm sm:text-lg font-semibold text-gray-900">🔄 Sincronización con Airtable</h3>
               <p className="text-xs sm:text-sm text-gray-600">Sincroniza datos desde tu base de Airtable</p>
             </div>
-            <button
-              onClick={clearDatabase}
-              disabled={clearing}
-              className={`px-3 py-2 rounded-lg text-xs sm:text-sm transition-colors ${
-                clearing
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-            >
-              {clearing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline mr-2"></div>
-                  Limpiando...
-                </>
-              ) : (
-                <>
-                  🗑️ Limpiar Base de Datos
-                </>
-              )}
-            </button>
-          </div>
+            <span className="ml-3 text-gray-500 text-lg">{showAirtableSync ? '▾' : '▸'}</span>
+          </button>
+
+          {showAirtableSync && (
+            <>
+              {/* Clear Database Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
+                <div className="mb-2 sm:mb-0"></div>
+                <button
+                  onClick={clearDatabase}
+                  disabled={clearing}
+                  className={`px-3 py-2 rounded-lg text-xs sm:text-sm transition-colors ${
+                    clearing
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  {clearing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline mr-2"></div>
+                      Limpiando...
+                    </>
+                  ) : (
+                    <>
+                      🗑️ Limpiar Base de Datos
+                    </>
+                  )}
+                </button>
+              </div>
 
           {/* Sync Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+            {/* Manual Image Cleanup Button - First on mobile, second on desktop */}
+            <button
+              onClick={handleImageCleanup}
+              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-red-600 hover:bg-red-700 text-white transition-colors duration-200 order-1 sm:order-2"
+            >
+              <span>🗑️</span>
+              <span className="hidden sm:inline">
+                Limpiar Imágenes No Utilizadas
+              </span>
+              <span className="sm:hidden">
+                Limpiar Imágenes No Utilizadas
+              </span>
+            </button>
+
+            {/* Sync Products Button - Second on mobile, first on desktop */}
             <button
               onClick={syncFromAirtable}
               disabled={syncing}
-              className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base ${
+              className={`flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base order-2 sm:order-1 ${
                 syncing
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 text-white'
@@ -643,23 +671,9 @@ export default function DatabasePage() {
                 <>
                   <span>📥</span>
                   <span className="hidden sm:inline">Sincronizar Productos</span>
-                  <span className="sm:hidden">Productos</span>
+                  <span className="sm:hidden">Sincronizar Productos</span>
                 </>
               )}
-            </button>
-
-            {/* Manual Image Cleanup Button */}
-            <button
-              onClick={handleImageCleanup}
-              className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 font-medium text-xs sm:text-base bg-red-600 hover:bg-red-700 text-white transition-colors duration-200"
-            >
-              <span>🗑️</span>
-              <span className="hidden sm:inline">
-                Limpiar Imágenes No Utilizadas
-              </span>
-              <span className="sm:hidden">
-                Limpiar Imágenes
-              </span>
             </button>
 
           </div>
@@ -740,6 +754,8 @@ export default function DatabasePage() {
 
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Stats Cards */}

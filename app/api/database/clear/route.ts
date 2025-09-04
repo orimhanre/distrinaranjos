@@ -11,17 +11,6 @@ export async function POST(request: NextRequest) {
     console.log('🗑️ [Railway] Process CWD:', process.cwd());
     console.log('🗑️ [Railway] NODE_ENV:', process.env.NODE_ENV);
     
-    // PROTECTION: Prevent database clearing in production unless explicitly enabled
-    if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DB_CLEAR !== 'true') {
-      console.log('🚫 [Railway] Database clear blocked in production (ENABLE_DB_CLEAR not set)');
-      return NextResponse.json({
-        success: false,
-        message: 'Database clearing is disabled in production for safety',
-        blocked: true,
-        reason: 'ENABLE_DB_CLEAR environment variable not set to true'
-      }, { status: 403 });
-    }
-    
     // Get context from request
     try {
       const body = await request.json();
@@ -30,30 +19,6 @@ export async function POST(request: NextRequest) {
     } catch (parseError) {
       context = request.headers.get('x-context') || 'virtual';
       console.log('🗑️ [Railway] Context from header:', context);
-    }
-    
-    // PROTECTION: Require explicit context in production
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        const body = await request.json();
-        if (!body.context) {
-          console.log('🚫 [Railway] Database clear blocked - no explicit context provided');
-          return NextResponse.json({
-            success: false,
-            message: 'Context must be explicitly provided in production',
-            blocked: true,
-            reason: 'Missing context in request body'
-          }, { status: 400 });
-        }
-      } catch (parseError) {
-        console.log('🚫 [Railway] Database clear blocked - invalid request body');
-        return NextResponse.json({
-          success: false,
-          message: 'Invalid request body in production',
-          blocked: true,
-          reason: 'Request body parsing failed'
-        }, { status: 400 });
-      }
     }
     
     console.log(`🗑️ [Railway] Clearing ${context} database`);

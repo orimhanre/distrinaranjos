@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { fetchProductsFromDatabase, fetchWebPhotos } from '@/lib/databaseService';
 import { useCart } from '@/lib/cartContext';
+import { Product } from '@/types';
 
 // Logo mapping function - Dynamic from webphotos
 const getLogoPath = (brand: string, webPhotos: Record<string, string>) => {
@@ -283,7 +284,7 @@ export default function Header() {
       try {
         const environment = isDistriPage ? 'regular' : 'virtual';
     
-        const photos = await fetchWebPhotos(environment);
+        const photos = await fetchWebPhotos();
         setWebPhotos(photos);
       } catch (webPhotosError) {
         console.warn('Failed to load WebPhotos, using empty object:', webPhotosError);
@@ -304,10 +305,10 @@ export default function Header() {
       }
       
       try {
-        const products = await fetchProductsFromDatabase(isDistriPage ? 'regular' : 'virtual');
+        const products = await fetchProductsFromDatabase();
       
       // Extract unique categories
-      const allCategories = products.flatMap((p: any) => {
+      const allCategories = products.flatMap((p: Product) => {
         if (Array.isArray(p.category)) return p.category;
         if (typeof p.category === 'string' && p.category.trim()) return [p.category];
         return [];
@@ -321,17 +322,17 @@ export default function Header() {
       // Extract subcategories and organize them with categories
       const categorySubcategoryMap = new Map<string, Set<string>>();
       
-      products.forEach((p: any) => {
+      products.forEach((p: Product) => {
         const productCategories = Array.isArray(p.category) ? p.category : [p.category];
         const productSubcategories = Array.isArray(p.subCategory) ? p.subCategory : [p.subCategory];
         
-        productCategories.forEach((cat: string) => {
+        productCategories.forEach((cat: string | undefined) => {
           if (cat && cat.trim()) {
             if (!categorySubcategoryMap.has(cat)) {
               categorySubcategoryMap.set(cat, new Set());
             }
             
-            productSubcategories.forEach((subcat: string) => {
+            productSubcategories.forEach((subcat: string | undefined) => {
               if (subcat && subcat.trim() && subcat !== 'null') {
                 categorySubcategoryMap.get(cat)!.add(subcat);
               }
@@ -371,7 +372,7 @@ export default function Header() {
       setCategoriesWithSubcategories(categoriesWithSubs);
 
       // Extract unique brands
-      const allBrands = products.flatMap((p: any) => {
+      const allBrands = products.flatMap((p: Product) => {
         if (Array.isArray(p.brand)) return p.brand;
         if (typeof p.brand === 'string' && p.brand.trim()) return [p.brand];
         return [];
@@ -386,7 +387,7 @@ export default function Header() {
       setBrands(uniqueBrands);
 
       // Extract unique types
-      const allTypes = products.flatMap((p: any) => {
+      const allTypes = products.flatMap((p: Product) => {
         if (Array.isArray(p.type)) return p.type;
         if (typeof p.type === 'string' && p.type.trim()) return [p.type];
         return [];
@@ -435,19 +436,17 @@ export default function Header() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-6">
-                {webPhotos['logo_distrinaranjos'] && (
-                  <img
-                    src={webPhotos['logo_distrinaranjos']}
-                    alt="DistriNaranjos logo"
-                    width={60}
-                    height={60}
-                    className="object-contain"
-                    onError={(e) => {
-                      console.warn('Failed to load DistriNaranjos logo');
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )}
+                <img
+                  src={webPhotos['logo_distrinaranjos'] || '/images/webphotos/logo_distrinaranjos.png'}
+                  alt="DistriNaranjos logo"
+                  width={60}
+                  height={60}
+                  className="object-contain"
+                  onError={(e) => {
+                    console.warn('Failed to load DistriNaranjos logo');
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
                 <span className="text-xl sm:text-2xl font-bold text-orange-500/80">
                   DistriNaranjos
                 </span>
