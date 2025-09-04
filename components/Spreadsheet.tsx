@@ -105,15 +105,8 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
 
   // Calculate editor position for portal
   const calculateEditorPosition = (columnKey: string) => {
-    console.log('🔧 calculateEditorPosition called for:', columnKey);
     const columnElement = columnRefs.current[columnKey];
     const tableContainer = gridRef.current;
-    
-    console.log('🔧 Position calculation elements:', {
-      columnElement: !!columnElement,
-      tableContainer: !!tableContainer,
-      columnKey
-    });
     
     if (columnElement && tableContainer) {
       const columnRect = columnElement.getBoundingClientRect();
@@ -122,20 +115,20 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       const editorWidth = 320; // w-80 = 20rem = 320px
       const editorHeight = 200; // Realistic height estimate
       
-      // Calculate position relative to the table container
-      let left = columnRect.left - containerRect.left + 8; // Offset from column left edge
-      let top = columnRect.bottom - containerRect.top + 8; // Below the column header
+      // Calculate position relative to the viewport (fixed positioning)
+      let left = columnRect.left + 8; // Offset from column left edge
+      let top = columnRect.bottom + 8; // Below the column header
       
-      // Ensure editor doesn't go off the right edge of container
-      if (left + editorWidth > containerRect.width) {
-        left = Math.max(8, containerRect.width - editorWidth - 8);
+      // Ensure editor doesn't go off the right edge of viewport
+      if (left + editorWidth > window.innerWidth) {
+        left = Math.max(8, window.innerWidth - editorWidth - 8);
       }
       
-      // Ensure editor doesn't go off the bottom edge of container
-      if (top + editorHeight > containerRect.height) {
+      // Ensure editor doesn't go off the bottom edge of viewport
+      if (top + editorHeight > window.innerHeight) {
         // If editor would go off bottom, position it above the column instead
-        top = columnRect.top - containerRect.top - editorHeight - 8;
-        // But don't let it go above the container
+        top = columnRect.top - editorHeight - 8;
+        // But don't let it go above the viewport
         if (top < 8) {
           top = 8;
         }
@@ -151,20 +144,13 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
         top = 8;
       }
       
-      console.log('🔧 Final editor position:', { left, top });
-      console.log('🔧 Container dimensions:', { width: containerRect.width, height: containerRect.height });
-      console.log('🔧 Editor dimensions:', { width: editorWidth, height: editorHeight });
-      
       setEditorPosition({ left, top });
     } else {
-      // Fallback position - center of container
-      if (tableContainer) {
-        const containerRect = tableContainer.getBoundingClientRect();
-        setEditorPosition({ 
-          left: Math.max(8, (containerRect.width - 320) / 2), 
-          top: Math.max(8, (containerRect.height - 200) / 2) 
-        });
-      }
+      // Fallback position - center of viewport
+      setEditorPosition({ 
+        left: Math.max(8, (window.innerWidth - 320) / 2), 
+        top: Math.max(8, (window.innerHeight - 200) / 2) 
+      });
     }
   };
   const customDragCleanupRef = useRef<(() => void) | null>(null);
@@ -271,12 +257,7 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      console.log('🔧 Document click detected on:', target.className, target.tagName);
-      if (target.closest && target.closest('.col-menu')) {
-        console.log('🔧 Click inside col-menu, ignoring');
-        return;
-      }
-      console.log('🔧 Click outside col-menu, closing dropdown');
+      if (target.closest && target.closest('.col-menu')) return;
       setOpenColumnMenu(null);
       setDropdownPosition(null);
     };
@@ -1654,18 +1635,13 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
           <button 
             className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50" 
             onClick={(e) => { 
-              console.log('🔧 Edit Field button clicked!');
               e.preventDefault(); 
               e.stopPropagation(); 
               setTimeout(() => { 
-                console.log('🔧 Setting openColumnEditor to:', openColumnMenu);
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(openColumnMenu); 
                 // Calculate position after setting the editor
-                setTimeout(() => {
-                  console.log('🔧 About to calculate position for:', openColumnMenu);
-                  calculateEditorPosition(openColumnMenu);
-                }, 100);
+                setTimeout(() => calculateEditorPosition(openColumnMenu), 100);
               }, 0); 
             }}
           >
@@ -1698,31 +1674,14 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       )}
 
       {/* Portal-based Column Editor */}
-      {(() => {
-        console.log('🔧 Portal render check:', { 
-          openColumnEditor, 
-          editorPosition, 
-          hasGridRef: !!gridRef.current,
-          isClient: typeof window !== 'undefined'
-        });
-        return openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current;
-      })() && createPortal(
+      {openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current && createPortal(
         <div 
-          className="col-editor absolute z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
+          className="col-editor fixed z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
           style={{
             left: `${editorPosition.left}px`,
             top: `${editorPosition.top}px`
           }}
           onClick={(e) => e.stopPropagation()}
-          ref={(el) => {
-            if (el) {
-              console.log('🔧 Column editor element rendered at:', {
-                left: editorPosition.left,
-                top: editorPosition.top,
-                rect: el.getBoundingClientRect()
-              });
-            }
-          }}
         >
           <div className="mb-2">
             <label className="block text-xs text-gray-500 mb-1">Field name</label>
