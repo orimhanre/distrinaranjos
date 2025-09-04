@@ -17,6 +17,10 @@ redirect = true
 enabled = true
 auto = true
 
+# Persistent volume for database files
+[deploy.volumes]
+data = "/app/data"
+
 [env]
 NODE_ENV = "production"
 FORCE_HTTPS = "true"
