@@ -453,6 +453,12 @@ function ProductCard({
       // Accept local paths starting with /
       if (cleanUrl.startsWith('/')) return true;
       
+      // Accept local API endpoints for regular environment
+      if (cleanUrl.includes('/api/images/regular/')) return true;
+      
+      // Accept local API endpoints for virtual environment
+      if (cleanUrl.includes('/api/images/virtual/')) return true;
+      
       // Accept Cloudinary URLs (for regular environment)
       if (cleanUrl.includes('res.cloudinary.com')) return true;
       
@@ -502,6 +508,12 @@ function ProductCard({
       
       // Accept local paths starting with /
       if (cleanUrl.startsWith('/')) return true;
+      
+      // Accept local API endpoints for regular environment
+      if (cleanUrl.includes('/api/images/regular/')) return true;
+      
+      // Accept local API endpoints for virtual environment
+      if (cleanUrl.includes('/api/images/virtual/')) return true;
       
       // Accept Cloudinary URLs (for regular environment)
       if (cleanUrl.includes('res.cloudinary.com')) return true;

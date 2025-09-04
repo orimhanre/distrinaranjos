@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 import Link from 'next/link';
-import { fetchWebPhotos } from '@/lib/databaseService';
+import { fetchWebPhotos } from '@/lib/useApiData';
 import FlyingAnimation from './FlyingAnimation';
 
 type Step = 'products' | 'client' | 'summary';
@@ -645,6 +645,12 @@ export default function Distri2Form() {
                         
                         // Accept local paths starting with /
                         if (cleanUrl.startsWith('/')) return true;
+                        
+                        // Accept local API endpoints for regular environment
+                        if (cleanUrl.includes('/api/images/regular/')) return true;
+                        
+                        // Accept local API endpoints for virtual environment
+                        if (cleanUrl.includes('/api/images/virtual/')) return true;
                         
                         // Accept Cloudinary URLs (for regular environment)
                         if (cleanUrl.includes('res.cloudinary.com')) return true;
