@@ -140,40 +140,36 @@ export async function POST(request: NextRequest) {
           product.imageURL = ['/placeholder-product.svg'];
         }
         
-        // For regular environment, download images from Airtable if available
-        if (context === 'regular' && product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-          console.log(`🖼️ Downloading images for regular product ${product.id}:`, product.imageURL);
-          
-          try {
-            // Use RegularPhotoDownloader to download images locally
-            const downloadedImagePaths = await RegularPhotoDownloader.downloadProductImages(product.imageURL);
-            
-            if (downloadedImagePaths.length > 0) {
-              // Update the product with downloaded image paths
-              product.imageURL = downloadedImagePaths;
-              console.log(`✅ Regular product ${product.id} now has ${downloadedImagePaths.length} downloaded images:`, downloadedImagePaths);
-            } else {
-              console.warn(`⚠️ No images were successfully downloaded for regular product ${product.id}, using placeholder`);
-              product.imageURL = ['/placeholder-product.svg'];
-            }
-            
-          } catch (imageError) {
-            console.error(`❌ Error downloading images for regular product ${product.id}:`, imageError);
-            // Fall back to placeholder
-            product.imageURL = ['/placeholder-product.svg'];
-          }
-        } else if (context === 'regular') {
-          // No images available, use placeholder
+        // For regular environment, skip image downloading for now to prevent hanging
+        // TODO: Implement proper image downloading after sync is working
+        if (context === 'regular') {
+          // For now, just use placeholders to prevent sync from hanging
           product.imageURL = ['/placeholder-product.svg'];
+          console.log(`📝 Regular product ${product.id} - using placeholder (image download disabled temporarily)`);
         }
         
-        // Save to database
-        const createdProduct = productDB.createProduct(product);
-        if (createdProduct) {
-          syncedCount++;
-          console.log(`✅ Created product ${i + 1}/${airtableRecords.length}: ${product.id}`);
+        // Save to database (use upsert to handle existing products)
+        const existingProduct = productDB.getProduct(product.id);
+        let savedProduct;
+        
+        if (existingProduct) {
+          // Update existing product
+          savedProduct = productDB.updateProduct(product.id, product);
+          if (savedProduct) {
+            syncedCount++;
+            console.log(`✅ Updated product ${i + 1}/${airtableRecords.length}: ${product.id}`);
+          } else {
+            console.warn(`⚠️ Failed to update product: ${product.id}`);
+          }
         } else {
-          console.warn(`⚠️ Failed to create product: ${product.id}`);
+          // Create new product
+          savedProduct = productDB.createProduct(product);
+          if (savedProduct) {
+            syncedCount++;
+            console.log(`✅ Created product ${i + 1}/${airtableRecords.length}: ${product.id}`);
+          } else {
+            console.warn(`⚠️ Failed to create product: ${product.id}`);
+          }
         }
         
         // Progress update every 10 products

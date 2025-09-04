@@ -154,15 +154,39 @@ export class RegularPhotoDownloader {
     
     const results: DownloadedRegularImage[] = [];
     
-    for (let i = 0; i < attachments.length; i++) {
-      const attachment = attachments[i];
-      const url = typeof attachment === 'string' ? attachment : attachment.url;
-      const filename = this.getOriginalFilename(attachment, i);
+    // Process images in batches to avoid overwhelming the system
+    const batchSize = 3;
+    for (let i = 0; i < attachments.length; i += batchSize) {
+      const batch = attachments.slice(i, i + batchSize);
       
-      const result = await this.downloadAndSaveImage(url, filename, this.IMAGES_DIR);
-      results.push(result);
+      const batchPromises = batch.map(async (attachment, batchIndex) => {
+        const globalIndex = i + batchIndex;
+        const url = typeof attachment === 'string' ? attachment : attachment.url;
+        const filename = this.getOriginalFilename(attachment, globalIndex);
+        
+        try {
+          const result = await this.downloadAndSaveImage(url, filename, this.IMAGES_DIR);
+          console.log(`✅ Processed: ${filename}`);
+          return result;
+        } catch (error) {
+          console.error(`❌ Failed to process ${filename}:`, error);
+          return {
+            originalUrl: url,
+            localPath: '',
+            filename: filename,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      });
       
-      console.log(`✅ Processed: ${filename}`);
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+      
+      // Small delay between batches to prevent overwhelming the system
+      if (i + batchSize < attachments.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
     
     const successfulDownloads = results.filter(r => r.success);

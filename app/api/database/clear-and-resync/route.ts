@@ -86,10 +86,28 @@ export async function POST(request: NextRequest) {
             product.imageURL = ['/placeholder-product.svg'];
           }
           
-          // Save to SQLite database
-          productDB.createProduct(product);
-          syncedCount++;
-          console.log(`✅ Successfully saved product ${product.id}`);
+          // Save to SQLite database (use upsert to handle existing products)
+          const existingProduct = productDB.getProduct(product.id);
+          
+          if (existingProduct) {
+            // Update existing product
+            const updatedProduct = productDB.updateProduct(product.id, product);
+            if (updatedProduct) {
+              syncedCount++;
+              console.log(`✅ Successfully updated product ${product.id}`);
+            } else {
+              console.warn(`⚠️ Failed to update product: ${product.id}`);
+            }
+          } else {
+            // Create new product
+            const createdProduct = productDB.createProduct(product);
+            if (createdProduct) {
+              syncedCount++;
+              console.log(`✅ Successfully created product ${product.id}`);
+            } else {
+              console.warn(`⚠️ Failed to create product: ${product.id}`);
+            }
+          }
         }
       } catch (error) {
         const errorMsg = `Failed to sync product ${airtableRecord.id}: ${error}`;
