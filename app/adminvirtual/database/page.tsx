@@ -419,7 +419,7 @@ function VirtualDatabasePageContent() {
         
         const cell = {
           id: `cell_${index}_${col.key}`,
-          value: value || '',
+          value: value !== null && value !== undefined ? value : '',
           type: (finalType === 'attachment' || col.key === 'imageURL') ? 'image' : finalType as any,
           editable: true // Force all cells to be editable
         };
