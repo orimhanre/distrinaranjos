@@ -1640,13 +1640,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
             onClick={(e) => { 
               e.preventDefault(); 
               e.stopPropagation(); 
+              // Capture the column key before clearing the menu state
+              const columnKey = openColumnMenu;
               setOpenColumnMenu(null); 
               setDropdownPosition(null); 
               setTimeout(() => { 
                 editorOpenedAtRef.current = Date.now(); 
-                setOpenColumnEditor(openColumnMenu); 
+                setOpenColumnEditor(columnKey); 
                 // Use a longer timeout to ensure DOM is updated
-                setTimeout(() => calculateEditorPosition(openColumnMenu), 100); 
+                setTimeout(() => calculateEditorPosition(columnKey), 100); 
               }, 0); 
             }}
           >
