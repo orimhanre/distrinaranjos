@@ -105,24 +105,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
 
   // Calculate editor position for portal
   const calculateEditorPosition = (columnKey: string) => {
-    console.log('🔍 Calculating editor position for column:', columnKey);
-    console.log('🔍 Available column refs:', Object.keys(columnRefs.current));
-    
     const columnElement = columnRefs.current[columnKey];
     if (columnElement) {
       const rect = columnElement.getBoundingClientRect();
-      console.log('🔍 Column element rect:', rect);
-      
       const editorWidth = 320; // w-80 = 20rem = 320px
-      const editorHeight = 200; // Reduced height estimate
-      
-      console.log('🔍 Viewport dimensions:', { width: window.innerWidth, height: window.innerHeight });
+      const editorHeight = 200; // Realistic height estimate
       
       // Calculate position relative to viewport
       let left = rect.left + 8; // Slightly offset from left edge of column
       let top = rect.bottom + 8; // Below the column header
-      
-      console.log('🔍 Initial position:', { left, top });
       
       // Ensure editor doesn't go off the right edge
       if (left + editorWidth > window.innerWidth) {
@@ -131,14 +122,12 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       
       // Ensure editor doesn't go off the bottom edge
       if (top + editorHeight > window.innerHeight) {
-        console.log('🔍 Editor would go off bottom, repositioning above column');
         // If editor would go off bottom, position it above the column instead
         top = rect.top - editorHeight - 8;
         // But don't let it go above the viewport
         if (top < 8) {
           top = 8;
         }
-        console.log('🔍 Repositioned above column:', { top });
       }
       
       // Ensure editor doesn't go off the left edge
@@ -151,14 +140,12 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
         top = 8;
       }
       
-      console.log('🔍 Final position:', { left, top });
       setEditorPosition({ left, top });
     } else {
-      console.error('❌ Column element not found for key:', columnKey);
       // Fallback position - center of screen
       setEditorPosition({ 
         left: Math.max(8, (window.innerWidth - 320) / 2), 
-        top: Math.max(8, (window.innerHeight - 300) / 2) 
+        top: Math.max(8, (window.innerHeight - 200) / 2) 
       });
     }
   };
