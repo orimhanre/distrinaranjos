@@ -3,6 +3,7 @@ import { AirtableService, SyncResult } from '../../../../lib/airtable';
 import { ProductDatabase } from '../../../../lib/database';
 import { ImageDownloader } from '../../../../lib/imageDownloader';
 import { VirtualPhotoDownloader } from '../../../../lib/virtualPhotoDownloader';
+import { RegularPhotoDownloader } from '../../../../lib/regularPhotoDownloader';
 import fs from 'fs';
 import path from 'path';
 
@@ -135,6 +136,33 @@ export async function POST(request: NextRequest) {
             product.imageURL = ['/placeholder-product.svg'];
           }
         } else if (context === 'virtual') {
+          // No images available, use placeholder
+          product.imageURL = ['/placeholder-product.svg'];
+        }
+        
+        // For regular environment, download images from Airtable if available
+        if (context === 'regular' && product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+          console.log(`🖼️ Downloading images for regular product ${product.id}:`, product.imageURL);
+          
+          try {
+            // Use RegularPhotoDownloader to download images locally
+            const downloadedImagePaths = await RegularPhotoDownloader.downloadProductImages(product.imageURL);
+            
+            if (downloadedImagePaths.length > 0) {
+              // Update the product with downloaded image paths
+              product.imageURL = downloadedImagePaths;
+              console.log(`✅ Regular product ${product.id} now has ${downloadedImagePaths.length} downloaded images:`, downloadedImagePaths);
+            } else {
+              console.warn(`⚠️ No images were successfully downloaded for regular product ${product.id}, using placeholder`);
+              product.imageURL = ['/placeholder-product.svg'];
+            }
+            
+          } catch (imageError) {
+            console.error(`❌ Error downloading images for regular product ${product.id}:`, imageError);
+            // Fall back to placeholder
+            product.imageURL = ['/placeholder-product.svg'];
+          }
+        } else if (context === 'regular') {
           // No images available, use placeholder
           product.imageURL = ['/placeholder-product.svg'];
         }

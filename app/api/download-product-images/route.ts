@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
     
     console.log(`📦 Found ${products.length} products to process`);
     
-    // For virtual environment, we don't download images locally
-    if (context === 'virtual') {
+    // For virtual and regular environments, images are already downloaded during sync
+    if (context === 'virtual' || context === 'regular') {
       return NextResponse.json({
         success: true,
-        message: 'Virtual environment uses original Airtable URLs - no local download needed',
+        message: `${context} environment images are downloaded during sync - no additional download needed`,
         downloadedCount: 0,
         totalProducts: products.length,
         context

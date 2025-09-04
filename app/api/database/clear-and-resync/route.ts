@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProductDatabase } from '../../../../lib/database';
 import { AirtableService } from '../../../../lib/airtable';
+import { VirtualPhotoDownloader } from '../../../../lib/virtualPhotoDownloader';
+import { RegularPhotoDownloader } from '../../../../lib/regularPhotoDownloader';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,23 +38,52 @@ export async function POST(request: NextRequest) {
         const product = AirtableService.convertAirtableToProduct(airtableRecord);
         
         if (product) {
-          // ALWAYS use original Airtable URLs for both virtual and regular environments
+          // Handle images based on environment
           if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-            const processedImageURLs = product.imageURL.map((img: any) => {
-              if (typeof img === 'string') return img;
-              if (img && typeof img === 'object' && img.url) {
-                // Use the full Airtable URL (needed for images to load)
-                return img.url;
+            if (context === 'virtual') {
+              // For virtual environment, download images locally
+              try {
+                const downloadedImagePaths = await VirtualPhotoDownloader.downloadProductImages(product.imageURL);
+                if (downloadedImagePaths.length > 0) {
+                  product.imageURL = downloadedImagePaths;
+                } else {
+                  product.imageURL = ['/placeholder-product.svg'];
+                }
+              } catch (imageError) {
+                console.error(`❌ Error downloading images for virtual product ${product.id}:`, imageError);
+                product.imageURL = ['/placeholder-product.svg'];
               }
-              if (img && typeof img === 'object' && img.filename) {
-                // If we only have filename, we can't load the image
-                return null;
+            } else if (context === 'regular') {
+              // For regular environment, download images locally
+              try {
+                const downloadedImagePaths = await RegularPhotoDownloader.downloadProductImages(product.imageURL);
+                if (downloadedImagePaths.length > 0) {
+                  product.imageURL = downloadedImagePaths;
+                } else {
+                  product.imageURL = ['/placeholder-product.svg'];
+                }
+              } catch (imageError) {
+                console.error(`❌ Error downloading images for regular product ${product.id}:`, imageError);
+                product.imageURL = ['/placeholder-product.svg'];
               }
-              return String(img);
-            }).filter((url: string | null) => url && url.length > 0);
-            
-            // Always use the processed URLs (original Airtable URLs)
-            product.imageURL = processedImageURLs;
+            } else {
+              // Fallback: use original Airtable URLs
+              const processedImageURLs = product.imageURL.map((img: any) => {
+                if (typeof img === 'string') return img;
+                if (img && typeof img === 'object' && img.url) {
+                  return img.url;
+                }
+                if (img && typeof img === 'object' && img.filename) {
+                  return null;
+                }
+                return String(img);
+              }).filter((url: string | null) => url && url.length > 0);
+              
+              product.imageURL = processedImageURLs;
+            }
+          } else {
+            // No images available, use placeholder
+            product.imageURL = ['/placeholder-product.svg'];
           }
           
           // Save to SQLite database
