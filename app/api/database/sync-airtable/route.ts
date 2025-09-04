@@ -83,8 +83,9 @@ export async function POST(request: NextRequest) {
     const fieldTypes = await AirtableService.getTableSchemaWithTypes();
     console.log(`📋 Found ${fieldTypes.length} fields with types:`, fieldTypes);
     
-    // Save field types to virtual-columns.json
-    const columnsPath = path.resolve(process.cwd(), 'data/virtual-columns.json');
+    // Save field types to appropriate columns file based on context
+    const columnsFileName = context === 'virtual' ? 'virtual-columns.json' : 'columns.json';
+    const columnsPath = path.resolve(process.cwd(), `data/${columnsFileName}`);
     fs.writeFileSync(columnsPath, JSON.stringify(fieldTypes, null, 2));
     console.log(`💾 Saved field types to ${columnsPath}`);
     
