@@ -1643,6 +1643,8 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
               setTimeout(() => { 
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(openColumnMenu); 
+                // Calculate position after setting the editor
+                setTimeout(() => calculateEditorPosition(openColumnMenu), 100);
               }, 0); 
             }}
           >
