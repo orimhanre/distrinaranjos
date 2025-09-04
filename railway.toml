@@ -25,4 +25,5 @@ data = "/app/data"
 NODE_ENV = "production"
 FORCE_HTTPS = "true"
 RAILWAY_FORCE_HTTPS = "true"
+RAILWAY_RUN_UID = "0"
 # Railway deployment configuration for distrinaranjos

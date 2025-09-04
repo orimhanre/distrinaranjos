@@ -2,9 +2,10 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { Product } from '../types';
 
-// Database file paths
-const REGULAR_DB_PATH = path.join(process.cwd(), 'data', 'products.db');
-const VIRTUAL_DB_PATH = path.join(process.cwd(), 'data', 'virtual-products.db');
+// Database file paths - use Railway's persistent volume if available
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(process.cwd(), 'data');
+const REGULAR_DB_PATH = path.join(DATA_DIR, 'products.db');
+const VIRTUAL_DB_PATH = path.join(DATA_DIR, 'virtual-products.db');
 
 // Initialize database instances
 let regularDb: Database.Database | null = null;
@@ -47,6 +48,9 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular'): Da
   }
   
   const dbPath = environment === 'virtual' ? VIRTUAL_DB_PATH : REGULAR_DB_PATH;
+  console.log(`🗄️ Initializing ${environment} database at: ${dbPath}`);
+  console.log(`📁 Data directory: ${DATA_DIR}`);
+  console.log(`🔧 Railway volume mount path: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || 'not set'}`);
   
   if (environment === 'virtual') {
     // Check if database is closed or corrupted and reinitialize if needed
