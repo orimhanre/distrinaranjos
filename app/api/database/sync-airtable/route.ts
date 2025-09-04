@@ -39,30 +39,12 @@ export async function POST(request: NextRequest) {
     const productDB = new ProductDatabase(context);
     console.log(`✅ Database initialized for ${context}`);
     
-    // STEP 1: Clear existing products (virtual environment)
-    if (context === 'virtual') {
-      console.log('🧹 STEP 1: Clearing existing products...');
-      const existingProducts = productDB.getAllProducts();
-      console.log(`📊 Found ${existingProducts.length} existing products to clear`);
-      
-      let deletedCount = 0;
-      for (const product of existingProducts) {
-        const deleted = productDB.deleteProduct(product.id);
-        if (deleted) {
-          deletedCount++;
-        }
-      }
-      console.log(`✅ Cleared ${deletedCount} existing products`);
-      
-      // VERIFY: Check if clearing worked
-      const remainingProducts = productDB.getAllProducts();
-      console.log(`🔍 VERIFICATION: ${remainingProducts.length} products remaining after clear`);
-      
-      if (remainingProducts.length > 0) {
-        console.error(`❌ CRITICAL: Database clear failed! Still have ${remainingProducts.length} products`);
-        throw new Error(`Database clear failed: ${remainingProducts.length} products still exist`);
-      }
-      console.log('✅ Database clear verification successful');
+    // STEP 1: Check existing products (no auto-clear for virtual database)
+    const existingProducts = productDB.getAllProducts();
+    console.log(`📊 Found ${existingProducts.length} existing products in ${context} database`);
+    
+    if (existingProducts.length > 0) {
+      console.log('ℹ️ Database already contains products - will update/insert new ones without clearing');
     }
     
     // STEP 2: Test Airtable connection
