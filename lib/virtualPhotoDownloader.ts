@@ -36,8 +36,8 @@ export class VirtualPhotoDownloader {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://distrinaranjos.co';
       return `${baseUrl}/api/images/${type}/${filename}`;
     } else {
-      // For local development, use absolute path from root
-      return `/api/images/${type}/${filename}`;
+      // For local development, use localhost
+      return `http://localhost:3000/api/images/${type}/${filename}`;
     }
   }
 
