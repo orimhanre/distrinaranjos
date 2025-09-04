@@ -267,14 +267,14 @@ export default function EditableCell({
       case 'select':
         return (
           <div className="px-2 py-1 text-sm text-black break-words leading-relaxed w-full">
-            {cell.value || ''}
+            {cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}
           </div>
         );
       
       case 'multipleSelect':
         return (
           <div className="px-2 py-1 text-sm text-black break-words leading-relaxed w-full">
-            {Array.isArray(cell.value) ? cell.value.join(', ') : cell.value || ''}
+            {Array.isArray(cell.value) ? cell.value.join(', ') : (cell.value !== null && cell.value !== undefined ? String(cell.value) : '')}
           </div>
         );
       
@@ -289,14 +289,14 @@ export default function EditableCell({
       case 'phone':
         return (
           <div className="px-2 py-1 text-sm text-black break-words leading-relaxed w-full">
-            {cell.value || ''}
+            {cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}
           </div>
         );
       
       case 'email':
         return (
           <div className="px-2 py-1 text-sm text-black break-words leading-relaxed w-full">
-            {cell.value || ''}
+            {cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}
           </div>
         );
       
@@ -314,7 +314,7 @@ export default function EditableCell({
         // Regular number fields
         return (
           <div className="px-2 py-1 text-sm truncate text-black flex items-center justify-center">
-            <span>{String(cell.value || '')}</span>
+            <span>{cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}</span>
           </div>
         );
       
@@ -330,7 +330,7 @@ export default function EditableCell({
       default:
         return (
           <div className="px-2 py-1 text-sm text-black flex items-start justify-between w-full">
-            <span className="break-words leading-relaxed flex-1">{String(cell.value || '')}</span>
+            <span className="break-words leading-relaxed flex-1">{cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}</span>
             {!readOnly && (
               <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 3.487a2.25 2.25 0 113.182 3.182L8.25 18.463 4.5 19.5l1.037-3.75L16.862 3.487z" />
