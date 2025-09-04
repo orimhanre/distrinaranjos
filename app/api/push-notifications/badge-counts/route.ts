@@ -4,6 +4,12 @@ import { initDatabase } from '@/lib/database';
 export async function GET() {
   try {
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Get all badge counts
     const stmt = db.prepare('SELECT user_email, badge_count, last_updated FROM badge_counts ORDER BY last_updated DESC');

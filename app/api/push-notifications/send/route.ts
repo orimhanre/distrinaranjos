@@ -96,6 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Get FCM tokens based on target
     let tokens: string[] = [];

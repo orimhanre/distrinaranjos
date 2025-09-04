@@ -7,6 +7,12 @@ export async function GET(request: NextRequest) {
     // // console.log('API: /api/database/virtual-webphotos called');
     
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Check if the webphotos table exists
     const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='webphotos'").get();
@@ -84,6 +90,12 @@ export async function POST(request: NextRequest) {
     }
     
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     const stmt = db.prepare('INSERT OR REPLACE INTO webphotos (name, imageUrl) VALUES (?, ?)');
     stmt.run(name, imageUrl);
     
@@ -113,6 +125,12 @@ export async function DELETE(request: NextRequest) {
     }
     
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     const stmt = db.prepare('DELETE FROM webphotos WHERE name = ?');
     const result = stmt.run(name);
     

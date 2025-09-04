@@ -13,6 +13,12 @@ export async function POST(request: NextRequest) {
     }
 
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     
     // Clear badge count for the user
     const stmt = db.prepare('UPDATE badge_counts SET badge_count = 0, last_updated = CURRENT_TIMESTAMP WHERE user_email = ?');

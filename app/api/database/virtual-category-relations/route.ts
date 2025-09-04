@@ -8,6 +8,13 @@ export async function GET() {
     // API: /api/database/virtual-category-relations called
     
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+    
     const stmt = db.prepare(`
       SELECT * FROM category_subcategory_relations 
       ORDER BY category ASC, subcategory ASC
@@ -41,6 +48,13 @@ export async function POST(request: NextRequest) {
     }
     
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO category_subcategory_relations (id, category, subcategory, isActive, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?)

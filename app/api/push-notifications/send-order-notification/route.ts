@@ -133,6 +133,12 @@ export async function POST(request: NextRequest) {
 
     console.log('🗄️ Initializing virtual database...');
     const db = initDatabase('virtual');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
     console.log('✅ Virtual database initialized');
     
     // Get all FCM tokens for admin users

@@ -41,7 +41,7 @@ export function getFreshDatabase(environment: 'regular' | 'virtual' = 'regular')
   return initDatabase(environment);
 }
 
-export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
+export function initDatabase(environment: 'regular' | 'virtual' = 'regular'): Database.Database | null {
   if (typeof window !== 'undefined') {
     throw new Error('Database should only be initialized on the server side');
   }
@@ -69,10 +69,15 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
         
         virtualDb = new Database(dbPath);
         createTables(virtualDb, 'virtual');
-        // console.log('✅ Virtual database initialized successfully');
+        console.log('✅ Virtual database initialized successfully');
       } catch (error) {
         console.error('❌ Error initializing virtual database:', error);
         virtualDb = null;
+        // Don't throw error in production to prevent app crash
+        if (process.env.NODE_ENV === 'production') {
+          console.warn('⚠️ Continuing without virtual database in production');
+          return null;
+        }
         throw error;
       }
     }
@@ -98,10 +103,15 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular') {
         
         regularDb = new Database(dbPath);
         createTables(regularDb, 'regular');
-        // console.log('✅ Regular database initialized successfully');
+        console.log('✅ Regular database initialized successfully');
       } catch (error) {
         console.error('❌ Error initializing regular database:', error);
         regularDb = null;
+        // Don't throw error in production to prevent app crash
+        if (process.env.NODE_ENV === 'production') {
+          console.warn('⚠️ Continuing without regular database in production');
+          return null;
+        }
         throw error;
       }
     }
@@ -230,7 +240,11 @@ export class ProductDatabase {
   
   constructor(environment: 'regular' | 'virtual' = 'regular') {
     this.environment = environment;
-    this.db = initDatabase(environment);
+    const db = initDatabase(environment);
+    if (!db) {
+      throw new Error(`Failed to initialize ${environment} database`);
+    }
+    this.db = db;
   }
   
   // Create a new product
@@ -1070,7 +1084,11 @@ export class WebPhotosDatabase {
   
   constructor(environment: 'regular' | 'virtual' = 'regular') {
     this.environment = environment;
-    this.db = initDatabase(environment);
+    const db = initDatabase(environment);
+    if (!db) {
+      throw new Error(`Failed to initialize ${environment} database`);
+    }
+    this.db = db;
   }
   
   // Create or update a web photo

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "dev:virtual": "./scripts/start-virtual.sh",
     "build": "next build",
-    "start": "next start",
+    "start": "node startup.js",
+    "start:server": "node server.js",
+    "start:next": "next start",
     "lint": "eslint ."
   },
   "dependencies": {
