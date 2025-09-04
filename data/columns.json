@@ -1,0 +1,52 @@
+[
+  {
+    "key": "name",
+    "label": "name",
+    "type": "text"
+  },
+  {
+    "key": "brand",
+    "label": "brand",
+    "type": "text"
+  },
+  {
+    "key": "type",
+    "label": "type",
+    "type": "text"
+  },
+  {
+    "key": "colors",
+    "label": "colors",
+    "type": "multipleSelect"
+  },
+  {
+    "key": "price1",
+    "label": "price1",
+    "type": "number"
+  },
+  {
+    "key": "price2",
+    "label": "price2",
+    "type": "number"
+  },
+  {
+    "key": "isProductStarredAirtable",
+    "label": "isProductStarredAirtable",
+    "type": "boolean"
+  },
+  {
+    "key": "quantity",
+    "label": "quantity",
+    "type": "number"
+  },
+  {
+    "key": "imageURL",
+    "label": "imageURL",
+    "type": "attachment"
+  },
+  {
+    "key": "lastUpdated",
+    "label": "lastUpdated",
+    "type": "lastModifiedTime"
+  }
+]

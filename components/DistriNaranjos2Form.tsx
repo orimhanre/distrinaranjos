@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 import Link from 'next/link';
-import { fetchWebPhotos } from '@/lib/useApiData';
+import { fetchWebPhotos } from '@/lib/databaseService';
 import FlyingAnimation from './FlyingAnimation';
 
 type Step = 'products' | 'client' | 'summary';
