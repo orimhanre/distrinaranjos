@@ -113,39 +113,53 @@ export async function POST(request: NextRequest) {
         // Convert to product
         const product = AirtableService.convertAirtableToProduct(airtableRecord);
         
-        // For virtual environment, download images from Airtable if available
-        if (context === 'virtual' && product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
-          console.log(`🖼️ Downloading images for product ${product.id}:`, product.imageURL);
-          
-          try {
-            // Use VirtualPhotoDownloader to download images locally
-            const downloadedImagePaths = await VirtualPhotoDownloader.downloadProductImages(product.imageURL);
-            
-            if (downloadedImagePaths.length > 0) {
-              // Update the product with downloaded image paths
-              product.imageURL = downloadedImagePaths;
-              console.log(`✅ Product ${product.id} now has ${downloadedImagePaths.length} downloaded images:`, downloadedImagePaths);
-            } else {
-              console.warn(`⚠️ No images were successfully downloaded for product ${product.id}, using placeholder`);
+        
+        // Handle images based on environment
+        if (product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
+          if (context === 'virtual') {
+            // For virtual environment, download images locally
+            try {
+              const downloadedImagePaths = await VirtualPhotoDownloader.downloadProductImages(product.imageURL);
+              if (downloadedImagePaths.length > 0) {
+                product.imageURL = downloadedImagePaths;
+              } else {
+                product.imageURL = ['/placeholder-product.svg'];
+              }
+            } catch (imageError) {
+              console.error(`❌ Error downloading images for virtual product ${product.id}:`, imageError);
               product.imageURL = ['/placeholder-product.svg'];
             }
+          } else if (context === 'regular') {
+            // For regular environment, download images locally
+            try {
+              const downloadedImagePaths = await RegularPhotoDownloader.downloadProductImages(product.imageURL);
+              if (downloadedImagePaths.length > 0) {
+                product.imageURL = downloadedImagePaths;
+              } else {
+                product.imageURL = ['/placeholder-product.svg'];
+              }
+            } catch (imageError) {
+              console.error(`❌ Error downloading images for regular product ${product.id}:`, imageError);
+              product.imageURL = ['/placeholder-product.svg'];
+            }
+          } else {
+            // Fallback: use original Airtable URLs
+            const processedImageURLs = product.imageURL.map((img: any) => {
+              if (typeof img === 'string') return img;
+              if (img && typeof img === 'object' && img.url) {
+                return img.url;
+              }
+              if (img && typeof img === 'object' && img.filename) {
+                return null;
+              }
+              return String(img);
+            }).filter((url: string | null) => url && url.length > 0);
             
-          } catch (imageError) {
-            console.error(`❌ Error downloading images for product ${product.id}:`, imageError);
-            // Fall back to placeholder
-            product.imageURL = ['/placeholder-product.svg'];
+            product.imageURL = processedImageURLs;
           }
-        } else if (context === 'virtual') {
+        } else {
           // No images available, use placeholder
           product.imageURL = ['/placeholder-product.svg'];
-        }
-        
-        // For regular environment, skip image downloading for now to prevent hanging
-        // TODO: Implement proper image downloading after sync is working
-        if (context === 'regular') {
-          // For now, just use placeholders to prevent sync from hanging
-          product.imageURL = ['/placeholder-product.svg'];
-          console.log(`📝 Regular product ${product.id} - using placeholder (image download disabled temporarily)`);
         }
         
         // Save to database (use upsert to handle existing products)
