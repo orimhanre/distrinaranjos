@@ -105,8 +105,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
 
   // Calculate editor position for portal
   const calculateEditorPosition = (columnKey: string) => {
+    console.log('🔧 calculateEditorPosition called for:', columnKey);
     const columnElement = columnRefs.current[columnKey];
     const tableContainer = gridRef.current;
+    
+    console.log('🔧 Position calculation elements:', {
+      columnElement: !!columnElement,
+      tableContainer: !!tableContainer,
+      columnKey
+    });
     
     if (columnElement && tableContainer) {
       const columnRect = columnElement.getBoundingClientRect();
@@ -1647,10 +1654,14 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
               e.preventDefault(); 
               e.stopPropagation(); 
               setTimeout(() => { 
+                console.log('🔧 Setting openColumnEditor to:', openColumnMenu);
                 editorOpenedAtRef.current = Date.now(); 
                 setOpenColumnEditor(openColumnMenu); 
                 // Calculate position after setting the editor
-                setTimeout(() => calculateEditorPosition(openColumnMenu), 100);
+                setTimeout(() => {
+                  console.log('🔧 About to calculate position for:', openColumnMenu);
+                  calculateEditorPosition(openColumnMenu);
+                }, 100);
               }, 0); 
             }}
           >
@@ -1683,7 +1694,15 @@ export default function Spreadsheet({ data, onDataChange, onColumnDelete, readOn
       )}
 
       {/* Portal-based Column Editor */}
-      {openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current && createPortal(
+      {(() => {
+        console.log('🔧 Portal render check:', { 
+          openColumnEditor, 
+          editorPosition, 
+          hasGridRef: !!gridRef.current,
+          isClient: typeof window !== 'undefined'
+        });
+        return openColumnEditor && editorPosition && typeof window !== 'undefined' && gridRef.current;
+      })() && createPortal(
         <div 
           className="col-editor absolute z-[2000] w-80 rounded-md border border-gray-200 bg-white shadow-lg p-3" 
           style={{
