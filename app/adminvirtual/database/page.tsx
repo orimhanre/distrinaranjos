@@ -1606,16 +1606,6 @@ function VirtualDatabasePageContent() {
                 )}
               </button>
               
-              {/* Simple Progress Indicator */}
-              {syncing && (
-                <div className="w-full bg-gray-100 rounded-lg p-3 mt-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                    <span>Sincronizando productos desde Airtable...</span>
-                  </div>
-                </div>
-              )}
-              
                   <button
                     onClick={syncWebPhotosFromAirtable}
                     disabled={syncingWebPhotos}
