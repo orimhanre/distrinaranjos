@@ -38,6 +38,11 @@ export async function GET(request: NextRequest) {
           const urlArray = Array.isArray(urls) ? urls : [urls];
           return urlArray.map(url => {
             if (typeof url === 'string' && url.startsWith('/')) {
+              // For iOS app (non-admin), filter out placeholder images so the app can handle "no image" case
+              if (!forAdmin && (url === '/placeholder-product.svg' || url === '/placeholder-image.png')) {
+                return null; // Will be filtered out
+              }
+              
               // Always convert to full URLs to avoid base path issues
               // Use the request's host for development, fallback for production
               const baseUrl = process.env.NEXTAUTH_URL || 
