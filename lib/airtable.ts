@@ -331,7 +331,7 @@ export class AirtableService {
       if (process.env.DEBUG_AIRTABLE_IMAGES === 'true') {
         console.log(`🖼️ Virtual environment: No images found for product ${product.id}, using placeholder`);
       }
-      product.imageURL = ['/placeholder-product.svg'];
+      product.imageURL = []; // No placeholder - let the app handle "no image" case
     } else if (this.currentEnvironment === 'virtual' && product.imageURL && Array.isArray(product.imageURL) && product.imageURL.length > 0) {
       // Log when images are found
       if (process.env.DEBUG_AIRTABLE_IMAGES === 'true') {

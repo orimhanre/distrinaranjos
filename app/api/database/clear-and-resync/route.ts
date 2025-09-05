@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
                 if (downloadedImagePaths.length > 0) {
                   product.imageURL = downloadedImagePaths;
                 } else {
-                  product.imageURL = ['/placeholder-product.svg'];
+                  product.imageURL = []; // No placeholder - let the app handle "no image" case
                 }
               } catch (imageError) {
                 console.error(`❌ Error downloading images for virtual product ${product.id}:`, imageError);
-                product.imageURL = ['/placeholder-product.svg'];
+                product.imageURL = []; // No placeholder - let the app handle "no image" case
               }
             } else if (context === 'regular') {
               // For regular environment, download images locally
@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
                 if (downloadedImagePaths.length > 0) {
                   product.imageURL = downloadedImagePaths;
                 } else {
-                  product.imageURL = ['/placeholder-product.svg'];
+                  product.imageURL = []; // No placeholder - let the app handle "no image" case
                 }
               } catch (imageError) {
                 console.error(`❌ Error downloading images for regular product ${product.id}:`, imageError);
-                product.imageURL = ['/placeholder-product.svg'];
+                product.imageURL = []; // No placeholder - let the app handle "no image" case
               }
             } else {
               // Fallback: use original Airtable URLs
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             }
           } else {
             // No images available, use placeholder
-            product.imageURL = ['/placeholder-product.svg'];
+            product.imageURL = []; // No placeholder - let the app handle "no image" case
           }
           
           // Save to SQLite database (use upsert to handle existing products)
