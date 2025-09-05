@@ -2,7 +2,6 @@ import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import { promisify } from 'util';
-import { v2 as cloudinary } from 'cloudinary';
 
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
@@ -25,59 +24,6 @@ export class VirtualPhotoDownloader {
   private static readonly TIMEOUT = 10000;
 
   /**
-   * Configure Cloudinary for virtual environment
-   */
-  private static configureCloudinary(): void {
-    const cloudName = process.env.VIRTUAL_CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.VIRTUAL_CLOUDINARY_API_KEY;
-    const apiSecret = process.env.VIRTUAL_CLOUDINARY_API_SECRET;
-
-    console.log(`☁️ Virtual Cloudinary config check:`, {
-      cloudName: cloudName ? 'Set' : 'Missing',
-      apiKey: apiKey ? 'Set' : 'Missing',
-      apiSecret: apiSecret ? 'Set' : 'Missing'
-    });
-
-    if (cloudName && apiKey && apiSecret) {
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-      });
-      console.log(`☁️ Virtual Cloudinary configured successfully`);
-    } else {
-      console.error(`❌ Missing Virtual Cloudinary credentials`);
-      throw new Error('Missing Virtual Cloudinary credentials');
-    }
-  }
-
-  /**
-   * Upload image to Cloudinary
-   */
-  private static async uploadToCloudinary(imageBuffer: Buffer, filename: string, type: 'products' | 'webphotos'): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: `virtual-${type}`,
-          public_id: filename.replace(/\.[^/.]+$/, ''), // Remove extension for public_id
-          resource_type: 'image',
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else if (result) {
-            resolve(result.secure_url);
-          } else {
-            reject(new Error('No result from Cloudinary'));
-          }
-        }
-      );
-
-      uploadStream.end(imageBuffer);
-    });
-  }
-
-  /**
    * Get the public URL for an image (works for both local and Railway)
    */
   private static getPublicImageUrl(filename: string, type: 'products' | 'webphotos'): string {
@@ -89,13 +35,6 @@ export class VirtualPhotoDownloader {
       // For local development, use localhost
       return `http://localhost:3000/api/images/${type}/${filename}`;
     }
-  }
-
-  /**
-   * Check if a URL is a Cloudinary URL
-   */
-  private static isCloudinaryUrl(url: string): boolean {
-    return url.includes('cloudinary.com') || url.includes('res.cloudinary.com');
   }
 
   /**
@@ -171,38 +110,19 @@ export class VirtualPhotoDownloader {
   }
 
   /**
-   * Download and save a single image locally or to Cloudinary
+   * Download and save a single image locally
    */
-  private static async downloadAndSaveImage(url: string, filename: string, dir: string, type: 'products' | 'webphotos'): Promise<DownloadedVirtualImage> {
+  private static async downloadAndSaveImage(url: string, filename: string, dir: string): Promise<DownloadedVirtualImage> {
     try {
+      await this.ensureDirectoryExists(dir);
+      
       console.log(`📥 Downloading image from: ${url}`);
       
       const imageData = await this.downloadImageData(url);
-      
-      if (process.env.NODE_ENV === 'production') {
-        // In production, upload to Cloudinary instead of local storage
-        try {
-          this.configureCloudinary();
-          const cloudinaryUrl = await this.uploadToCloudinary(imageData, filename, type);
-          console.log(`✅ Successfully uploaded to Cloudinary: ${filename}`);
-          
-          return {
-            originalUrl: url,
-            localPath: cloudinaryUrl, // Store Cloudinary URL as localPath
-            filename: filename,
-            success: true
-          };
-        } catch (cloudinaryError) {
-          console.error(`❌ Failed to upload to Cloudinary, falling back to local storage:`, cloudinaryError);
-          // Fall back to local storage if Cloudinary fails
-        }
-      }
-      
-      // Local storage fallback (for development or if Cloudinary fails)
-      await this.ensureDirectoryExists(dir);
       const filePath = path.join(dir, filename);
+      
       await writeFile(filePath, imageData);
-      console.log(`✅ Successfully saved locally: ${filename}`);
+      console.log(`✅ Successfully saved: ${filename}`);
       
       return {
         originalUrl: url,
@@ -239,7 +159,7 @@ export class VirtualPhotoDownloader {
       const url = typeof attachment === 'string' ? attachment : attachment.url;
       const filename = this.getOriginalFilename(attachment, i);
       
-              const result = await this.downloadAndSaveImage(url, filename, this.IMAGES_DIR, 'products');
+      const result = await this.downloadAndSaveImage(url, filename, this.IMAGES_DIR);
       results.push(result);
       
       console.log(`✅ Processed: ${filename}`);
@@ -249,14 +169,9 @@ export class VirtualPhotoDownloader {
     console.log(`🎉 Virtual product images download completed: ${successfulDownloads.length}/${attachments.length} successful`);
     
     // Return public URLs for successful downloads
-    return successfulDownloads.map(result => {
-      // If it's a Cloudinary URL, return it directly
-      if (this.isCloudinaryUrl(result.localPath)) {
-        return result.localPath;
-      }
-      // Otherwise, use the API endpoint
-      return this.getPublicImageUrl(result.filename, 'products');
-    });
+    return successfulDownloads.map(result => 
+      this.getPublicImageUrl(result.filename, 'products')
+    );
   }
 
   /**
@@ -285,7 +200,7 @@ export class VirtualPhotoDownloader {
         console.log(`🔍 Extracted filename from URL: ${filename}`);
       }
       
-      const result = await this.downloadAndSaveImage(url, filename, this.WEBPHOTOS_DIR, 'webphotos');
+      const result = await this.downloadAndSaveImage(url, filename, this.WEBPHOTOS_DIR);
       results.push(result);
       
       console.log(`✅ Processed: ${filename}`);
@@ -295,14 +210,9 @@ export class VirtualPhotoDownloader {
     console.log(`🎉 Virtual WebPhotos download completed: ${successfulDownloads.length}/${webPhotos.length} successful`);
     
     // Return public URLs for successful downloads
-    return successfulDownloads.map(result => {
-      // If it's a Cloudinary URL, return it directly
-      if (this.isCloudinaryUrl(result.localPath)) {
-        return result.localPath;
-      }
-      // Otherwise, use the API endpoint
-      return this.getPublicImageUrl(result.filename, 'webphotos');
-    });
+    return successfulDownloads.map(result => 
+      this.getPublicImageUrl(result.filename, 'webphotos')
+    );
   }
 
   /**

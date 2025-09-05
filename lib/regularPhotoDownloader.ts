@@ -15,10 +15,9 @@ export interface DownloadedRegularImage {
 }
 
 export class RegularPhotoDownloader {
-  // Use Railway-compatible paths
-  private static readonly IMAGES_DIR = process.env.NODE_ENV === 'production' 
-    ? path.join('/tmp', 'images', 'regular-products')  // Railway uses /tmp for writable storage
-    : path.join(process.cwd(), 'public', 'images', 'products');
+  // Use Railway's persistent volume (same as database)
+  private static readonly DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(process.cwd(), 'data');
+  private static readonly IMAGES_DIR = path.join(this.DATA_DIR, 'images', 'regular-products');
   
   private static readonly MAX_RETRIES = 3;
   private static readonly TIMEOUT = 10000;
