@@ -60,27 +60,6 @@ setTimeout(() => {
   }
 }, 5000); // Wait 5 seconds for server to be ready
 
-// Auto-sync empty databases (async, non-blocking)
-setTimeout(async () => {
-  try {
-    console.log('🔄 Running auto-sync check for empty databases...');
-    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/database/auto-sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log('✅ Auto-sync completed:', result.message);
-    } else {
-      console.log('⚠️ Auto-sync failed:', response.status, response.statusText);
-    }
-  } catch (e) {
-    console.warn('⚠️ autoSync startup guard error:', e?.message || e);
-  }
-}, 10000); // Wait 10 seconds for server to be ready
-
 // Start the server
 console.log('🌐 Starting web server...');
 require('./server.js');

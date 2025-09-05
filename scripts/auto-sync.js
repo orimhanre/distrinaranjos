@@ -33,11 +33,7 @@ async function autoSyncIfEmpty() {
         // Sync regular products
         if (regularCount === 0) {
           console.log('📥 Syncing regular products...');
-          const regularResponse = await fetch(`${baseUrl}/api/database/sync-airtable`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ context: 'regular' })
-          });
+          const regularResponse = await fetch(`${baseUrl}/api/database/sync-airtable`);
           if (regularResponse.ok) {
             console.log('✅ Regular products synced');
           } else {
@@ -48,11 +44,7 @@ async function autoSyncIfEmpty() {
         // Sync virtual products
         if (virtualCount === 0) {
           console.log('📥 Syncing virtual products...');
-          const virtualResponse = await fetch(`${baseUrl}/api/database/sync-airtable`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ context: 'virtual' })
-          });
+          const virtualResponse = await fetch(`${baseUrl}/api/database/virtual-products`);
           if (virtualResponse.ok) {
             console.log('✅ Virtual products synced');
           } else {
@@ -62,11 +54,7 @@ async function autoSyncIfEmpty() {
         
         // Sync web photos
         console.log('📸 Syncing web photos...');
-        const webPhotosResponse = await fetch(`${baseUrl}/api/database/sync-webphotos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context: 'virtual' })
-        });
+        const webPhotosResponse = await fetch(`${baseUrl}/api/database/sync-webphotos`);
         if (webPhotosResponse.ok) {
           console.log('✅ Web photos synced');
         } else {

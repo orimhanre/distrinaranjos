@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  let context = 'virtual';
+  let context = 'regular';
   
   try {
     console.log('🗑️ [Railway] Starting database clear...');

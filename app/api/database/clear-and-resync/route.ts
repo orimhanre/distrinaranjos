@@ -6,7 +6,7 @@ import { RegularPhotoDownloader } from '../../../../lib/regularPhotoDownloader';
 
 export async function POST(request: NextRequest) {
   try {
-    const { context = 'virtual' } = await request.json();
+    const { context = 'regular' } = await request.json();
     
     console.log(`🔄 Starting clear and resync for ${context} environment...`);
     

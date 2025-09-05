@@ -74,36 +74,6 @@ export function initDatabase(environment: 'regular' | 'virtual' = 'regular'): Da
         virtualDb = new Database(dbPath);
         createTables(virtualDb, 'virtual');
         console.log('✅ Virtual database initialized successfully');
-        
-        // Auto-sync if database is empty (only in production)
-        if (process.env.NODE_ENV === 'production') {
-          try {
-            const count = virtualDb.prepare('SELECT COUNT(*) as count FROM products').get().count;
-            if (count === 0) {
-              console.log('🔄 Virtual database is empty, triggering auto-sync...');
-              // Trigger sync asynchronously without blocking
-              setTimeout(async () => {
-                try {
-                  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || 'http://localhost:3000';
-                  const response = await fetch(`${baseUrl}/api/database/sync-airtable`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ context: 'virtual' })
-                  });
-                  if (response.ok) {
-                    console.log('✅ Virtual database auto-sync completed');
-                  } else {
-                    console.log('⚠️ Virtual database auto-sync failed');
-                  }
-                } catch (error) {
-                  console.log('⚠️ Virtual database auto-sync error:', error);
-                }
-              }, 5000); // Wait 5 seconds for server to be ready
-            }
-          } catch (error) {
-            console.log('⚠️ Error checking virtual database count:', error);
-          }
-        }
       } catch (error) {
         console.error('❌ Error initializing virtual database:', error);
         virtualDb = null;
