@@ -5,31 +5,37 @@ import { join } from 'path';
 // Function to load environment variables from .env.virtual.local or process.env
 function loadVirtualEnv() {
   try {
-    // First, try to load from process.env (for Railway deployment)
     const envVars: { [key: string]: string } = {
-      VIRTUAL_SHIPPING_FREE_THRESHOLD: process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '',
-      VIRTUAL_SHIPPING_COST: process.env.VIRTUAL_SHIPPING_COST || '',
-      VIRTUAL_SHIPPING_ESTIMATED_DAYS: process.env.VIRTUAL_SHIPPING_ESTIMATED_DAYS || '',
+      VIRTUAL_SHIPPING_FREE_THRESHOLD: '',
+      VIRTUAL_SHIPPING_COST: '',
+      VIRTUAL_SHIPPING_ESTIMATED_DAYS: '',
     };
 
-    // If we have environment variables from process.env, use them
-    if (envVars.VIRTUAL_SHIPPING_FREE_THRESHOLD || envVars.VIRTUAL_SHIPPING_COST) {
-      console.log('✅ Using environment variables from process.env (Railway deployment)');
-      return envVars;
+    // Always try to read from .env.virtual.local file first (for real-time updates)
+    const envPath = join(process.cwd(), '.env.virtual.local');
+    try {
+      const envContent = readFileSync(envPath, 'utf8');
+      
+      envContent.split('\n').forEach(line => {
+        const [key, ...valueParts] = line.split('=');
+        if (key && valueParts.length > 0) {
+          envVars[key.trim()] = valueParts.join('=').trim();
+        }
+      });
+      
+      console.log('✅ Loaded virtual environment variables from .env.virtual.local file');
+    } catch (fileError) {
+      console.log('⚠️ Could not read .env.virtual.local, falling back to process.env');
     }
 
-    // Fallback to local file for development
-    const envPath = join(process.cwd(), '.env.virtual.local');
-    const envContent = readFileSync(envPath, 'utf8');
+    // Fallback to process.env if file values are empty (for Railway deployment)
+    if (!envVars.VIRTUAL_SHIPPING_FREE_THRESHOLD && !envVars.VIRTUAL_SHIPPING_COST) {
+      envVars.VIRTUAL_SHIPPING_FREE_THRESHOLD = process.env.VIRTUAL_SHIPPING_FREE_THRESHOLD || '';
+      envVars.VIRTUAL_SHIPPING_COST = process.env.VIRTUAL_SHIPPING_COST || '';
+      envVars.VIRTUAL_SHIPPING_ESTIMATED_DAYS = process.env.VIRTUAL_SHIPPING_ESTIMATED_DAYS || '';
+      console.log('✅ Using environment variables from process.env (Railway deployment)');
+    }
     
-    envContent.split('\n').forEach(line => {
-      const [key, ...valueParts] = line.split('=');
-      if (key && valueParts.length > 0) {
-        envVars[key.trim()] = valueParts.join('=').trim();
-      }
-    });
-    
-    // // console.log('✅ Loaded virtual environment variables from local file (development):', Object.keys(envVars));
     return envVars;
   } catch (error) {
     console.error('Error loading virtual environment:', error);
