@@ -1035,6 +1035,42 @@ export async function POST(request: NextRequest) {
       // Email will be sent after bank transfer confirmation
       console.log('📧 Virtual order - skipping email (will be sent after bank transfer confirmation)');
       
+      // Send push notification immediately for virtual orders
+      try {
+        console.log('📱 Sending push notification for virtual order...');
+        
+        const pushNotificationData = {
+          clientName: client.name || '',
+          clientSurname: client.surname || '',
+          products: cleanedCartItems?.map((item: any) => ({
+            name: item.product?.name || 'Producto',
+            quantity: item.quantity || 1
+          })) || [],
+          totalAmount: finalTotal,
+          invoiceNumber: invoiceNumber
+        };
+
+        // Send push notification without waiting for response (non-blocking)
+        fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos-production.up.railway.app'}/api/push-notifications/send-order-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(pushNotificationData),
+        }).then(async (response) => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Push notification failed:', errorText);
+          } else {
+            console.log('✅ Push notification sent successfully');
+          }
+        }).catch((error) => {
+          console.error('❌ Error sending push notification:', error);
+        });
+        
+      } catch (pushError) {
+        console.error('❌ Error preparing push notification:', pushError);
+      }
 
       
       return NextResponse.json({
