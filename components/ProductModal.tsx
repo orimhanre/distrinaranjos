@@ -204,6 +204,28 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
         cartPrice = originalPrice * 0.7; // 30% discount
       }
       
+      // Convert raw image URL to proper API endpoint
+      const getProcessedImageUrl = (rawUrl: string): string => {
+        if (!rawUrl || rawUrl === '/placeholder-product.svg') {
+          return '/placeholder-product.svg';
+        }
+        
+        // If it's already an API endpoint, return as is
+        if (rawUrl.startsWith('/api/images/')) {
+          return rawUrl;
+        }
+        
+        // Extract filename from URL
+        const filename = rawUrl.split('/').pop() || rawUrl;
+        
+        // Determine environment and return appropriate API endpoint
+        // For virtual environment, use virtual API endpoint
+        return `/api/images/virtual/products/${filename}`;
+      };
+
+      const rawImageUrl = Array.isArray(product.imageURL) ? product.imageURL[0] : product.imageURL || '';
+      const processedImageUrl = getProcessedImageUrl(rawImageUrl);
+
       const cartItem = {
         id: product.id + (selectedColor ? `-${selectedColor}` : ''),
         name: product.name,
@@ -212,7 +234,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
         originalPrice: originalPrice,
         isPromotional: hasPromotionalPricing || false,
         quantity,
-                    image: Array.isArray(product.imageURL) ? product.imageURL[0] : product.imageURL || '',
+        image: processedImageUrl,
         category: product.category || '', // Preserve all categories (array or string)
         subCategory: (product as any).subCategory || '',
         brand: product.brand || '',

@@ -128,10 +128,29 @@ export default function Distri2Form() {
     
     setFlyingTargetPosition(targetPosition);
     
+    // Convert raw image URL to proper API endpoint
+    const getProcessedImageUrl = (rawUrl: string): string => {
+      if (!rawUrl || rawUrl === '/placeholder-product.svg') {
+        return '/placeholder-product.svg';
+      }
+      
+      // If it's already an API endpoint, return as is
+      if (rawUrl.startsWith('/api/images/')) {
+        return rawUrl;
+      }
+      
+      // Extract filename from URL
+      const filename = rawUrl.split('/').pop() || rawUrl;
+      
+      // For regular environment, use regular API endpoint
+      return `/api/images/regular/${filename}`;
+    };
+
     // Get product image
-    const productImage = Array.isArray(product.imageURL) && product.imageURL.length > 0 
+    const rawImageUrl = Array.isArray(product.imageURL) && product.imageURL.length > 0 
       ? product.imageURL[0] 
       : '/placeholder-product.svg';
+    const productImage = getProcessedImageUrl(rawImageUrl);
     
     setFlyingImageUrl(productImage);
     setShowFlyingAnimation(true);
