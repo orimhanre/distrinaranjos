@@ -9,7 +9,7 @@ interface EnvVariable {
   key: string;
   value: string;
   description: string;
-  category: 'resend' | 'cloudinary' | 'firebase' | 'airtable';
+  category: 'resend' | 'cloudinary' | 'firebase' | 'airtable' | 'google';
   isSecret: boolean;
 }
 
@@ -128,6 +128,9 @@ export default function AjustesPage() {
           { key: 'NEXT_PUBLIC_AIRTABLE_API_KEY', value: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY || '', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
           { key: 'NEXT_PUBLIC_AIRTABLE_BASE_ID', value: process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
           { key: 'AIRTABLE_ACCOUNT_EMAIL', value: process.env.AIRTABLE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Airtable', category: 'airtable', isSecret: false },
+          
+          // Google Maps
+          { key: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', value: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '', description: 'API Key de Google Maps para mostrar ubicación en contacto', category: 'google', isSecret: true },
         ];
 
         setEnvVariables(variables);
@@ -161,6 +164,9 @@ export default function AjustesPage() {
         { key: 'NEXT_PUBLIC_AIRTABLE_API_KEY', value: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY || '', description: 'API Key (Personal Access Token) de Airtable', category: 'airtable', isSecret: true },
         { key: 'NEXT_PUBLIC_AIRTABLE_BASE_ID', value: process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '', description: 'ID de la base de datos de Airtable', category: 'airtable', isSecret: false },
         { key: 'AIRTABLE_ACCOUNT_EMAIL', value: process.env.AIRTABLE_ACCOUNT_EMAIL || '', description: 'Email de la cuenta de Airtable', category: 'airtable', isSecret: false },
+        
+        // Google Maps
+        { key: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', value: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '', description: 'API Key de Google Maps para mostrar ubicación en contacto', category: 'google', isSecret: true },
       ];
 
       setEnvVariables(variables);

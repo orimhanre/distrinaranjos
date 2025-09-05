@@ -172,6 +172,9 @@ export async function GET(request: NextRequest) {
       NEXT_PUBLIC_AIRTABLE_API_KEY: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY || '',
       NEXT_PUBLIC_AIRTABLE_BASE_ID: process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '',
       AIRTABLE_ACCOUNT_EMAIL: process.env.AIRTABLE_ACCOUNT_EMAIL || '',
+      
+      // Google Maps
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     };
 
     return NextResponse.json({ envVars: responseVars });
