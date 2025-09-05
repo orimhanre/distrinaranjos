@@ -32,7 +32,7 @@ export class VirtualPhotoDownloader {
    */
   private static getPublicImageUrl(filename: string, type: 'products' | 'webphotos'): string {
     if (process.env.NODE_ENV === 'production') {
-      // For production, use the current domain
+      // For production, use the custom domain
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://distrinaranjos.co';
       return `${baseUrl}/api/images/${type}/${filename}`;
     } else {
