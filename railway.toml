@@ -26,5 +26,4 @@ NODE_ENV = "production"
 FORCE_HTTPS = "true"
 RAILWAY_FORCE_HTTPS = "true"
 RAILWAY_RUN_UID = "0"
-RAILWAY_VOLUME_MOUNT_PATH = "/app/data"
 # Railway deployment configuration for distrinaranjos
