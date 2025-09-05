@@ -201,7 +201,15 @@ export async function POST(request: NextRequest) {
     // Update sync timestamp for virtual environment
     if (context === 'virtual') {
       try {
-        const timestamp = new Date().toLocaleString('es-ES');
+        const timestamp = new Date().toLocaleString('es-CO', {
+          timeZone: 'America/Bogota',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
         await fetch(`https://distrinaranjos.co/api/admin/virtual-sync-timestamps`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
