@@ -63,21 +63,60 @@ interface OrderNotificationPayload {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    console.log('📱 Push notification request received');
+    // Load virtual environment variables first
+    const virtualEnv = loadVirtualEnv();
     
-    // Check if required Firebase environment variables are available (use regular Firebase like test notifications)
-    if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 
-        !process.env.FIREBASE_CLIENT_EMAIL ||
-        !process.env.FIREBASE_PRIVATE_KEY) {
-      console.log('⚠️ Firebase environment variables not available, skipping operation');
+    // Check if required virtual Firebase environment variables are available
+    if (!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID || 
+        !virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL ||
+        !virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY) {
+      console.log('⚠️ Virtual Firebase environment variables not available, skipping operation');
       return NextResponse.json({ 
         success: false, 
-        error: 'Firebase not configured' 
+        error: 'Virtual Firebase not configured' 
       }, { status: 503 });
     }
 
-    console.log('🔥 Using regular Firebase configuration for push notifications...');
+    // Only import Firebase when we actually need it
+    const { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, setDoc, deleteDoc, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db } = await import('../../../../lib/firebase');
+  try {
+    console.log('📱 Push notification request received');
+    
+    console.log('🔍 Virtual env keys loaded:', Object.keys(virtualEnv).filter(key => key.includes('FIREBASE')));
+    
+    // Initialize Firebase Admin - always initialize for this API
+    console.log('🔥 Initializing Firebase Admin...');
+    
+    if (!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID || !virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL || !virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY) {
+      console.error('❌ Missing Firebase Admin environment variables:', {
+        projectId: !!virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID,
+        clientEmail: !!virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL,
+        privateKey: !!virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY
+      });
+      throw new Error('Missing required Firebase Admin environment variables');
+    }
+    
+    console.log('✅ Firebase Admin credentials found, initializing...');
+    
+    // Delete any existing apps to avoid conflicts
+    getApps().forEach(app => {
+      try {
+        // app.delete(); // Commented out to fix TypeScript error
+      } catch (error) {
+        console.log('⚠️ Error deleting existing app:', error);
+      }
+    });
+    
+    // Initialize new app
+    const app = initializeApp({
+      credential: cert({
+        projectId: virtualEnv.VIRTUAL_FIREBASE_PROJECT_ID,
+        clientEmail: virtualEnv.VIRTUAL_FIREBASE_CLIENT_EMAIL,
+        privateKey: virtualEnv.VIRTUAL_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }),
+    });
+    console.log('✅ Firebase Admin initialized successfully with app:', app.name);
 
     const orderData: OrderNotificationPayload = await request.json();
     const { clientName, clientSurname, products, totalAmount, invoiceNumber } = orderData;
