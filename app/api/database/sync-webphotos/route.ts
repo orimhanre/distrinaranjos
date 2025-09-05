@@ -272,6 +272,21 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ Failed to update sync timestamp:', error);
     }
 
+    // Update virtual sync timestamp for virtual environment
+    if (context === 'virtual') {
+      try {
+        const timestamp = new Date().toLocaleString('es-ES');
+        await fetch(`${process.env.RAILWAY_PUBLIC_DOMAIN || 'http://localhost:3000'}/api/admin/virtual-sync-timestamps`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'webphotos', timestamp })
+        });
+        console.log('✅ Updated virtual WebPhotos sync timestamp:', timestamp);
+      } catch (timestampError) {
+        console.warn('⚠️ Failed to update virtual sync timestamp:', timestampError);
+      }
+    }
+
     // Add cache busting headers to response
     const response = NextResponse.json({
       success: true,

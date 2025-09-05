@@ -198,6 +198,21 @@ export async function POST(request: NextRequest) {
     // Final summary
     console.log(`✅ Sync completed: ${syncedCount} products synced`);
     
+    // Update sync timestamp for virtual environment
+    if (context === 'virtual') {
+      try {
+        const timestamp = new Date().toLocaleString('es-ES');
+        await fetch(`${process.env.RAILWAY_PUBLIC_DOMAIN || 'http://localhost:3000'}/api/admin/virtual-sync-timestamps`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'products', timestamp })
+        });
+        console.log('✅ Updated virtual product sync timestamp:', timestamp);
+      } catch (timestampError) {
+        console.warn('⚠️ Failed to update virtual sync timestamp:', timestampError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: `Sincronización completada: ${syncedCount} productos sincronizados`,
