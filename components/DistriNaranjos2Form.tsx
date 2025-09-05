@@ -359,8 +359,8 @@ export default function Distri2Form() {
   };
 
   const totalPrice = cartItems.reduce((total, item) => {
-    // Distri1 always uses price1
-    const price = item.product.price1 ?? 0;
+    // Distri2 always uses price2
+    const price = item.product.price2 ?? 0;
     return total + (price * item.quantity);
   }, 0);
 
@@ -497,6 +497,7 @@ export default function Distri2Form() {
               onGeneratePDF={handleGeneratePDF}
               loading={loading}
               totalColor="text-green-600"
+              environment="regular"
             />
           </div>
         )}
@@ -633,8 +634,8 @@ export default function Distri2Form() {
                       return a.product.name.localeCompare(b.product.name);
                     })
                                         .map((item) => {
-                      // Distri1 always uses price1
-                      const price = item.product.price1 ?? 0;
+                      // Distri2 always uses price2
+                      const price = item.product.price2 ?? 0;
                     
                     const getImageUrl = () => {
                       // Helper function to validate URLs

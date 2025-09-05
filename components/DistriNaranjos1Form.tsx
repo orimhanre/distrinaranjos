@@ -495,6 +495,7 @@ export default function Distri1Form() {
               onGeneratePDF={handleGeneratePDF}
               loading={loading}
               totalColor="text-green-600"
+              environment="regular"
             />
           </div>
         )}

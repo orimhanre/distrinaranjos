@@ -204,6 +204,35 @@ export default function OrderSummary({
                               (item.selectedPrice === 'price1' ? 'text-green-600' : 'text-blue-600');
             // Ensure we use local photos only
             const getImageUrl = () => {
+              // Helper function to validate URLs (same as ProductCatalog)
+              const isValidLocalUrl = (url: any): boolean => {
+                if (!url || typeof url !== 'string') return false;
+                const cleanUrl = url.trim();
+                if (cleanUrl === '') return false;
+                
+                // Accept local paths starting with /
+                if (cleanUrl.startsWith('/')) return true;
+                
+                // Accept local API endpoints for regular environment
+                if (cleanUrl.includes('/api/images/regular/')) return true;
+                
+                // Accept local API endpoints for virtual environment
+                if (cleanUrl.includes('/api/images/virtual/')) return true;
+                
+                // Accept Cloudinary URLs (for regular environment)
+                if (cleanUrl.includes('res.cloudinary.com')) return true;
+                
+                // Accept Airtable URLs (for both virtual and regular environments)
+                if (cleanUrl.includes('dl.airtable.com')) return true;
+                
+                // Reject other external URLs
+                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+                  return false;
+                }
+                
+                return false;
+              };
+
               // Handle imageURL property
               const imageData = (item.product as any).imageURL;
               
@@ -217,21 +246,9 @@ export default function OrderSummary({
                 }
                 
                 // Handle different URL formats
-                if (imageUrl && typeof imageUrl === 'string') {
-                  // If it's already a full URL (starts with http/https), use it as is
-                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                    return imageUrl;
-                  }
-                  
-                  // If it's a relative path that doesn't start with /images/products/, add the prefix
-                  if (!imageUrl.startsWith('/images/products/')) {
-                    return `/images/products/${imageUrl}`;
-                  }
-                  
-                  // If it's already a relative path starting with /images/, use it as is
-                  if (imageUrl.startsWith('/images/')) {
-                    return imageUrl;
-                  }
+                if (imageUrl && typeof imageUrl === 'string' && isValidLocalUrl(imageUrl)) {
+                  // If it's already a valid local URL, use it as is
+                  return imageUrl;
                 }
               }
               
