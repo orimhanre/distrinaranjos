@@ -3,26 +3,36 @@ import { NextRequest, NextResponse } from 'next/server';
 // GET /api/server-info - Get server information for dynamic port discovery
 export async function GET(request: NextRequest) {
   try {
-    // Get the port from the request headers or environment
+    // Get the host from the request headers
     const host = request.headers.get('host') || '';
-    const port = host.includes(':') ? host.split(':')[1] : '3001';
     
     // Get the protocol (http/https)
-    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
     
-    // Use a fixed IP address for better compatibility with iOS app
-    // This prevents redirect loops and ensures consistent connectivity
-    const ip = '192.168.1.29'; // Your computer's IP address
+    // In production, use the actual domain
+    // In development, use local IP for iOS app compatibility
+    let baseUrl: string;
+    let port: number;
+    let ip: string;
     
-    // Construct the base URL
-    const baseUrl = `${protocol}://${ip}:${port}`;
+    if (process.env.NODE_ENV === 'production') {
+      // Production: use the actual domain
+      baseUrl = 'https://distrinaranjos.co';
+      port = 443; // HTTPS port
+      ip = 'distrinaranjos.co';
+    } else {
+      // Development: use local IP for iOS app compatibility
+      port = 3001;
+      ip = '192.168.1.29';
+      baseUrl = `http://${ip}:${port}`;
+    }
     
-    console.log(`🌐 Server info request - Host: ${host}, Port: ${port}, IP: ${ip}, BaseURL: ${baseUrl}`);
+    console.log(`🌐 Server info request - Host: ${host}, Port: ${port}, IP: ${ip}, BaseURL: ${baseUrl}, Environment: ${process.env.NODE_ENV}`);
     
     return NextResponse.json({
       success: true,
       serverInfo: {
-        port: parseInt(port),
+        port,
         protocol,
         ip,
         baseUrl,
