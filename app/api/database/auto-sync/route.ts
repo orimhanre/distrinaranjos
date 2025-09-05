@@ -1,18 +1,20 @@
-#!/usr/bin/env node
+import { NextRequest, NextResponse } from 'next/server';
+import { initDatabase } from '@/lib/database';
 
-const { initDatabase } = require('../lib/database');
-
-async function autoSyncIfEmpty() {
-  console.log('🔄 Checking if databases need auto-sync...');
-  
+export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Auto-sync check for empty databases...');
+    
     // Initialize databases
     const regularDb = initDatabase('regular');
     const virtualDb = initDatabase('virtual');
     
     if (!regularDb || !virtualDb) {
       console.log('⚠️ Databases not available, skipping auto-sync');
-      return;
+      return NextResponse.json({
+        success: false,
+        error: 'Databases not available'
+      });
     }
     
     // Check if databases are empty
@@ -22,12 +24,17 @@ async function autoSyncIfEmpty() {
     console.log(`📊 Regular database: ${regularCount} products`);
     console.log(`📊 Virtual database: ${virtualCount} products`);
     
+    const results = {
+      regular: { count: regularCount, needsSync: regularCount === 0 },
+      virtual: { count: virtualCount, needsSync: virtualCount === 0 }
+    };
+    
     // If either database is empty, trigger sync
     if (regularCount === 0 || virtualCount === 0) {
       console.log('🔄 Databases are empty, triggering auto-sync...');
       
-      // Call the sync API endpoints
       const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN || 'http://localhost:3000';
+      const syncResults = [];
       
       try {
         // Sync regular products
@@ -40,8 +47,10 @@ async function autoSyncIfEmpty() {
           });
           if (regularResponse.ok) {
             console.log('✅ Regular products synced');
+            syncResults.push('Regular products synced');
           } else {
             console.log('⚠️ Regular products sync failed');
+            syncResults.push('Regular products sync failed');
           }
         }
         
@@ -55,8 +64,10 @@ async function autoSyncIfEmpty() {
           });
           if (virtualResponse.ok) {
             console.log('✅ Virtual products synced');
+            syncResults.push('Virtual products synced');
           } else {
             console.log('⚠️ Virtual products sync failed');
+            syncResults.push('Virtual products sync failed');
           }
         }
         
@@ -69,27 +80,45 @@ async function autoSyncIfEmpty() {
         });
         if (webPhotosResponse.ok) {
           console.log('✅ Web photos synced');
+          syncResults.push('Web photos synced');
         } else {
           console.log('⚠️ Web photos sync failed');
+          syncResults.push('Web photos sync failed');
         }
         
         console.log('🎉 Auto-sync completed');
         
+        return NextResponse.json({
+          success: true,
+          message: 'Auto-sync completed',
+          results,
+          syncResults
+        });
+        
       } catch (syncError) {
-        console.error('❌ Auto-sync failed:', syncError.message);
+        console.error('❌ Auto-sync failed:', syncError);
+        return NextResponse.json({
+          success: false,
+          error: 'Auto-sync failed',
+          details: syncError instanceof Error ? syncError.message : 'Unknown error',
+          results
+        });
       }
     } else {
       console.log('✅ Databases already have data, no sync needed');
+      return NextResponse.json({
+        success: true,
+        message: 'Databases already have data, no sync needed',
+        results
+      });
     }
     
   } catch (error) {
     console.error('❌ Auto-sync error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Auto-sync error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
-
-// Run if called directly
-if (require.main === module) {
-  autoSyncIfEmpty();
-}
-
-module.exports = { autoSyncIfEmpty };
