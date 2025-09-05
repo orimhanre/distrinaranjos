@@ -17,8 +17,9 @@ export async function GET(
     // Determine the directory based on environment
     let imageDir: string;
     if (process.env.NODE_ENV === 'production') {
-      // For production (Railway), use /tmp
-      imageDir = path.join('/tmp', 'images', `virtual-${type}`);
+      // For production (Railway), use persistent volume (same as database)
+      const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(process.cwd(), 'data');
+      imageDir = path.join(dataDir, 'images', `virtual-${type}`);
     } else {
       // For local development, use public directory
       imageDir = path.join(process.cwd(), 'public', 'images', `virtual-${type}`);

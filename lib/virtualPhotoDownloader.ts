@@ -16,14 +16,10 @@ export interface DownloadedVirtualImage {
 }
 
 export class VirtualPhotoDownloader {
-  // Use Railway-compatible paths
-  private static readonly IMAGES_DIR = process.env.NODE_ENV === 'production' 
-    ? path.join('/tmp', 'images', 'virtual-products')  // Railway uses /tmp for writable storage
-    : path.join(process.cwd(), 'public', 'images', 'virtual-products');
-  
-  private static readonly WEBPHOTOS_DIR = process.env.NODE_ENV === 'production'
-    ? path.join('/tmp', 'images', 'virtual-webphotos')  // Railway uses /tmp for writable storage
-    : path.join(process.cwd(), 'public', 'images', 'virtual-webphotos');
+  // Use Railway's persistent volume (same as database)
+  private static readonly DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(process.cwd(), 'data');
+  private static readonly IMAGES_DIR = path.join(this.DATA_DIR, 'images', 'virtual-products');
+  private static readonly WEBPHOTOS_DIR = path.join(this.DATA_DIR, 'images', 'virtual-webphotos');
   
   private static readonly MAX_RETRIES = 3;
   private static readonly TIMEOUT = 10000;
