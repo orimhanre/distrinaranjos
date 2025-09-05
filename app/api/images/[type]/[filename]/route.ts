@@ -14,12 +14,25 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid image type' }, { status: 400 });
     }
     
-    // Determine the directory based on environment
+    // Determine the directory based on environment and type
     let imageDir: string;
     if (process.env.NODE_ENV === 'production') {
       // For production (Railway), use persistent volume (same as database)
       const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(process.cwd(), 'data');
-      imageDir = path.join(dataDir, 'images', `virtual-${type}`);
+      
+      // Map API types to actual directory names
+      if (type === 'products') {
+        // For products, we need to determine if it's virtual or regular
+        // Since virtual environment uses /api/images/products/ and regular uses /api/images/regular/
+        // We'll check the URL to determine the environment
+        const isVirtualRequest = request.url.includes('/api/images/products/');
+        imageDir = path.join(dataDir, 'images', isVirtualRequest ? 'virtual-products' : 'regular-products');
+      } else if (type === 'webphotos') {
+        // WebPhotos are only used in virtual environment
+        imageDir = path.join(dataDir, 'images', 'virtual-webphotos');
+      } else {
+        imageDir = path.join(dataDir, 'images', `virtual-${type}`);
+      }
     } else {
       // For local development, use public directory
       imageDir = path.join(process.cwd(), 'public', 'images', `virtual-${type}`);
