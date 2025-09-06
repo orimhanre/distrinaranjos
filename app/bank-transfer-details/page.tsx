@@ -91,7 +91,7 @@ export default function BankTransferDetailsPage() {
       // Check if clipboard API is available
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
-        setCopyNotification(`${fieldName} copiado al portapapeles`);
+        setCopyNotification('Copiado');
         setTimeout(() => setCopyNotification(''), 2000);
       } else {
         // Fallback method for older browsers
@@ -106,7 +106,7 @@ export default function BankTransferDetailsPage() {
         
         try {
           document.execCommand('copy');
-          setCopyNotification(`${fieldName} copiado al portapapeles`);
+          setCopyNotification('Copiado');
           setTimeout(() => setCopyNotification(''), 2000);
         } catch (fallbackErr) {
           console.error('Fallback copy failed:', fallbackErr);
@@ -211,6 +211,28 @@ export default function BankTransferDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-10">
+      <style jsx>{`
+        .no-underline {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          text-decoration-line: none !important;
+        }
+        .no-underline:hover {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          text-decoration-line: none !important;
+        }
+        .no-underline:focus {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          text-decoration-line: none !important;
+        }
+        .no-underline:active {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          text-decoration-line: none !important;
+        }
+      `}</style>
       {/* Copy Notification */}
       {copyNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
@@ -259,7 +281,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.accountHolder, 'Titular')}
                 style={{ textDecoration: 'none' }}
               >
@@ -280,7 +302,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.bankName, 'Banco')}
                 style={{ textDecoration: 'none' }}
               >
@@ -301,9 +323,9 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.accountNumber, 'Número de cuenta')}
-                style={{ textDecoration: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
               >
                 {details.accountNumber}
               </div>
@@ -322,7 +344,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.accountType, 'Tipo de cuenta')}
                 style={{ textDecoration: 'none' }}
               >
@@ -343,9 +365,9 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.phoneNumber, 'Teléfono')}
-                style={{ textDecoration: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
               >
                 {details.phoneNumber}
               </div>
@@ -364,9 +386,9 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => handleCopyToClipboard(details.email, 'Email')}
-                style={{ textDecoration: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
               >
                 {details.email}
               </div>
