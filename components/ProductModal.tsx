@@ -886,12 +886,12 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                             <button
                               data-add-to-cart-button
                               data-product-id={product.id}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                              className={`w-12 h-12 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center ${
                                 isOutOfStock 
                                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                                   : isDisabled 
                                     ? 'bg-blue-600 text-white opacity-50 cursor-not-allowed' 
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 shadow-md'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 shadow-lg'
                               }`}
                               disabled={isDisabled}
                               onClick={(e) => {
@@ -908,7 +908,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                                 }
                               }}
                             >
-                              {isOutOfStock ? 'Agotado' : 'Agregar'}
+                              {isOutOfStock ? '❌' : '➕'}
                             </button>
                           );
                         })()}
