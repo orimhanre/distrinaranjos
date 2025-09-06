@@ -886,7 +886,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                             <button
                               data-add-to-cart-button
                               data-product-id={product.id}
-                              className={`w-12 h-12 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center ${
+                              className={`w-16 h-16 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center ${
                                 isOutOfStock 
                                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                                   : isDisabled 
@@ -908,7 +908,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                                 }
                               }}
                             >
-                              {isOutOfStock ? '❌' : '➕'}
+                              {isOutOfStock ? 'Agotado' : 'Agregar'}
                             </button>
                           );
                         })()}
