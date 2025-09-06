@@ -202,63 +202,39 @@ export default function OrderSummary({
                           (item.selectedPrice === 'price1' ? (item.product.price1 || 0) : (item.product.price2 || 0));
             const priceColor = item.selectedPrice === 'price' ? 'text-gray-600' : 
                               (item.selectedPrice === 'price1' ? 'text-green-600' : 'text-blue-600');
-            // Ensure we use local photos only
-            const getImageUrl = () => {
-              // Helper function to validate URLs (same as ProductCatalog)
-              const isValidLocalUrl = (url: any): boolean => {
-                if (!url || typeof url !== 'string') return false;
-                const cleanUrl = url.trim();
-                if (cleanUrl === '') return false;
-                
-                // Accept local paths starting with /
-                if (cleanUrl.startsWith('/')) return true;
-                
-                // Accept local API endpoints for regular environment
-                if (cleanUrl.includes('/api/images/regular/')) return true;
-                
-                // Accept local API endpoints for virtual environment
-                if (cleanUrl.includes('/api/images/virtual/')) return true;
-                
-                // Accept Cloudinary URLs (for regular environment)
-                if (cleanUrl.includes('res.cloudinary.com')) return true;
-                
-                // Accept Airtable URLs (for both virtual and regular environments)
-                if (cleanUrl.includes('dl.airtable.com')) return true;
-                
-                // Reject other external URLs
-                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-                  return false;
-                }
-                
-                return false;
-              };
-
-              // Handle imageURL property
-              const imageData = (item.product as any).imageURL;
-              
-              if (imageData) {
-                let imageUrl = '';
-                
-                if (Array.isArray(imageData)) {
-                  imageUrl = imageData[0] || '';
-                } else {
-                  imageUrl = String(imageData || '');
-                }
-                
-                // Handle different URL formats
-                if (imageUrl && typeof imageUrl === 'string' && isValidLocalUrl(imageUrl)) {
-                  // If it's already a valid local URL, use it as is
-                  return imageUrl;
-                }
+            // Helper function to process image URLs (same logic as cart and checkout pages)
+            const getProcessedImageUrl = (rawUrl: string): string => {
+              if (!rawUrl || rawUrl === '/placeholder-product.svg') {
+                return '/placeholder-product.svg';
               }
               
-              return '/placeholder-product.svg';
+              // If it's already an API endpoint, return as is
+              if (rawUrl.startsWith('/api/images/')) {
+                return rawUrl;
+              }
+              
+              // If it's already a valid URL (Cloudinary, Airtable, etc.), return as is
+              if (rawUrl.includes('res.cloudinary.com') || rawUrl.includes('dl.airtable.com')) {
+                return rawUrl;
+              }
+              
+              // Extract filename from URL
+              const filename = rawUrl.split('/').pop() || rawUrl;
+              
+              // Determine environment and return appropriate API endpoint
+              // For virtual environment, use virtual API endpoint
+              return `/api/images/virtual/products/${filename}`;
+            };
+
+            // Use the processed image URL from the cart item
+            const getImageUrl = () => {
+              return getProcessedImageUrl(item.image || '/placeholder-product.svg');
             };
             return (
               <div key={index} className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
                 <img
                   src={getImageUrl()}
-                  alt={item.product.name}
+                  alt={item.name}
                   width={56}
                   height={56}
                   className="w-14 h-14 object-cover rounded-lg border border-gray-200 bg-white"

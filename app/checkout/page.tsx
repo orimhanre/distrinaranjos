@@ -40,6 +40,30 @@ const colombianDepartments = [
 
 export default function CheckoutPage() {
   const router = useRouter();
+  
+  // Helper function to process image URLs (same logic as cart page)
+  const getProcessedImageUrl = (rawUrl: string): string => {
+    if (!rawUrl || rawUrl === '/placeholder-product.svg') {
+      return '/placeholder-product.svg';
+    }
+    
+    // If it's already an API endpoint, return as is
+    if (rawUrl.startsWith('/api/images/')) {
+      return rawUrl;
+    }
+    
+    // If it's already a valid URL (Cloudinary, Airtable, etc.), return as is
+    if (rawUrl.includes('res.cloudinary.com') || rawUrl.includes('dl.airtable.com')) {
+      return rawUrl;
+    }
+    
+    // Extract filename from URL
+    const filename = rawUrl.split('/').pop() || rawUrl;
+    
+    // Determine environment and return appropriate API endpoint
+    // For virtual environment, use virtual API endpoint
+    return `/api/images/virtual/products/${filename}`;
+  };
   const cartContext = useCart();
   const { user, loading: authLoading } = useClientAuth();
   const { showToast } = useToast();
@@ -1618,7 +1642,7 @@ export default function CheckoutPage() {
                               <div className="flex items-start space-x-3">
                                 <div className="relative flex-shrink-0">
                                   <img
-                                    src={item.image || '/placeholder-product.svg'}
+                                    src={getProcessedImageUrl(item.image || '/placeholder-product.svg')}
                                     alt={item.name}
                                     className="w-16 h-16 object-cover rounded-lg"
                                   />

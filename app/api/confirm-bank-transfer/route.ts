@@ -1102,7 +1102,7 @@ async function processBackgroundTasks(
     };
 
     // Send push notification without waiting for response (non-blocking)
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos-production.up.railway.app'}/api/push-notifications/send-order-notification`, {
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://distrinaranjos.co'}/api/push-notifications/send-order-notification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

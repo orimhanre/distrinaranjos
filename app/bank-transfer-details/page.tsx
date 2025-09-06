@@ -217,133 +217,133 @@ export default function BankTransferDetailsPage() {
           {copyNotification}
         </div>
       )}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🏦</span>
+        <div className="text-center mb-4 sm:mb-8">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-4">
+            <span className="text-xl sm:text-2xl">🏦</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Datos Bancarios</h1>
-          <p className="text-lg text-gray-600 mb-4">Realiza la transferencia con los siguientes datos</p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
-            <p className="text-sm text-green-700 mb-1">Total a transferir</p>
-            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Datos Bancarios</h1>
+          <p className="text-sm sm:text-lg text-gray-600 mb-2 sm:mb-4">Realiza la transferencia con los siguientes datos</p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-4 inline-block">
+            <p className="text-xs sm:text-sm text-green-700 mb-1">Total a transferir</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
           </div>
         </div>
 
 
 
         {/* Bank Details */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
-              <span className="text-xl">🏦</span>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex items-center mb-3 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4">
+              <span className="text-lg sm:text-xl">🏦</span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Datos de la Cuenta</h2>
-              <p className="text-sm text-gray-600">Copia y pega estos datos en tu aplicación bancaria</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Datos de la Cuenta</h2>
+              <p className="text-xs sm:text-sm text-gray-600">Copia y pega estos datos en tu aplicación bancaria</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             {/* Account Holder */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Titular de la Cuenta</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Titular de la Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountHolder, 'Titular')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.accountHolder}
               </div>
             </div>
 
             {/* Bank Name */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Banco</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Banco</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.bankName, 'Banco')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.bankName}
               </div>
             </div>
 
             {/* Account Number */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Número de Cuenta</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Número de Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountNumber, 'Número de cuenta')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.accountNumber}
               </div>
             </div>
 
             {/* Account Type */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Tipo de Cuenta</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Tipo de Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountType, 'Tipo de cuenta')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.accountType}
               </div>
             </div>
 
             {/* Phone Number */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Teléfono</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Teléfono</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.phoneNumber, 'Teléfono')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.phoneNumber}
               </div>
             </div>
 
             {/* Email */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Email</label>
+            <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Email</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.email, 'Email')}
-                  className="text-blue-600 hover:text-blue-700 text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   📋
                 </button>
               </div>
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm text-black">
+              <div className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black">
                 {details.email}
               </div>
             </div>
@@ -351,16 +351,16 @@ export default function BankTransferDetailsPage() {
         </div>
 
         {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-6 mb-6 sm:mb-8">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-900 mb-2">Instrucciones para la Transferencia</h3>
-              <div className="text-sm text-blue-800 space-y-2">
+            <div className="ml-2 sm:ml-3">
+              <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-1 sm:mb-2">Instrucciones para la Transferencia</h3>
+              <div className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-2">
                 <p>1. <strong>Copia los datos bancarios</strong> haciendo clic en "Copiar" junto a cada campo</p>
                 <p>2. <strong>Abre tu aplicación bancaria</strong> (Bancolombia, Nequi, A la Mano, etc.)</p>
                 <p>3. <strong>Realiza la transferencia</strong> por el monto exacto: {formatCurrency(totalAmount)}</p>
@@ -372,7 +372,7 @@ export default function BankTransferDetailsPage() {
         </div>
 
         {/* Confirmation Checkbox */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl shadow-lg p-6 mb-8 hover:shadow-xl transition-all duration-300">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl shadow-lg p-3 sm:p-6 mb-6 sm:mb-8 hover:shadow-xl transition-all duration-300">
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
               <input

@@ -11,6 +11,30 @@ export default function CartPage() {
   // Add mobile error handler for chunk loading issues
   useMobileErrorHandler();
   
+  // Helper function to process image URLs (same logic as ProductModal and other components)
+  const getProcessedImageUrl = (rawUrl: string): string => {
+    if (!rawUrl || rawUrl === '/placeholder-product.svg') {
+      return '/placeholder-product.svg';
+    }
+    
+    // If it's already an API endpoint, return as is
+    if (rawUrl.startsWith('/api/images/')) {
+      return rawUrl;
+    }
+    
+    // If it's already a valid URL (Cloudinary, Airtable, etc.), return as is
+    if (rawUrl.includes('res.cloudinary.com') || rawUrl.includes('dl.airtable.com')) {
+      return rawUrl;
+    }
+    
+    // Extract filename from URL
+    const filename = rawUrl.split('/').pop() || rawUrl;
+    
+    // Determine environment and return appropriate API endpoint
+    // For virtual environment, use virtual API endpoint
+    return `/api/images/virtual/products/${filename}`;
+  };
+  
   const { cartItems, updateQuantity, removeFromCart, clearCart, getTotalPrice, getTotalItems } = useCart();
   const [shippingConfig, setShippingConfig] = useState({
     freeShippingThreshold: 100000,
@@ -374,7 +398,7 @@ export default function CartPage() {
                          <div className="flex-shrink-0">
                            <div className="relative">
                              <img
-                               src={item.image || '/placeholder-product.svg'}
+                               src={getProcessedImageUrl(item.image || '/placeholder-product.svg')}
                                alt={item.name}
                                className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200"
                                onError={(e) => {
@@ -541,7 +565,7 @@ export default function CartPage() {
                       <div className="flex-shrink-0">
                         <div className="relative">
                           <img
-                            src={item.image || '/placeholder-product.svg'}
+                            src={getProcessedImageUrl(item.image || '/placeholder-product.svg')}
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm"
                             onError={(e) => {
