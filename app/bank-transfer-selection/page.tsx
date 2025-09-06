@@ -22,14 +22,14 @@ const bankProviders: BankProvider[] = [
     id: 'nequi',
     name: 'Nequi',
     description: 'Transferencia desde Nequi',
-    icon: '💳',
+    icon: '💰',
     color: 'from-purple-500 to-purple-600'
   },
   {
     id: 'a_la_mano',
     name: 'A la Mano',
     description: 'Transferencia desde A la Mano',
-    icon: '📱',
+    icon: '💎',
     color: 'from-green-500 to-green-600'
   }
 ];
