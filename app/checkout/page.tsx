@@ -779,7 +779,7 @@ export default function CheckoutPage() {
     }
   }, [cartItems, router, isProcessing]);
 
-  // Auto-scroll to Finalizar Compra section when coming from bank transfer selection
+  // Auto-scroll to Finalizar Compra section when coming from bank transfer selection or step changes
   useEffect(() => {
     const shouldScrollToCheckout = sessionStorage.getItem('scrollToCheckout');
     if (shouldScrollToCheckout === 'true') {
@@ -799,6 +799,23 @@ export default function CheckoutPage() {
       }, 500);
     }
   }, []);
+
+  // Auto-scroll to Finalizar Compra section when step changes
+  useEffect(() => {
+    // Only scroll if we're not on the initial load (currentStep > 1)
+    if (currentStep > 1) {
+      setTimeout(() => {
+        const checkoutSection = document.querySelector('h1');
+        if (checkoutSection) {
+          checkoutSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 300);
+    }
+  }, [currentStep]);
 
   // Show loading state while cart context is initializing
   if (isCartLoading) {
