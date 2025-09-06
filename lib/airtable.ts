@@ -282,10 +282,10 @@ export class AirtableService {
                 fieldNameLower === 'images';
             
             if (isImageField) {
-              console.log(`🔍 Processing image field: ${fieldName} with value:`, value);
-              console.log(`🔍 Field type: ${typeof value}, isArray: ${Array.isArray(value)}`);
+              // console.log(`🔍 Processing image field: ${fieldName} with value:`, value);
+              // console.log(`🔍 Field type: ${typeof value}, isArray: ${Array.isArray(value)}`);
               const attachments = extractImageAttachments(value);
-              console.log(`🔍 Extracted ${attachments.length} attachments from ${fieldName}:`, attachments);
+              // console.log(`🔍 Extracted ${attachments.length} attachments from ${fieldName}:`, attachments);
               // Always return an array for image fields, even if empty
               return attachments;
             }
@@ -318,9 +318,9 @@ export class AirtableService {
     for (const [fieldName, fieldValue] of Object.entries(fields)) {
       // Preserve original case from Airtable
       // Reduced logging - only log if debugging is enabled
-      if (process.env.DEBUG_AIRTABLE_FIELDS === 'true') {
-        console.log(`🔍 Processing field: ${fieldName} (type: ${typeof fieldValue})`);
-      }
+      // if (process.env.DEBUG_AIRTABLE_FIELDS === 'true') {
+      //   console.log(`🔍 Processing field: ${fieldName} (type: ${typeof fieldValue})`);
+      // }
       const processedValue = safeValue(fieldValue, fieldName);
       product[fieldName] = processedValue;
     }
@@ -473,14 +473,14 @@ export class AirtableService {
       console.log(`⚠️ No brand field found, setting default: ${product.brand}`);
     }
 
-    console.log(`✅ Final converted product:`, {
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      stock: product.stock,
-      imageURL: product.imageURL
-    });
+    // console.log(`✅ Final converted product:`, {
+    //   id: product.id,
+    //   name: product.name,
+    //   brand: product.brand,
+    //   price: product.price,
+    //   stock: product.stock,
+    //   imageURL: product.imageURL
+    // });
 
     return product;
   }

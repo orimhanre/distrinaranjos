@@ -150,7 +150,7 @@ export class VirtualPhotoDownloader {
       return [];
     }
 
-    console.log(`🚀 Starting virtual product images download: ${attachments.length} images...`);
+    // console.log(`🚀 Starting virtual product images download: ${attachments.length} images...`);
     
     const results: DownloadedVirtualImage[] = [];
     
@@ -162,11 +162,11 @@ export class VirtualPhotoDownloader {
       const result = await this.downloadAndSaveImage(url, filename, this.IMAGES_DIR);
       results.push(result);
       
-      console.log(`✅ Processed: ${filename}`);
+      // console.log(`✅ Processed: ${filename}`);
     }
     
     const successfulDownloads = results.filter(r => r.success);
-    console.log(`🎉 Virtual product images download completed: ${successfulDownloads.length}/${attachments.length} successful`);
+    // console.log(`🎉 Virtual product images download completed: ${successfulDownloads.length}/${attachments.length} successful`);
     
     // Return public URLs for successful downloads
     return successfulDownloads.map(result => 
@@ -203,7 +203,7 @@ export class VirtualPhotoDownloader {
       const result = await this.downloadAndSaveImage(url, filename, this.WEBPHOTOS_DIR);
       results.push(result);
       
-      console.log(`✅ Processed: ${filename}`);
+      // console.log(`✅ Processed: ${filename}`);
     }
     
     const successfulDownloads = results.filter(r => r.success);

@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
           savedProduct = productDB.updateProduct(product.id, product);
           if (savedProduct) {
             syncedCount++;
-            console.log(`✅ Updated product ${i + 1}/${airtableRecords.length}: ${product.id}`);
+            // console.log(`✅ Updated product ${i + 1}/${airtableRecords.length}: ${product.id}`);
           } else {
             console.warn(`⚠️ Failed to update product: ${product.id}`);
           }

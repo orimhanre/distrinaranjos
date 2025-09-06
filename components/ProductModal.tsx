@@ -422,7 +422,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
             </svg>
           </button>
 
-          <div className="p-2 sm:p-4 lg:p-8 bg-white" style={{ backgroundColor: 'white' }}>
+          <div className="p-2 sm:p-4 lg:p-8 bg-white relative" style={{ backgroundColor: 'white' }}>
             
             {/* Product Layout - Stacked on mobile, side-by-side on desktop */}
             <div className="flex flex-col lg:flex-row lg:gap-6">
@@ -711,7 +711,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
               </div>
 
               {/* Product Info - Right side on desktop */}
-              <div className="lg:w-1/2 space-y-1.5 sm:space-y-3">
+              <div className="lg:w-1/2 space-y-1.5 sm:space-y-3 relative">
                 {/* Product Name - Hidden on mobile, shown on desktop */}
                                   <div className="hidden lg:block">
                     <div className="flex items-center gap-2 mb-2">
@@ -876,7 +876,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                   </h3>
                   {/* Floating Add to Cart Button - Only on mobile virtual pages */}
                   {isVirtualAdmin && (
-                    <div className="lg:hidden absolute -top-2 -right-2 z-10">
+                    <div className="lg:hidden absolute top-1 right-2 z-20">
                       {(() => {
                         const isOutOfStock = stockValue <= 0;
                         const isDisabled = isOutOfStock || (colors.length > 0 && !selectedColor) || !quantity;
@@ -885,7 +885,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                           <button
                             data-add-to-cart-button
                             data-product-id={product.id}
-                            className={`w-20 h-20 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center ${
+                            className={`w-24 h-16 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center ${
                               isOutOfStock 
                                 ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                                 : isDisabled 
@@ -1008,6 +1008,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                   </div>
                 </div>
 
+
                 {/* Technical Specifications Section */}
                 <div className="bg-gray-50 rounded-lg p-1.5 sm:p-3 mb-2 lg:mb-3">
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1 border-b border-gray-200 pb-1">
@@ -1068,6 +1069,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
