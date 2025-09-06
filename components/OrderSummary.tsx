@@ -226,15 +226,30 @@ export default function OrderSummary({
               return `/api/images/virtual/products/${filename}`;
             };
 
-            // Use the processed image URL from the cart item
+            // Use the processed image URL from the cart item's product
             const getImageUrl = () => {
-              return getProcessedImageUrl(item.image || '/placeholder-product.svg');
+              // Handle imageURL property from the product
+              const imageData = item.product.imageURL;
+              
+              if (imageData) {
+                let imageUrl = '';
+                
+                if (Array.isArray(imageData)) {
+                  imageUrl = imageData[0] || '';
+                } else {
+                  imageUrl = String(imageData || '');
+                }
+                
+                return getProcessedImageUrl(imageUrl);
+              }
+              
+              return '/placeholder-product.svg';
             };
             return (
               <div key={index} className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
                 <img
                   src={getImageUrl()}
-                  alt={item.name}
+                  alt={item.product.name}
                   width={56}
                   height={56}
                   className="w-14 h-14 object-cover rounded-lg border border-gray-200 bg-white"
