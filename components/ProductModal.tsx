@@ -871,9 +871,50 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
 
                 {/* Product Details Section */}
                 <div className="bg-gray-50 rounded-lg p-1.5 sm:p-3 mb-2 lg:mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1 border-b border-gray-200 pb-1">
-                    Detalles del Producto
-                  </h3>
+                  <div className="flex items-center justify-between mb-1 border-b border-gray-200 pb-1">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900">
+                      Detalles del Producto
+                    </h3>
+                    {/* Floating Add to Cart Button - Only on mobile virtual pages */}
+                    {isVirtualAdmin && (
+                      <div className="lg:hidden">
+                        {(() => {
+                          const isOutOfStock = stockValue <= 0;
+                          const isDisabled = isOutOfStock || (colors.length > 0 && !selectedColor) || !quantity;
+                          
+                          return (
+                            <button
+                              data-add-to-cart-button
+                              data-product-id={product.id}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                                isOutOfStock 
+                                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                  : isDisabled 
+                                    ? 'bg-blue-600 text-white opacity-50 cursor-not-allowed' 
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 shadow-md'
+                              }`}
+                              disabled={isDisabled}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                console.log('🖱️ Floating Add to cart button clicked for product:', product.name);
+                                console.log('🖱️ Is out of stock:', isOutOfStock);
+                                console.log('🖱️ Is disabled:', isDisabled);
+                                
+                                if (!isOutOfStock) {
+                                  handleAddToCart();
+                                  // Modal will close automatically when flying animation completes
+                                }
+                              }}
+                            >
+                              {isOutOfStock ? 'Agotado' : 'Agregar'}
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1">
                     {product.brand && (
                       <div className="flex items-center">
