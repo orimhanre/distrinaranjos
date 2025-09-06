@@ -202,7 +202,10 @@ export default function BankTransferSelectionPage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <button
-            onClick={() => router.push('/checkout')}
+            onClick={() => {
+              sessionStorage.setItem('scrollToCheckout', 'true');
+              router.push('/checkout');
+            }}
             className="px-6 sm:px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 active:scale-95"
           >
             Volver al Checkout

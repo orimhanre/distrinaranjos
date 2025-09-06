@@ -779,6 +779,27 @@ export default function CheckoutPage() {
     }
   }, [cartItems, router, isProcessing]);
 
+  // Auto-scroll to Finalizar Compra section when coming from bank transfer selection
+  useEffect(() => {
+    const shouldScrollToCheckout = sessionStorage.getItem('scrollToCheckout');
+    if (shouldScrollToCheckout === 'true') {
+      // Clear the flag
+      sessionStorage.removeItem('scrollToCheckout');
+      
+      // Scroll to the Finalizar Compra section after a short delay
+      setTimeout(() => {
+        const checkoutSection = document.querySelector('h1');
+        if (checkoutSection) {
+          checkoutSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 500);
+    }
+  }, []);
+
   // Show loading state while cart context is initializing
   if (isCartLoading) {
     return (

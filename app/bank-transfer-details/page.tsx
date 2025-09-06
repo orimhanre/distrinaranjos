@@ -198,7 +198,10 @@ export default function BankTransferDetailsPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
             <p className="text-gray-600">No se encontraron los detalles bancarios. Por favor regresa al checkout.</p>
             <button
-              onClick={() => router.push('/checkout')}
+              onClick={() => {
+                sessionStorage.setItem('scrollToCheckout', 'true');
+                router.push('/checkout');
+              }}
               className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Volver al Checkout
