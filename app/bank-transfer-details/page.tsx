@@ -260,7 +260,7 @@ export default function BankTransferDetailsPage() {
       `}</style>
       {/* Copy Notification */}
       {copyNotification && (
-        <div className="fixed top-32 left-4 right-4 sm:top-4 sm:left-auto sm:right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg text-center font-medium animate-bounce">
+        <div className="fixed top-32 left-4 right-4 sm:top-20 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg text-center font-medium animate-bounce">
           {copyNotification}
         </div>
       )}
