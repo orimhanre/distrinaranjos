@@ -299,10 +299,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Titular de la Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountHolder, 'Titular')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
@@ -320,10 +320,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Banco</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.bankName, 'Banco')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
@@ -341,10 +341,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Número de Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountNumber, 'Número de cuenta')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
@@ -362,10 +362,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Tipo de Cuenta</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.accountType, 'Tipo de cuenta')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
@@ -383,10 +383,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Teléfono</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.phoneNumber, 'Teléfono')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
@@ -404,10 +404,10 @@ export default function BankTransferDetailsPage() {
                 <label className="text-xs sm:text-sm font-medium text-gray-700">Email</label>
                 <button
                   onClick={() => handleCopyToClipboard(details.email, 'Email')}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none"
+                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm select-none font-medium"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  📋
+                  Copiar
                 </button>
               </div>
               <div 
