@@ -142,8 +142,8 @@ export default function Distri1Form() {
       // Extract filename from URL
       const filename = rawUrl.split('/').pop() || rawUrl;
       
-      // For regular environment, use regular API endpoint
-      return `/api/images/regular/${filename}`;
+      // Use the correct API endpoint structure: /api/images/products/filename
+      return `/api/images/products/${filename}`;
     };
 
     // Get product image

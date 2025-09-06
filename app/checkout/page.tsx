@@ -60,9 +60,8 @@ export default function CheckoutPage() {
     // Extract filename from URL
     const filename = rawUrl.split('/').pop() || rawUrl;
     
-    // Determine environment and return appropriate API endpoint
-    // For virtual environment, use virtual API endpoint
-    return `/api/images/virtual/products/${filename}`;
+    // Use the correct API endpoint structure: /api/images/products/filename
+    return `/api/images/products/${filename}`;
   };
   const cartContext = useCart();
   const { user, loading: authLoading } = useClientAuth();
