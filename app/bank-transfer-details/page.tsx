@@ -218,22 +218,22 @@ export default function BankTransferDetailsPage() {
       <style jsx>{`
         .no-underline {
           text-decoration: none !important;
-          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
           text-decoration-line: none !important;
         }
         .no-underline:hover {
           text-decoration: none !important;
-          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
           text-decoration-line: none !important;
         }
         .no-underline:focus {
           text-decoration: none !important;
-          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
           text-decoration-line: none !important;
         }
         .no-underline:active {
           text-decoration: none !important;
-          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
           text-decoration-line: none !important;
         }
         .select-text {
@@ -335,7 +335,7 @@ export default function BankTransferDetailsPage() {
               <div 
                 className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
                 onClick={() => handleCopyToClipboard(details.accountNumber, 'Número de cuenta')}
-                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
                 {details.accountNumber}
               </div>
@@ -377,7 +377,7 @@ export default function BankTransferDetailsPage() {
               <div 
                 className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
                 onClick={() => handleCopyToClipboard(details.phoneNumber, 'Teléfono')}
-                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
                 {details.phoneNumber}
               </div>
@@ -398,7 +398,7 @@ export default function BankTransferDetailsPage() {
               <div 
                 className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
                 onClick={() => handleCopyToClipboard(details.email, 'Email')}
-                style={{ textDecoration: 'none', WebkitTextDecoration: 'none', textDecorationLine: 'none' }}
+                style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
                 {details.email}
               </div>
