@@ -87,14 +87,11 @@ export default function BankTransferDetailsPage() {
   const [copyNotification, setCopyNotification] = useState<string>('');
 
   const handleCopyToClipboard = async (text: string, fieldName: string) => {
-    console.log('Copy function called:', fieldName, text);
     try {
       // Check if clipboard API is available
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
-        console.log('Clipboard API success');
         setCopyNotification(`${fieldName} copiado al portapapeles`);
-        console.log('Notification set:', `${fieldName} copiado al portapapeles`);
         setTimeout(() => setCopyNotification(''), 2000);
       } else {
         // Fallback method for older browsers
@@ -109,7 +106,6 @@ export default function BankTransferDetailsPage() {
         
         try {
           document.execCommand('copy');
-          console.log('Fallback copy success');
           setCopyNotification(`${fieldName} copiado al portapapeles`);
           setTimeout(() => setCopyNotification(''), 2000);
         } catch (fallbackErr) {
@@ -245,7 +241,7 @@ export default function BankTransferDetailsPage() {
       `}</style>
       {/* Copy Notification */}
       {copyNotification && (
-        <div className="fixed top-20 left-4 right-4 sm:top-4 sm:left-auto sm:right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg text-center font-medium">
+        <div className="fixed top-32 left-4 right-4 sm:top-4 sm:left-auto sm:right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg text-center font-medium animate-bounce">
           {copyNotification}
         </div>
       )}
