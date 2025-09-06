@@ -29,7 +29,7 @@ const bankProviders: BankProvider[] = [
     id: 'a_la_mano',
     name: 'A la Mano',
     description: 'Transferencia desde A la Mano',
-    icon: '💎',
+    icon: '💳',
     color: 'from-green-500 to-green-600'
   }
 ];
