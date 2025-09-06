@@ -129,7 +129,7 @@ export default function BankTransferSelectionPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Métodos de Transferencia Disponibles</h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
             {bankProviders.map((provider) => (
               <div
                 key={provider.id}
@@ -140,8 +140,14 @@ export default function BankTransferSelectionPage() {
                     : 'border-gray-200 hover:border-blue-300'
                 }`}
               >
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center justify-end mb-3 sm:mb-4">
+                <div className="p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-2 sm:mb-4">
+                    <div className="flex items-center">
+                      <span className="text-lg sm:text-xl mr-2">{provider.icon}</span>
+                      <h3 className="text-sm sm:text-lg font-semibold text-gray-900">
+                        {provider.name}
+                      </h3>
+                    </div>
                     {selectedProvider === provider.id && (
                       <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,12 +157,9 @@ export default function BankTransferSelectionPage() {
                     )}
                   </div>
                   
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                    {provider.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600">{provider.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">{provider.description}</p>
                   
-                  <div className="mt-3 sm:mt-4 flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center text-xs text-gray-500">
                       <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
