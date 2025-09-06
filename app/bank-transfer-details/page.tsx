@@ -212,31 +212,47 @@ export default function BankTransferDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-10">
       <style jsx>{`
-        .no-underline {
+        .bank-field {
           text-decoration: none !important;
+          -webkit-text-decoration: none !important;
           -webkit-text-decoration-line: none !important;
           text-decoration-line: none !important;
-        }
-        .no-underline:hover {
-          text-decoration: none !important;
-          -webkit-text-decoration-line: none !important;
-          text-decoration-line: none !important;
-        }
-        .no-underline:focus {
-          text-decoration: none !important;
-          -webkit-text-decoration-line: none !important;
-          text-decoration-line: none !important;
-        }
-        .no-underline:active {
-          text-decoration: none !important;
-          -webkit-text-decoration-line: none !important;
-          text-decoration-line: none !important;
-        }
-        .select-text {
           -webkit-user-select: text !important;
           -moz-user-select: text !important;
           -ms-user-select: text !important;
           user-select: text !important;
+        }
+        .bank-field:hover {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
+          text-decoration-line: none !important;
+        }
+        .bank-field:focus {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
+          text-decoration-line: none !important;
+        }
+        .bank-field:active {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
+          text-decoration-line: none !important;
+        }
+        .bank-field:visited {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
+          text-decoration-line: none !important;
+        }
+        div.bank-field {
+          text-decoration: none !important;
+          -webkit-text-decoration: none !important;
+          -webkit-text-decoration-line: none !important;
+          text-decoration-line: none !important;
+          border-bottom: none !important;
+          outline: none !important;
         }
       `}</style>
       {/* Copy Notification */}
@@ -287,7 +303,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.accountHolder, 'Titular')}
                 style={{ textDecoration: 'none' }}
               >
@@ -308,7 +324,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.bankName, 'Banco')}
                 style={{ textDecoration: 'none' }}
               >
@@ -329,7 +345,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.accountNumber, 'Número de cuenta')}
                 style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
@@ -350,7 +366,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.accountType, 'Tipo de cuenta')}
                 style={{ textDecoration: 'none' }}
               >
@@ -371,7 +387,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.phoneNumber, 'Teléfono')}
                 style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
@@ -392,7 +408,7 @@ export default function BankTransferDetailsPage() {
                 </button>
               </div>
               <div 
-                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors no-underline select-text"
+                className="bg-white border border-gray-200 rounded px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs sm:text-sm text-black cursor-pointer hover:bg-gray-50 transition-colors bank-field"
                 onClick={() => handleCopyToClipboard(details.email, 'Email')}
                 style={{ textDecoration: 'none', WebkitTextDecorationLine: 'none', textDecorationLine: 'none' }}
               >
