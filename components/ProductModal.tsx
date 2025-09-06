@@ -1031,8 +1031,8 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                   </div>
                 </div>
 
-                {/* Add to Cart Button */}
-                <div className="pt-1.5 pb-3 sm:pb-2">
+                {/* Add to Cart Button - Hidden on mobile virtual pages (floating button is used instead) */}
+                <div className={`pt-1.5 pb-3 sm:pb-2 ${isVirtualAdmin ? 'hidden lg:block' : ''}`}>
                   {(() => {
                     const isOutOfStock = stockValue <= 0;
                     const isDisabled = isOutOfStock || (colors.length > 0 && !selectedColor) || !quantity;
